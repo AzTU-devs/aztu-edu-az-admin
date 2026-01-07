@@ -257,7 +257,7 @@ export default function Projects() {
                       <p className="font-bold text-[18px] text-gray-600 dark:text-gray-100" style={{ width: "calc(100% / 4)" }}>{project.display_order}</p>
                       <p className="font-bold text-[18px] text-gray-600 dark:text-gray-100" style={{ width: "calc(100% / 4)" }}>{truncate(project.title, 30)}</p>
                       <p className="text-[18px] text-gray-800 dark:text-gray-200" style={{ width: "calc(100% / 4)" }}>{truncate(project.desc, 30)}</p>
-                      <p className="text-[18px] text-gray-800 dark:text-gray-200 flex justify-end items-center" style={{ width: "calc(100% / 4)" }}>
+                      <p className="text-[18px] text-gray-800 dark:text-gray-200 flex justify-center items-center" style={{ width: "calc(100% / 4)" }}>
                         {new Date(project.created_at).toLocaleDateString("en-GB")}
                       </p>
                     </div>

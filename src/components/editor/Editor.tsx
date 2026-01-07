@@ -206,7 +206,7 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                             >
                                 Cancel
                             </button>
-                            <button
+                            <button 
                                 onClick={confirmLink}
                                 className="px-4 py-2 rounded-md bg-yellow-400 dark:bg-yellow-500 hover:bg-yellow-500 dark:hover:bg-yellow-600 transition text-white"
                             >
