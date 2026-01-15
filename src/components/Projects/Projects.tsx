@@ -1,4 +1,3 @@
-import Swal from "sweetalert2";
 import {
   DndContext,
   closestCenter,
@@ -12,12 +11,13 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import Swal from "sweetalert2";
 import { Link } from "react-router";
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useState } from "react";
-import { Pagination, Stack, CircularProgress } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { Pagination, Stack, CircularProgress } from "@mui/material";
 import { deleteProject, getProjects, Project, reorderProject } from "../../services/project/projectService";
 
 function SortableItem({ id, children }: { id: string; children: (args: { attributes: any; listeners: any }) => React.ReactNode }) {
@@ -43,10 +43,10 @@ export default function Projects() {
   const [end, setEnd] = useState(4);
   const [start, setStart] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [totalProjects, setTotalProjects] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
 

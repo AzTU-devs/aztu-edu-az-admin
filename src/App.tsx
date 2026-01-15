@@ -21,6 +21,7 @@ import NewProjectPage from "./pages/Projects/NewProjectPage";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ProjectDetailsPage from "./pages/Projects/ProjectDetailsPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+import AnnouncementsPage from "./pages/AnnouncementPages/AnnouncementsPage";
 
 export default function App() {
   return (
@@ -59,6 +60,9 @@ export default function App() {
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/new" element={<NewProjectPage />} />
             <Route path="/projects/:project_id" element={<ProjectDetailsPage />} />
+
+            {/* Announcement */}
+            <Route path="/announcements" element={<AnnouncementsPage />} />
 
           </Route>
 
