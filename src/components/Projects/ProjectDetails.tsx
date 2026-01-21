@@ -4,7 +4,6 @@ import Button from "../ui/button/Button";
 import { useEffect, useState } from "react";
 import Input from "../form/input/InputField";
 import { useParams } from "react-router-dom";
-import DropzoneComponent from "../form/form-elements/DropZone";
 import { getProjectDetails, Project } from "../../services/project/projectService";
 
 export default function ProjectDetails() {

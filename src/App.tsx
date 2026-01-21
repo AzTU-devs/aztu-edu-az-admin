@@ -14,13 +14,16 @@ import Avatars from "./pages/UiElements/Avatars";
 import Buttons from "./pages/UiElements/Buttons";
 import LineChart from "./pages/Charts/LineChart";
 import NotFound from "./pages/OtherPage/NotFound";
+import NewsPage from "./pages/newsPages/NewsPage";
 import BasicTables from "./pages/Tables/BasicTables";
 import FormElements from "./pages/Forms/FormElements";
 import ProjectsPage from "./pages/Projects/ProjectsPage";
 import NewProjectPage from "./pages/Projects/NewProjectPage";
 import { ScrollToTop } from "./components/common/ScrollToTop";
+import NewsDetailsPage from "./pages/newsPages/NewsDetailsPage";
 import ProjectDetailsPage from "./pages/Projects/ProjectDetailsPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+import NewsCategoryPage from "./pages/newsCategoryPages/NewsCategoryPage";
 import AnnouncementsPage from "./pages/AnnouncementPages/AnnouncementsPage";
 
 export default function App() {
@@ -63,6 +66,13 @@ export default function App() {
 
             {/* Announcement */}
             <Route path="/announcements" element={<AnnouncementsPage />} />
+
+            {/* News */}
+            <Route path="/news" element={<NewsPage />} />
+            <Route path="/news/:news_id" element={<NewsDetailsPage />} />
+
+            {/* News category */}
+            <Route path="/news-categories" element={<NewsCategoryPage />} />
 
           </Route>
 

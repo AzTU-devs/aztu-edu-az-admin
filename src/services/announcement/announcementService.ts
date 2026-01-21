@@ -36,7 +36,7 @@ export const getAnnouncements = async (
         }
 
         const response = await apiClient.get(
-            `/api/announcement/all?${params.toString()}`,
+            `/api/announcement/admin/all?${params.toString()}`,
             config
         );
 
@@ -64,7 +64,7 @@ export const reorderAnnouncement = async (payload: ReOrderAnnouncementPayload) =
     try {
         const response = await apiClient.post("/api/announcement/reorder", payload);
 
-        if (response.data.status_code === 201) {
+        if (response.data.status_code === 200) {
             return "SUCCESS";
         }
 
