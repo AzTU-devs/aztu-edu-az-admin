@@ -56,6 +56,7 @@ const navItems: NavItem[] = [
     icon: <NewspaperIcon />,
     subItems: [
       { name: "Xəbərlər", path: "/news", pro: false },
+      { name: "Yeni xəbər", path: "/news/new", pro: false },
       { name: "Xəbər kateqoriyaları", path: "/news-categories", pro: false }
     ],
   },

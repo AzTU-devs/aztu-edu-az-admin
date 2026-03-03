@@ -20,6 +20,12 @@ import ProjectsPage from "./pages/Projects/ProjectsPage";
 import NewProjectPage from "./pages/Projects/NewProjectPage";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ProjectDetailsPage from "./pages/Projects/ProjectDetailsPage";
+import NewsPage from "./pages/News/NewsPage";
+import NewNewsPage from "./pages/News/NewNewsPage";
+import NewsDetailsPage from "./pages/News/NewsDetailsPage";
+import AnnouncementsPage from "./pages/Announcements/AnnouncementsPage";
+import NewAnnouncementPage from "./pages/Announcements/NewAnnouncementPage";
+import AnnouncementDetailsPage from "./pages/Announcements/AnnouncementDetailsPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
 export default function App() {
@@ -59,6 +65,16 @@ export default function App() {
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/new" element={<NewProjectPage />} />
             <Route path="/projects/:project_id" element={<ProjectDetailsPage />} />
+
+            {/* News */}
+            <Route path="/news" element={<NewsPage />} />
+            <Route path="/news/new" element={<NewNewsPage />} />
+            <Route path="/news/:news_id" element={<NewsDetailsPage />} />
+
+            {/* Announcements */}
+            <Route path="/announcements" element={<AnnouncementsPage />} />
+            <Route path="/announcements/new" element={<NewAnnouncementPage />} />
+            <Route path="/announcements/:announcement_id" element={<AnnouncementDetailsPage />} />
 
           </Route>
 
