@@ -1,5 +1,5 @@
-import MapIcon from '@mui/icons-material/Map';
 import MenuIcon from '@mui/icons-material/Menu';
+import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
 import { Link, useLocation } from "react-router";
 import CampaignIcon from '@mui/icons-material/Campaign';
 import HandshakeIcon from '@mui/icons-material/Handshake';
@@ -33,12 +33,9 @@ const navItems: NavItem[] = [
     path: "/"
   },
   {
-    icon: <MapIcon />,
-    name: "Slayder",
-    subItems: [
-      { name: "Slayderlər", path: "/sliders", pro: false },
-      { name: "Yeni slayder", path: "/sliders/new", pro: false },
-    ],
+    icon: <SmartDisplayIcon />,
+    name: "Hero",
+    path: "/hero",
   },
   {
     icon: <AccountTreeIcon />,

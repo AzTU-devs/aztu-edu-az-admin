@@ -36,6 +36,7 @@ import FacultyDetailsPage from "./pages/Faculties/FacultyDetailsPage";
 import CafedrasPage from "./pages/Cafedras/CafedrasPage";
 import NewCafedraPage from "./pages/Cafedras/NewCafedraPage";
 import CafedraDetailsPage from "./pages/Cafedras/CafedraDetailsPage";
+import HeroPage from "./pages/Hero/HeroPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
 export default function App() {
@@ -103,6 +104,9 @@ export default function App() {
             <Route path="/cafedras" element={<CafedrasPage />} />
             <Route path="/cafedras/new" element={<NewCafedraPage />} />
             <Route path="/cafedras/:cafedra_code" element={<CafedraDetailsPage />} />
+
+            {/* Hero */}
+            <Route path="/hero" element={<HeroPage />} />
 
           </Route>
 
