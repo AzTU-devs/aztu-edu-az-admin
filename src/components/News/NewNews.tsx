@@ -13,34 +13,30 @@ export default function NewNews() {
 
     const [categoryId, setCategoryId] = useState("");
     const [titleAz, setTitleAz] = useState("");
-    const [descAz, setDescAz] = useState("");
     const [contentAZ, setContentAZ] = useState("");
     const [titleEn, setTitleEn] = useState("");
-    const [descEn, setDescEn] = useState("");
     const [contentEN, setContentEN] = useState("");
+    const [coverImage, setCoverImage] = useState<File | null>(null);
+    const [galleryImages, setGalleryImages] = useState<File[]>([]);
 
     const isFormValid =
         categoryId.trim() !== "" &&
         titleAz.trim() !== "" &&
-        descAz.trim() !== "" &&
         titleEn.trim() !== "" &&
-        descEn.trim() !== "";
+        coverImage !== null;
 
     const handleSubmit = async () => {
+        if (!coverImage) return;
         setLoading(true);
 
         const payload: CreateNewsPayload = {
-            cateogry_id: Number(categoryId),
-            az: {
-                title: titleAz,
-                desc: descAz,
-                content_html: contentAZ,
-            },
-            en: {
-                title: titleEn,
-                desc: descEn,
-                content_html: contentEN,
-            },
+            category_id: Number(categoryId),
+            az_title: titleAz,
+            az_html_content: contentAZ,
+            en_title: titleEn,
+            en_html_content: contentEN,
+            cover_image: coverImage,
+            gallery_images: galleryImages.length > 0 ? galleryImages : undefined,
         };
 
         const result = await createNews(payload);
@@ -79,6 +75,27 @@ export default function NewNews() {
                 />
             </div>
 
+            <div className="mb-[10px]">
+                <Label className="text-[17px]">Kapaq şəkli *</Label>
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setCoverImage(e.target.files?.[0] ?? null)}
+                    className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+            </div>
+
+            <div className="mb-[10px]">
+                <Label className="text-[17px]">Qalereya şəkilləri</Label>
+                <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => setGalleryImages(e.target.files ? Array.from(e.target.files) : [])}
+                    className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+            </div>
+
             {/* AZ section */}
             <div className="bg-white dark:bg-gray-800 p-3 rounded-md">
                 <h2 className="text-[17px] mb-2 text-gray-400 dark:text-gray-300">-- AZ --</h2>
@@ -88,14 +105,6 @@ export default function NewNews() {
                         placeholder="Başlıq"
                         value={titleAz}
                         onChange={(e) => setTitleAz(e.target.value)}
-                    />
-                </div>
-                <div className="mb-[10px]">
-                    <Label className="text-[17px]">Təsvir</Label>
-                    <Input
-                        placeholder="Təsvir"
-                        value={descAz}
-                        onChange={(e) => setDescAz(e.target.value)}
                     />
                 </div>
                 <Editor onUpdate={(html: string) => setContentAZ(html)} />
@@ -110,14 +119,6 @@ export default function NewNews() {
                         placeholder="Başlıq"
                         value={titleEn}
                         onChange={(e) => setTitleEn(e.target.value)}
-                    />
-                </div>
-                <div className="mb-[10px]">
-                    <Label className="text-[17px]">Təsvir</Label>
-                    <Input
-                        placeholder="Təsvir"
-                        value={descEn}
-                        onChange={(e) => setDescEn(e.target.value)}
                     />
                 </div>
                 <Editor onUpdate={(html: string) => setContentEN(html)} />

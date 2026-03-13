@@ -8,6 +8,8 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import CollectionsIcon from '@mui/icons-material/Collections';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import SchoolIcon from '@mui/icons-material/School';
+import CategoryIcon from '@mui/icons-material/Category';
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -33,7 +35,10 @@ const navItems: NavItem[] = [
   {
     icon: <MapIcon />,
     name: "Slayder",
-    path: "/sliders",
+    subItems: [
+      { name: "Slayderlər", path: "/sliders", pro: false },
+      { name: "Yeni slayder", path: "/sliders/new", pro: false },
+    ],
   },
   {
     icon: <AccountTreeIcon />,
@@ -66,6 +71,22 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Header", path: "/menu-header", pro: false },
       { name: "Footer", path: "/menu-footer", pro: false }
+    ],
+  },
+  {
+    icon: <SchoolIcon />,
+    name: "Fakültələr",
+    subItems: [
+      { name: "Fakültələr", path: "/faculties", pro: false },
+      { name: "Yeni fakültə", path: "/faculties/new", pro: false },
+    ],
+  },
+  {
+    icon: <CategoryIcon />,
+    name: "Kafedralar",
+    subItems: [
+      { name: "Kafedralar", path: "/cafedras", pro: false },
+      { name: "Yeni kafedra", path: "/cafedras/new", pro: false },
     ],
   },
   {

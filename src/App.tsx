@@ -26,6 +26,16 @@ import NewsDetailsPage from "./pages/News/NewsDetailsPage";
 import AnnouncementsPage from "./pages/Announcements/AnnouncementsPage";
 import NewAnnouncementPage from "./pages/Announcements/NewAnnouncementPage";
 import AnnouncementDetailsPage from "./pages/Announcements/AnnouncementDetailsPage";
+import SlidersPage from "./pages/Sliders/SlidersPage";
+import NewSliderPage from "./pages/Sliders/NewSliderPage";
+import SliderDetailsPage from "./pages/Sliders/SliderDetailsPage";
+import NewsCategoriesPage from "./pages/NewsCategories/NewsCategoriesPage";
+import FacultiesPage from "./pages/Faculties/FacultiesPage";
+import NewFacultyPage from "./pages/Faculties/NewFacultyPage";
+import FacultyDetailsPage from "./pages/Faculties/FacultyDetailsPage";
+import CafedrasPage from "./pages/Cafedras/CafedrasPage";
+import NewCafedraPage from "./pages/Cafedras/NewCafedraPage";
+import CafedraDetailsPage from "./pages/Cafedras/CafedraDetailsPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
 export default function App() {
@@ -75,6 +85,24 @@ export default function App() {
             <Route path="/announcements" element={<AnnouncementsPage />} />
             <Route path="/announcements/new" element={<NewAnnouncementPage />} />
             <Route path="/announcements/:announcement_id" element={<AnnouncementDetailsPage />} />
+
+            {/* Sliders */}
+            <Route path="/sliders" element={<SlidersPage />} />
+            <Route path="/sliders/new" element={<NewSliderPage />} />
+            <Route path="/sliders/:slider_id" element={<SliderDetailsPage />} />
+
+            {/* News Categories */}
+            <Route path="/news-categories" element={<NewsCategoriesPage />} />
+
+            {/* Faculties */}
+            <Route path="/faculties" element={<FacultiesPage />} />
+            <Route path="/faculties/new" element={<NewFacultyPage />} />
+            <Route path="/faculties/:faculty_code" element={<FacultyDetailsPage />} />
+
+            {/* Cafedras */}
+            <Route path="/cafedras" element={<CafedrasPage />} />
+            <Route path="/cafedras/new" element={<NewCafedraPage />} />
+            <Route path="/cafedras/:cafedra_code" element={<CafedraDetailsPage />} />
 
           </Route>
 

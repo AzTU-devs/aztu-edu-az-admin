@@ -21,17 +21,13 @@ export interface ReOrderNewsPayload {
 }
 
 export interface CreateNewsPayload {
-    cateogry_id: number;
-    az: {
-        title: string;
-        desc: string;
-        content_html: string;
-    };
-    en: {
-        title: string;
-        desc: string;
-        content_html: string;
-    };
+    category_id: number;
+    az_title: string;
+    az_html_content: string;
+    en_title: string;
+    en_html_content: string;
+    cover_image: File;
+    gallery_images?: File[];
 }
 
 export const getNews = async (start: number, end: number, lang: string) => {
@@ -89,7 +85,20 @@ export const reorderNews = async (payload: ReOrderNewsPayload) => {
 
 export const createNews = async (payload: CreateNewsPayload) => {
     try {
-        const response = await apiClient.post("/api/news/create", payload);
+        const formData = new FormData();
+        formData.append("category_id", String(payload.category_id));
+        formData.append("az_title", payload.az_title);
+        formData.append("az_html_content", payload.az_html_content);
+        formData.append("en_title", payload.en_title);
+        formData.append("en_html_content", payload.en_html_content);
+        formData.append("cover_image", payload.cover_image);
+        if (payload.gallery_images) {
+            payload.gallery_images.forEach((file) => formData.append("gallery_images", file));
+        }
+
+        const response = await apiClient.post("/api/news/create", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
 
         if (response.data.status_code === 201) {
             return "SUCCESS";
