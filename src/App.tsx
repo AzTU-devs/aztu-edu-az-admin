@@ -37,6 +37,10 @@ import CafedrasPage from "./pages/Cafedras/CafedrasPage";
 import NewCafedraPage from "./pages/Cafedras/NewCafedraPage";
 import CafedraDetailsPage from "./pages/Cafedras/CafedraDetailsPage";
 import HeroPage from "./pages/Hero/HeroPage";
+import MenuHeaderPage from "./pages/Menu/MenuHeaderPage";
+import MenuFooterPage from "./pages/Menu/MenuFooterPage";
+import MenuQuickPage from "./pages/Menu/MenuQuickPage";
+import MenuSharedPage from "./pages/Menu/MenuSharedPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
 export default function App() {
@@ -107,6 +111,12 @@ export default function App() {
 
             {/* Hero */}
             <Route path="/hero" element={<HeroPage />} />
+
+            {/* Menu */}
+            <Route path="/menu-header" element={<MenuHeaderPage />} />
+            <Route path="/menu-footer" element={<MenuFooterPage />} />
+            <Route path="/menu-quick" element={<MenuQuickPage />} />
+            <Route path="/menu-shared" element={<MenuSharedPage />} />
 
           </Route>
 

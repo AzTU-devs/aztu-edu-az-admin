@@ -67,7 +67,9 @@ const navItems: NavItem[] = [
     icon: <MenuIcon />,
     subItems: [
       { name: "Header", path: "/menu-header", pro: false },
-      { name: "Footer", path: "/menu-footer", pro: false }
+      { name: "Footer", path: "/menu-footer", pro: false },
+      { name: "Sürətli Menyu", path: "/menu-quick", pro: false },
+      { name: "Paylaşılan", path: "/menu-shared", pro: false },
     ],
   },
   {
