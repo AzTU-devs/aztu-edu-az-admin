@@ -32,7 +32,7 @@ export interface CreateNewsPayload {
 
 export const getNews = async (start: number, end: number, lang: string) => {
     try {
-        const response = await apiClient.get(`/api/news/all?start=${start}&end=${end}&lang=${lang}`);
+        const response = await apiClient.get(`/api/news/admin/all?start=${start}&end=${end}&lang=${lang}`);
 
         if (response.data.status_code === 200) {
             return {
