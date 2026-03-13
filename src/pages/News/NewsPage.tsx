@@ -1,5 +1,5 @@
 import PageMeta from "../../components/common/PageMeta";
-import NewsList from "../../components/News/News";
+import NewsList from "../../components/news/News";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { Link } from "react-router";

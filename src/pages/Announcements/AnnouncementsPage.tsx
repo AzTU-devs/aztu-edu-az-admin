@@ -1,5 +1,5 @@
 import PageMeta from "../../components/common/PageMeta";
-import Announcements from "../../components/Announcements/Announcements";
+import Announcements from "../../components/announcements/Announcements";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { Link } from "react-router";

@@ -50,8 +50,6 @@ export default function Projects() {
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const SwalWithInput = Swal.mixin({});
-
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;

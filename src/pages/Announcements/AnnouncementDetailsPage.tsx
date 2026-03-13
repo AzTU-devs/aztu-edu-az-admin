@@ -1,5 +1,5 @@
 import PageMeta from "../../components/common/PageMeta";
-import AnnouncementDetails from "../../components/Announcements/AnnouncementDetails";
+import AnnouncementDetails from "../../components/announcements/AnnouncementDetails";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 

@@ -1,5 +1,5 @@
 import PageMeta from "../../components/common/PageMeta";
-import NewsDetails from "../../components/News/NewsDetails";
+import NewsDetails from "../../components/news/NewsDetails";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 
