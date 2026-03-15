@@ -41,6 +41,9 @@ import MenuHeaderPage from "./pages/Menu/MenuHeaderPage";
 import MenuFooterPage from "./pages/Menu/MenuFooterPage";
 import MenuQuickPage from "./pages/Menu/MenuQuickPage";
 import MenuSharedPage from "./pages/Menu/MenuSharedPage";
+import CollaborationsPage from "./pages/Collaborations/CollaborationsPage";
+import NewCollaborationPage from "./pages/Collaborations/NewCollaborationPage";
+import CollaborationDetailsPage from "./pages/Collaborations/CollaborationDetailsPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
 export default function App() {
@@ -108,6 +111,11 @@ export default function App() {
             <Route path="/cafedras" element={<CafedrasPage />} />
             <Route path="/cafedras/new" element={<NewCafedraPage />} />
             <Route path="/cafedras/:cafedra_code" element={<CafedraDetailsPage />} />
+
+            {/* Collaborations */}
+            <Route path="/collaborations" element={<CollaborationsPage />} />
+            <Route path="/collaborations/new" element={<NewCollaborationPage />} />
+            <Route path="/collaborations/:collaboration_id" element={<CollaborationDetailsPage />} />
 
             {/* Hero */}
             <Route path="/hero" element={<HeroPage />} />

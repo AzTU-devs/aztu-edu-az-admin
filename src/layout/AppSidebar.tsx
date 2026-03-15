@@ -91,7 +91,10 @@ const navItems: NavItem[] = [
   {
     name: "Əməkdaşlıqlar",
     icon: <HandshakeIcon />,
-    path: "/collaborations"
+    subItems: [
+      { name: "Əməkdaşlıqlar", path: "/collaborations", pro: false },
+      { name: "Yeni əməkdaşlıq", path: "/collaborations/new", pro: false },
+    ],
   },
   {
     name: "Tədbirlər",
