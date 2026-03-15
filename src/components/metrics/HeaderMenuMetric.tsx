@@ -1,46 +1,55 @@
 import { useEffect, useState } from "react";
 import MenuIcon from '@mui/icons-material/Menu';
+import { Link } from "react-router";
 
 export default function HeaderMenuMetric() {
     const targetNumber = 254;
     const [count, setCount] = useState(0);
 
     useEffect(() => {
-        let current = 10;
-        const stepTime = 50;
-        const incrementValue = 30;
+        let current = 0;
+        const duration = 1200;
+        const steps = 60;
+        const increment = targetNumber / steps;
+        const stepTime = duration / steps;
 
-        const increment = () => {
-            current += incrementValue;
-            if (current > targetNumber) {
+        const interval = setInterval(() => {
+            current += increment;
+            if (current >= targetNumber) {
                 setCount(targetNumber);
                 clearInterval(interval);
             } else {
-                setCount(current);
+                setCount(Math.floor(current));
             }
-        };
-
-        const interval = setInterval(increment, stepTime);
+        }, stepTime);
 
         return () => clearInterval(interval);
-    }, [targetNumber]);
+    }, []);
 
     return (
-        <div className="flex justify-between items-center rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 w-[23%] min-w-[23%]">
-            <div className="flex flex-col justify-center items-start">
-                <span className="text-sm text-gray-500 dark:text-gray-400 mb-[20px]">
-                    Menyu sayı (header)
-                </span>
-                <div className="flex flex-col items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
-                    <MenuIcon className="text-gray-800 size-6 dark:text-white/90" />
+        <Link to="/menu-header" className="group relative overflow-hidden rounded-2xl bg-white border border-gray-100 dark:border-gray-800 dark:bg-gray-900 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 block">
+            {/* Top accent bar */}
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-purple-500 to-purple-400 rounded-t-2xl" />
+
+            {/* Icon */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-900/20">
+                    <MenuIcon style={{ fontSize: 20 }} className="text-purple-600 dark:text-purple-400" />
                 </div>
+                <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full">
+                    Header
+                </span>
             </div>
 
-            <div className="flex justify-center items-center">
-                <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                    {count}
-                </h4>
-            </div>
-        </div>
+            {/* Count */}
+            <h4 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {count.toLocaleString()}
+            </h4>
+
+            {/* Label */}
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-0.5">
+                Menyu sayı (header)
+            </p>
+        </Link>
     );
 }

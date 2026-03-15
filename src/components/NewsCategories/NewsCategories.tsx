@@ -61,11 +61,12 @@ export default function NewsCategories() {
   };
 
   return (
-    <div className="bg-white dark:bg-transparent text-gray-900 dark:text-gray-100">
-      <div className="flex justify-end mb-4">
+    <div className="space-y-4">
+      {/* Add button */}
+      <div className="flex justify-end">
         <button
           type="button"
-          className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-brand-500 hover:bg-brand-600 text-white transition-colors shadow-sm"
           onClick={() => setShowForm((v) => !v)}
         >
           <AddIcon fontSize="small" />
@@ -73,22 +74,23 @@ export default function NewsCategories() {
         </button>
       </div>
 
+      {/* Inline form */}
       {showForm && (
-        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 space-y-4">
-          <h3 className="font-semibold text-lg">Yeni xəbər kateqoriyası</h3>
+        <div className="overflow-hidden rounded-2xl border border-brand-100 dark:border-brand-900/30 bg-brand-50/50 dark:bg-brand-900/10 p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Yeni xəbər kateqoriyası</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-[15px]">AZ başlıq</Label>
+              <Label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">AZ başlıq</Label>
               <Input placeholder="Azerbaijanca başlıq" value={azTitle} onChange={(e) => setAzTitle(e.target.value)} />
             </div>
             <div>
-              <Label className="text-[15px]">EN başlıq</Label>
+              <Label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">EN başlıq</Label>
               <Input placeholder="English title" value={enTitle} onChange={(e) => setEnTitle(e.target.value)} />
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <Button
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+              className="px-4 py-2 bg-brand-500 text-white rounded-xl text-sm font-semibold hover:bg-brand-600"
               onClick={handleCreate}
               disabled={creating || !azTitle.trim() || !enTitle.trim()}
             >
@@ -96,7 +98,7 @@ export default function NewsCategories() {
             </Button>
             <button
               type="button"
-              className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-lg"
+              className="px-4 py-2 text-sm font-medium rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               onClick={() => { setShowForm(false); setAzTitle(""); setEnTitle(""); }}
             >
               İmtina
@@ -105,45 +107,50 @@ export default function NewsCategories() {
         </div>
       )}
 
-      <div className="border border-gray-200 dark:border-gray-700 flex items-center px-[10px] py-[15px] rounded-[10px] mb-[10px] bg-gray-100 dark:bg-gray-800">
-        <p style={{ width: "10%" }}>#ID</p>
-        <p style={{ width: "90%" }}>Kateqoriya adı</p>
-      </div>
-
-      {loading ? (
-        <>
-          {[...Array(5)].map((_, idx) => (
-            <div key={idx} className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[10px] px-[10px] py-[20px] mb-[10px] bg-white dark:bg-gray-800 animate-pulse">
-              <div className="bg-gray-300 dark:bg-gray-600 rounded h-6" style={{ width: "10%" }}></div>
-              <div className="bg-gray-300 dark:bg-gray-600 rounded h-6 ml-4" style={{ width: "88%" }}></div>
-            </div>
-          ))}
-        </>
-      ) : error ? (
-        <div className="text-center text-red-500 dark:text-red-400 py-10">{error}</div>
-      ) : categories.length > 0 ? (
-        categories.map((cat) => (
-          <div
-            key={cat.category_id}
-            className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[10px] px-[10px] py-[15px] mb-[10px] bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            <p className="font-bold text-[16px] text-gray-500 dark:text-gray-400" style={{ width: "10%" }}>
-              #{cat.category_id}
-            </p>
-            <p className="text-[16px] text-gray-800 dark:text-gray-200" style={{ width: "90%" }}>
-              {cat.title}
-            </p>
-          </div>
-        ))
-      ) : (
-        <div className="text-center text-gray-500 dark:text-gray-400 py-10">Kateqoriya yoxdur</div>
-      )}
-
-      {loading && (
-        <div className="flex justify-center py-4">
-          <CircularProgress size={28} />
+      {/* Table card */}
+      <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+        <div className="flex items-center px-5 py-3 bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "10%" }}>#ID</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "90%" }}>Kateqoriya adı</p>
         </div>
-      )}
+
+        {loading ? (
+          <div>
+            {[...Array(5)].map((_, idx) => (
+              <div key={idx} className="flex items-center px-5 py-4 border-b border-gray-50 dark:border-gray-800 last:border-b-0 animate-pulse">
+                <div className="h-5 bg-gray-100 dark:bg-gray-800 rounded-lg" style={{ width: "8%" }}></div>
+                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full ml-4" style={{ width: "50%" }}></div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-3">
+              <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        ) : categories.length > 0 ? (
+          categories.map((cat) => (
+            <div key={cat.category_id} className="flex items-center px-5 py-3.5 border-b border-gray-50 dark:border-gray-800 last:border-b-0 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors duration-150">
+              <div style={{ width: "10%" }}>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-mono text-xs font-semibold">
+                  #{cat.category_id}
+                </span>
+              </div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "90%" }}>{cat.title}</p>
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+              <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kateqoriya yoxdur</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Hələ heç bir kateqoriya əlavə edilməyib</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

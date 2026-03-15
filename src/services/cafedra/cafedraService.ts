@@ -42,7 +42,7 @@ export const getCafedras = async (start: number, end: number, lang: string, facu
 
 export const getCafedraDetails = async (cafedraCode: string, lang: string) => {
     try {
-        const response = await apiClient.get(`/api/cafedra/${cafedraCode}?lang_code=${lang}`);
+        const response = await apiClient.get(`/api/cafedra/${cafedraCode}?lang=${lang}`);
 
         if (response.data.status_code === 200) {
             return response.data.cafedra as Cafedra;

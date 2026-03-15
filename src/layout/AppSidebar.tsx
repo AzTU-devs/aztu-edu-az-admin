@@ -182,7 +182,7 @@ const AppSidebar: React.FC = () => {
   };
 
   const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
-    <ul className="flex flex-col gap-4">
+    <ul className="flex flex-col gap-0.5">
       {items.map((nav, index) => (
         <li key={nav.name}>
           {nav.subItems ? (
@@ -196,6 +196,9 @@ const AppSidebar: React.FC = () => {
                   : "lg:justify-start"
                 }`}
             >
+              {openSubmenu?.type === menuType && openSubmenu?.index === index && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-brand-500 rounded-r-full" />
+              )}
               <span
                 className={`menu-item-icon-size  ${openSubmenu?.type === menuType && openSubmenu?.index === index
                   ? "menu-item-icon-active"
@@ -209,10 +212,10 @@ const AppSidebar: React.FC = () => {
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${openSubmenu?.type === menuType &&
+                  className={`ml-auto w-4 h-4 transition-transform duration-200 ${openSubmenu?.type === menuType &&
                     openSubmenu?.index === index
                     ? "rotate-180 text-brand-500"
-                    : ""
+                    : "text-gray-400"
                     }`}
                 />
               )}
@@ -224,6 +227,9 @@ const AppSidebar: React.FC = () => {
                 className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
                   }`}
               >
+                {isActive(nav.path) && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-brand-500 rounded-r-full" />
+                )}
                 <span
                   className={`menu-item-icon-size ${isActive(nav.path)
                     ? "menu-item-icon-active"
@@ -251,7 +257,7 @@ const AppSidebar: React.FC = () => {
                     : "0px",
               }}
             >
-              <ul className="mt-2 space-y-1 ml-9">
+              <ul className="mt-1 space-y-0.5 ml-9">
                 {nav.subItems.map((subItem) => (
                   <li key={subItem.name}>
                     <Link
@@ -297,7 +303,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-4 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-100 dark:border-gray-800
         ${isExpanded || isMobileOpen
           ? "w-[290px]"
           : isHovered
@@ -309,62 +315,69 @@ const AppSidebar: React.FC = () => {
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Logo Area */}
       <div
-        className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
+        className={`py-5 flex border-b border-gray-100 dark:border-gray-800 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
           }`}
       >
-        <Link to="/">
+        <Link to="/" className="flex items-center gap-2.5">
           {isExpanded || isHovered || isMobileOpen ? (
-            <div className='flex justify-center items-center'>
+            <>
               <img
                 className="dark:hidden"
                 src="/images/aztu-logo-dark.png"
                 alt="Logo"
-                width={75}
-                height={40}
+                width={70}
+                height={36}
               />
               <img
                 className="hidden dark:block"
                 src="/images/aztu-logo-light.png"
                 alt="Logo"
-                width={75}
-                height={40}
+                width={70}
+                height={36}
               />
-            </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-semibold text-gray-900 dark:text-white leading-tight">AzTU Admin</span>
+                <span className="text-[10px] text-gray-400 leading-tight">aztu.edu.az</span>
+              </div>
+            </>
           ) : (
-            <div className='flex justify-center items-center'>
+            <>
               <img
                 className="dark:hidden"
                 src="/images/aztu-logo-dark.png"
                 alt="Logo"
-                width={40}
-                height={40}
+                width={38}
+                height={38}
               />
               <img
                 className="hidden dark:block"
                 src="/images/aztu-logo-light.png"
                 alt="Logo"
-                width={40}
-                height={40}
+                width={38}
+                height={38}
               />
-            </div>
+            </>
           )}
         </Link>
       </div>
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
+
+      {/* Navigation */}
+      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar pt-4">
         <nav className="mb-6">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                className={`mb-3 px-2 text-[10px] font-semibold uppercase tracking-wider flex leading-[20px] text-gray-400 dark:text-gray-600 ${!isExpanded && !isHovered
                   ? "lg:justify-center"
                   : "justify-start"
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menyu"
+                  "Naviqasiya"
                 ) : (
-                  <HorizontaLDots className="size-6" />
+                  <HorizontaLDots className="size-4" />
                 )}
               </h2>
               {renderMenuItems(navItems, "main")}

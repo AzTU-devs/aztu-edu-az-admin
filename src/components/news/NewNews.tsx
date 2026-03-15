@@ -64,73 +64,86 @@ export default function NewNews() {
     };
 
     return (
-        <div className="p-5 space-y-6">
-            <div className="mb-[10px]">
-                <Label className="text-[17px]">Kateqoriya ID</Label>
-                <Input
-                    type="number"
-                    placeholder="Kateqoriya ID"
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                />
-            </div>
-
-            <div className="mb-[10px]">
-                <Label className="text-[17px]">Kapaq şəkli *</Label>
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setCoverImage(e.target.files?.[0] ?? null)}
-                    className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-            </div>
-
-            <div className="mb-[10px]">
-                <Label className="text-[17px]">Qalereya şəkilləri</Label>
-                <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => setGalleryImages(e.target.files ? Array.from(e.target.files) : [])}
-                    className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
+        <div className="p-5 sm:p-6 space-y-5">
+            {/* Meta info */}
+            <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Meta məlumatlar</span>
+                </div>
+                <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Kateqoriya ID</Label>
+                        <Input type="number" placeholder="Kateqoriya ID" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} />
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Kapaq şəkli <span className="text-red-500">*</span></Label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setCoverImage(e.target.files?.[0] ?? null)}
+                            className="block w-full text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 dark:file:bg-brand-900/20 dark:file:text-brand-400 hover:file:bg-brand-100 cursor-pointer"
+                        />
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Qalereya şəkilləri</Label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => setGalleryImages(e.target.files ? Array.from(e.target.files) : [])}
+                            className="block w-full text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-50 file:text-gray-700 dark:file:bg-gray-800 dark:file:text-gray-300 hover:file:bg-gray-100 cursor-pointer"
+                        />
+                    </div>
+                </div>
             </div>
 
             {/* AZ section */}
-            <div className="bg-white dark:bg-gray-800 p-3 rounded-md">
-                <h2 className="text-[17px] mb-2 text-gray-400 dark:text-gray-300">-- AZ --</h2>
-                <div className="mb-[10px]">
-                    <Label className="text-[17px]">Başlıq</Label>
-                    <Input
-                        placeholder="Başlıq"
-                        value={titleAz}
-                        onChange={(e) => setTitleAz(e.target.value)}
-                    />
+            <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold tracking-wide">AZ</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Azərbaycan dili</span>
                 </div>
-                <Editor onUpdate={(html: string) => setContentAZ(html)} />
+                <div className="p-5 space-y-4">
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Başlıq</Label>
+                        <Input placeholder="Xəbərin başlığını daxil edin" value={titleAz} onChange={(e) => setTitleAz(e.target.value)} />
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Məzmun</Label>
+                        <Editor onUpdate={(html: string) => setContentAZ(html)} />
+                    </div>
+                </div>
             </div>
 
             {/* EN section */}
-            <div className="bg-white dark:bg-gray-800 p-3 rounded-md">
-                <h2 className="text-[17px] mb-2 text-gray-400 dark:text-gray-300">-- EN --</h2>
-                <div className="mb-[10px]">
-                    <Label className="text-[17px]">Başlıq</Label>
-                    <Input
-                        placeholder="Başlıq"
-                        value={titleEn}
-                        onChange={(e) => setTitleEn(e.target.value)}
-                    />
+            <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold tracking-wide">EN</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">English</span>
                 </div>
-                <Editor onUpdate={(html: string) => setContentEN(html)} />
+                <div className="p-5 space-y-4">
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Title</Label>
+                        <Input placeholder="Enter news title" value={titleEn} onChange={(e) => setTitleEn(e.target.value)} />
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Content</Label>
+                        <Editor onUpdate={(html: string) => setContentEN(html)} />
+                    </div>
+                </div>
             </div>
 
-            <Button
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
-                onClick={handleSubmit}
-                disabled={loading || !isFormValid}
-            >
-                {loading ? "Yadda saxlanılır..." : "Yadda saxla"}
-            </Button>
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-1">
+                <Button
+                    className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-50"
+                    onClick={handleSubmit}
+                    disabled={loading || !isFormValid}
+                >
+                    {loading ? "Yadda saxlanılır..." : "Yadda saxla"}
+                </Button>
+            </div>
         </div>
     );
 }

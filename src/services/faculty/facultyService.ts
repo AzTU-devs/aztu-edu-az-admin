@@ -37,7 +37,7 @@ export const getFaculties = async (start: number, end: number, lang: string) => 
 
 export const getFacultyDetails = async (facultyCode: string, lang: string) => {
     try {
-        const response = await apiClient.get(`/api/faculty/${facultyCode}?lang_code=${lang}`);
+        const response = await apiClient.get(`/api/faculty/${facultyCode}?lang=${lang}`);
 
         if (response.data.status_code === 200) {
             return response.data.faculty as Faculty;

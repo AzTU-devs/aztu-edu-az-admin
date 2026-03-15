@@ -8,23 +8,25 @@ export default function AnnouncementsPage() {
     return (
         <>
             <PageMeta
-                title="Azərbaycan Texniki Universitet veb səhifəsi idarəetmə paneli"
+                title="Elanlar | AzTU Admin"
                 description="aztu.edu.az üçün idarəetmə paneli"
             />
             <PageBreadcrumb pageTitle="Elanlar" />
-            <div className="space-y-6">
-                <div className="flex justify-end">
+            <ComponentCard
+                title="Elanlar"
+                desc="Saytda göstərilən bütün elanların siyahısı"
+                actions={
                     <Link
                         to="/announcements/new"
-                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-brand-500 hover:bg-brand-600 text-white transition-colors shadow-sm"
                     >
-                        + Yeni elan
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+                        Yeni elan
                     </Link>
-                </div>
-                <ComponentCard title="Elanlar">
-                    <Announcements />
-                </ComponentCard>
-            </div>
+                }
+            >
+                <Announcements />
+            </ComponentCard>
         </>
     );
 }

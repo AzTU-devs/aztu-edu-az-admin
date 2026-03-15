@@ -7,15 +7,16 @@ export default function NewsCategoriesPage() {
     return (
         <>
             <PageMeta
-                title="Azərbaycan Texniki Universitet veb səhifəsi idarəetmə paneli"
+                title="Xəbər kateqoriyaları | AzTU Admin"
                 description="aztu.edu.az üçün idarəetmə paneli"
             />
             <PageBreadcrumb pageTitle="Xəbər kateqoriyaları" />
-            <div className="space-y-6">
-                <ComponentCard title="Xəbər kateqoriyaları">
-                    <NewsCategories />
-                </ComponentCard>
-            </div>
+            <ComponentCard
+                title="Xəbər kateqoriyaları"
+                desc="Xəbərləri qruplaşdırmaq üçün istifadə olunan kateqoriyalar"
+            >
+                <NewsCategories />
+            </ComponentCard>
         </>
     );
 }

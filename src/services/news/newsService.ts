@@ -2,7 +2,7 @@ import apiClient from "../../util/apiClient";
 
 export interface News {
     news_id: number;
-    cateogry_id: number;
+    category_id: number;
     display_order: number;
     is_active: boolean;
     title: string;
@@ -127,15 +127,21 @@ export const deleteNews = async (newsId: number) => {
     }
 };
 
-export const toggleNewsStatus = async (newsId: number) => {
+export const activateNews = async (newsId: number) => {
     try {
-        const response = await apiClient.patch(`/api/news/${newsId}/toggle`);
+        const response = await apiClient.post(`/api/news/activate?news_id=${newsId}`);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return "ERROR";
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
 
-        if (response.data.status_code === 200) {
-            return "SUCCESS";
-        } else {
-            return "ERROR";
-        }
+export const deactivateNews = async (newsId: number) => {
+    try {
+        const response = await apiClient.post(`/api/news/deactivate?news_id=${newsId}`);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return "ERROR";
     } catch (err: any) {
         return "ERROR";
     }

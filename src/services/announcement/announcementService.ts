@@ -125,15 +125,21 @@ export const deleteAnnouncement = async (announcementId: number) => {
     }
 };
 
-export const toggleAnnouncementStatus = async (announcementId: number) => {
+export const activateAnnouncement = async (announcementId: number) => {
     try {
-        const response = await apiClient.patch(`/api/announcement/${announcementId}/toggle`);
+        const response = await apiClient.post(`/api/announcement/activate?announcement_id=${announcementId}`);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return "ERROR";
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
 
-        if (response.data.status_code === 200) {
-            return "SUCCESS";
-        } else {
-            return "ERROR";
-        }
+export const deactivateAnnouncement = async (announcementId: number) => {
+    try {
+        const response = await apiClient.post(`/api/announcement/deactivate?announcement_id=${announcementId}`);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return "ERROR";
     } catch (err: any) {
         return "ERROR";
     }

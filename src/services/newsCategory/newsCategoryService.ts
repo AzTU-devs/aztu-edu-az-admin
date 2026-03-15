@@ -12,10 +12,10 @@ export interface CreateNewsCategoryPayload {
 
 export const getNewsCategories = async (lang: string) => {
     try {
-        const response = await apiClient.get(`/api/news-category/all?lang_code=${lang}`);
+        const response = await apiClient.get(`/api/news-category/all?lang=${lang}`);
 
         if (response.data.status_code === 200) {
-            return response.data.categories as NewsCategory[];
+            return response.data.news_categories as NewsCategory[];
         } else if (response.data.status_code === 204) {
             return "NO CONTENT";
         } else {

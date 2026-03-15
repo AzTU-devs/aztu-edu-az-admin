@@ -7,15 +7,16 @@ export default function HeroPage() {
     return (
         <>
             <PageMeta
-                title="Azərbaycan Texniki Universitet veb səhifəsi idarəetmə paneli"
+                title="Hero | AzTU Admin"
                 description="aztu.edu.az üçün idarəetmə paneli"
             />
             <PageBreadcrumb pageTitle="Hero" />
-            <div className="space-y-6">
-                <ComponentCard title="Hero">
-                    <Heroes />
-                </ComponentCard>
-            </div>
+            <ComponentCard
+                title="Hero videolar"
+                desc="Saytın əsas səhifəsindəki hero bölməsinin videoları"
+            >
+                <Heroes />
+            </ComponentCard>
         </>
     );
 }

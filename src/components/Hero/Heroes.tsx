@@ -130,151 +130,180 @@ export default function Heroes() {
   };
 
   return (
-    <div className="bg-white dark:bg-transparent text-gray-900 dark:text-gray-100">
+    <div className="space-y-4">
       {/* Upload new hero */}
-      <div className="border border-gray-200 dark:border-gray-700 rounded-[10px] p-4 mb-6 bg-gray-50 dark:bg-gray-800">
-        <p className="font-semibold text-sm mb-3 text-gray-700 dark:text-gray-200">Yeni hero yüklə</p>
+      <div className="overflow-hidden rounded-2xl border border-brand-100 dark:border-brand-900/30 bg-brand-50/50 dark:bg-brand-900/10 p-5">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-100 dark:bg-brand-900/30">
+            <svg className="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+          </div>
+          Yeni hero video yüklə
+        </h3>
         <div className="flex items-center gap-3 flex-wrap">
           <input
             ref={newVideoRef}
             type="file"
             accept="video/*"
             onChange={(e) => setNewVideo(e.target.files?.[0] ?? null)}
-            className="text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-[6px] file:border-0 file:text-sm file:font-semibold file:bg-brand-500 file:text-white hover:file:bg-brand-600 cursor-pointer"
+            className="text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-500 file:text-white hover:file:bg-brand-600 cursor-pointer"
           />
           <button
             type="button"
             onClick={handleCreate}
             disabled={!newVideo || creating}
-            className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-[6px] transition-colors"
+            className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
           >
-            {creating ? <CircularProgress size={16} sx={{ color: "white" }} /> : null}
+            {creating ? <CircularProgress size={14} sx={{ color: "white" }} /> : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+            )}
             Yüklə
           </button>
         </div>
       </div>
 
-      {/* Header row */}
-      <div className="border border-gray-200 dark:border-gray-700 flex items-center px-[10px] py-[15px] rounded-[10px] mb-[10px] bg-gray-100 dark:bg-gray-800">
-        <p style={{ width: "8%" }}>ID</p>
-        <p style={{ width: "32%" }}>Video</p>
-        <p style={{ width: "20%" }}>Yaradılma tarixi</p>
-        <p style={{ width: "12%", textAlign: "center" }}>Status</p>
-        <p style={{ width: "28%", textAlign: "right" }}>Əməliyyatlar</p>
-      </div>
+      {/* Table card */}
+      <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+        {/* Header */}
+        <div className="flex items-center px-5 py-3 bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "7%" }}>#ID</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "38%" }}>Video</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "22%" }}>Yaradılma tarixi</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "13%" }}>Status</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-right" style={{ width: "20%" }}>Əməliyyatlar</p>
+        </div>
 
-      {loading ? (
-        <>
-          {[...Array(3)].map((_, idx) => (
-            <div
-              key={idx}
-              className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[10px] px-[10px] py-[20px] mb-[10px] bg-white dark:bg-gray-800 animate-pulse"
-            >
-              <div className="bg-gray-300 dark:bg-gray-600 rounded h-6" style={{ width: "8%" }}></div>
-              <div className="bg-gray-300 dark:bg-gray-600 rounded h-12 ml-2" style={{ width: "32%" }}></div>
-              <div className="bg-gray-300 dark:bg-gray-600 rounded h-6 ml-2" style={{ width: "20%" }}></div>
-              <div className="flex justify-center ml-2" style={{ width: "12%" }}>
-                <div className="bg-gray-300 dark:bg-gray-600 rounded h-6 w-16"></div>
+        {loading ? (
+          <div>
+            {[...Array(3)].map((_, idx) => (
+              <div key={idx} className="flex items-center px-5 py-4 border-b border-gray-50 dark:border-gray-800 last:border-b-0 animate-pulse">
+                <div className="h-5 w-8 bg-gray-100 dark:bg-gray-800 rounded-lg" style={{ width: "7%" }} />
+                <div className="h-14 bg-gray-100 dark:bg-gray-800 rounded-xl mr-2" style={{ width: "36%" }} />
+                <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded-full" style={{ width: "20%" }} />
+                <div className="h-6 w-16 bg-gray-100 dark:bg-gray-800 rounded-full ml-4" />
+                <div className="flex justify-end gap-2 ml-auto">
+                  <div className="h-8 w-8 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                  <div className="h-8 w-8 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                  <div className="h-8 w-8 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                </div>
               </div>
-              <div className="flex justify-end gap-2 ml-2" style={{ width: "28%" }}>
-                <div className="bg-gray-300 dark:bg-gray-600 rounded h-10 w-10"></div>
-                <div className="bg-gray-300 dark:bg-gray-600 rounded h-10 w-10"></div>
-                <div className="bg-gray-300 dark:bg-gray-600 rounded h-10 w-10"></div>
-              </div>
-            </div>
-          ))}
-        </>
-      ) : error ? (
-        <div className="text-center text-red-500 dark:text-red-400 py-10">{error}</div>
-      ) : heroes.length > 0 ? (
-        heroes.map((hero) => (
-          <div
-            key={hero.hero_id}
-            className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[10px] px-[10px] py-[12px] mb-[10px] bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
-          >
-            <p className="font-bold text-[15px] text-gray-600 dark:text-gray-100" style={{ width: "8%" }}>
-              {hero.hero_id}
-            </p>
-
-            <div style={{ width: "32%" }}>
-              <video
-                src={`${API_BASE_URL}/${hero.video}`}
-                className="h-16 rounded-[6px] object-cover"
-                muted
-                preload="metadata"
-              />
-            </div>
-
-            <p className="text-[13px] text-gray-500 dark:text-gray-400" style={{ width: "20%" }}>
-              {new Date(hero.created_at).toLocaleDateString("az-AZ")}
-            </p>
-
-            <div style={{ width: "12%", display: "flex", justifyContent: "center" }}>
-              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                hero.is_active
-                  ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                  : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-              }`}>
-                {hero.is_active ? "Aktiv" : "Deaktiv"}
-              </span>
-            </div>
-
-            <div className="flex justify-end items-center gap-2 flex-wrap" style={{ width: "28%" }}>
-              {/* Update video */}
-              <label className="bg-yellow-400 p-[8px] rounded-[5px] cursor-pointer flex items-center" title="Videonu dəyiş">
-                <input
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  ref={(el) => { updateVideoRefs.current[hero.hero_id] = el; }}
-                  onChange={() => handleUpdate(hero.hero_id)}
-                />
-                {updatingId === hero.hero_id ? (
-                  <CircularProgress size={22} sx={{ color: "white" }} />
-                ) : (
-                  <EditIcon sx={{ color: "white", fontSize: "22px" }} />
-                )}
-              </label>
-
-              {/* Toggle active */}
-              <button
-                type="button"
-                className={`p-[8px] rounded-[5px] flex justify-center items-center ${
-                  hero.is_active ? "bg-orange-500" : "bg-green-500"
-                }`}
-                onClick={() => handleToggle(hero)}
-                disabled={togglingId === hero.hero_id}
-                title={hero.is_active ? "Deaktiv et" : "Aktiv et"}
-              >
-                {togglingId === hero.hero_id ? (
-                  <CircularProgress size={22} sx={{ color: "white" }} />
-                ) : hero.is_active ? (
-                  <CancelIcon sx={{ color: "white", fontSize: "22px" }} />
-                ) : (
-                  <CheckCircleIcon sx={{ color: "white", fontSize: "22px" }} />
-                )}
-              </button>
-
-              {/* Delete */}
-              <button
-                type="button"
-                className="bg-red-500 p-[8px] rounded-[5px] flex justify-center items-center"
-                onClick={() => handleDelete(hero.hero_id)}
-                disabled={deletingId === hero.hero_id}
-                title="Sil"
-              >
-                {deletingId === hero.hero_id ? (
-                  <CircularProgress size={22} sx={{ color: "white" }} />
-                ) : (
-                  <DeleteIcon sx={{ color: "white", fontSize: "22px" }} />
-                )}
-              </button>
-            </div>
+            ))}
           </div>
-        ))
-      ) : (
-        <div className="text-center text-gray-500 dark:text-gray-400 py-10">Hero yoxdur</div>
-      )}
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-3">
+              <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        ) : heroes.length > 0 ? (
+          heroes.map((hero) => (
+            <div
+              key={hero.hero_id}
+              className="flex items-center px-5 py-3.5 border-b border-gray-50 dark:border-gray-800 last:border-b-0 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors duration-150"
+            >
+              {/* ID */}
+              <div style={{ width: "7%" }}>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-mono text-xs font-semibold">
+                  #{hero.hero_id}
+                </span>
+              </div>
+
+              {/* Video preview */}
+              <div style={{ width: "38%" }} className="pr-4">
+                <video
+                  src={`${API_BASE_URL}/${hero.video}`}
+                  className="h-16 w-full max-w-[200px] rounded-xl object-cover bg-gray-100 dark:bg-gray-800"
+                  muted
+                  preload="metadata"
+                />
+              </div>
+
+              {/* Date */}
+              <p className="text-sm text-gray-500 dark:text-gray-400" style={{ width: "22%" }}>
+                {new Date(hero.created_at).toLocaleDateString("az-AZ")}
+              </p>
+
+              {/* Status */}
+              <div style={{ width: "13%" }}>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                  hero.is_active
+                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                    : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${hero.is_active ? "bg-emerald-500" : "bg-red-500"}`} />
+                  {hero.is_active ? "Aktiv" : "Deaktiv"}
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end items-center gap-1.5" style={{ width: "20%" }}>
+                {/* Update video */}
+                <label
+                  className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 cursor-pointer transition-colors"
+                  title="Videonu dəyiş"
+                >
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    ref={(el) => { updateVideoRefs.current[hero.hero_id] = el; }}
+                    onChange={() => handleUpdate(hero.hero_id)}
+                  />
+                  {updatingId === hero.hero_id ? (
+                    <CircularProgress size={18} sx={{ color: "#f59e0b" }} />
+                  ) : (
+                    <EditIcon sx={{ fontSize: 18 }} />
+                  )}
+                </label>
+
+                {/* Toggle active */}
+                <button
+                  type="button"
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    hero.is_active
+                      ? "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                      : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
+                  onClick={() => handleToggle(hero)}
+                  disabled={togglingId === hero.hero_id}
+                  title={hero.is_active ? "Deaktiv et" : "Aktiv et"}
+                >
+                  {togglingId === hero.hero_id ? (
+                    <CircularProgress size={18} sx={{ color: "currentColor" }} />
+                  ) : hero.is_active ? (
+                    <CheckCircleIcon sx={{ fontSize: 18 }} />
+                  ) : (
+                    <CancelIcon sx={{ fontSize: 18 }} />
+                  )}
+                </button>
+
+                {/* Delete */}
+                <button
+                  type="button"
+                  className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  onClick={() => handleDelete(hero.hero_id)}
+                  disabled={deletingId === hero.hero_id}
+                  title="Sil"
+                >
+                  {deletingId === hero.hero_id ? (
+                    <CircularProgress size={18} sx={{ color: "#ef4444" }} />
+                  ) : (
+                    <DeleteIcon sx={{ fontSize: 18 }} />
+                  )}
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+              <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Video yoxdur</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Hələ heç bir hero video əlavə edilməyib</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

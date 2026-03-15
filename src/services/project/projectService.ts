@@ -94,12 +94,12 @@ export const createProject = async (payload: CreateProjectPayload) => {
     
     // AZ fields
     formData.append("az_title", payload.az.title);
-    formData.append("az_desc", payload.az.desc);
+    formData.append("az_description", payload.az.desc);
     formData.append("az_content_html", payload.az.content_html);
-    
+
     // EN fields
     formData.append("en_title", payload.en.title);
-    formData.append("en_desc", payload.en.desc);
+    formData.append("en_description", payload.en.desc);
     formData.append("en_content_html", payload.en.content_html);
 
     const response = await apiClient.post("/api/project/create", formData, {
