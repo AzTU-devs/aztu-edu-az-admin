@@ -4,6 +4,9 @@ import Home from "./pages/Dashboard/Home";
 import AppLayout from "./layout/AppLayout";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
+import { useSelector } from "react-redux";
+import { RootState } from "./redux/store";
+import { Navigate, Outlet } from "react-router";
 import Videos from "./pages/UiElements/Videos";
 import Images from "./pages/UiElements/Images";
 import Alerts from "./pages/UiElements/Alerts";
@@ -46,13 +49,19 @@ import NewCollaborationPage from "./pages/Collaborations/NewCollaborationPage";
 import CollaborationDetailsPage from "./pages/Collaborations/CollaborationDetailsPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
+function ProtectedRoute() {
+  const token = useSelector((state: RootState) => state.auth.token);
+  return token ? <Outlet /> : <Navigate to="/signin" replace />;
+}
+
 export default function App() {
   return (
     <>
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Dashboard Layout */}
+          {/* Dashboard Layout — protected */}
+          <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
 
@@ -126,6 +135,7 @@ export default function App() {
             <Route path="/menu-quick" element={<MenuQuickPage />} />
             <Route path="/menu-shared" element={<MenuSharedPage />} />
 
+          </Route>
           </Route>
 
           {/* Auth Layout */}
