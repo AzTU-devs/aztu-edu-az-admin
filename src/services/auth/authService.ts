@@ -8,7 +8,7 @@ export interface LoginResponse {
 const authService = {
   login: async (username: string, password: string): Promise<LoginResponse> => {
     const response = await apiClient.post<LoginResponse>(
-      '/api/v1/auth/login',
+      '/api/auth/login',
       { username, password },
       { withCredentials: true }
     );
@@ -17,7 +17,7 @@ const authService = {
 
   refresh: async (): Promise<LoginResponse> => {
     const response = await apiClient.post<LoginResponse>(
-      '/api/v1/auth/refresh',
+      '/api/auth/refresh',
       {},
       { withCredentials: true }
     );
