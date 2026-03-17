@@ -67,19 +67,21 @@ export default function HeaderManager() {
 
   // form state — sections
   const [sKey, setSKey] = useState("");
-  const [sImageUrl, setSImageUrl] = useState("");
+  const [sImageFile, setSImageFile] = useState<File | null>(null);
+  const [sCurrentImageUrl, setSCurrentImageUrl] = useState("");
   const [sOrder, setSOrder] = useState("1");
   const [sLabelAz, setSLabelAz] = useState("");
   const [sLabelEn, setSLabelEn] = useState("");
   const [sBaseAz, setSBaseAz] = useState("");
   const [sBaseEn, setSBaseEn] = useState("");
+  const [sDirectUrl, setSDirectUrl] = useState("");
 
   // form state — items
   const [iSlug, setISlug] = useState("");
   const [iOrder, setIOrder] = useState("1");
   const [iTitleAz, setITitleAz] = useState("");
   const [iTitleEn, setITitleEn] = useState("");
-  const [iIsCategory, setIIsCategory] = useState(false);
+  const [iItemType, setIItemType] = useState<"link" | "subheader">("link");
 
   // form state — sub-items
   const [siSlug, setSiSlug] = useState("");
@@ -99,26 +101,29 @@ export default function HeaderManager() {
 
   // ── open modal helpers ─────────────────────────────────────
   const openCreateSection = () => {
-    setSKey(""); setSImageUrl(""); setSOrder("1"); setSLabelAz(""); setSLabelEn(""); setSBaseAz(""); setSBaseEn("");
+    setSKey(""); setSImageFile(null); setSCurrentImageUrl(""); setSOrder("1");
+    setSLabelAz(""); setSLabelEn(""); setSBaseAz(""); setSBaseEn(""); setSDirectUrl("");
     setModal({ type: "section", mode: "create" });
   };
 
   const openEditSection = (s: AdminHeaderSection) => {
-    setSKey(s.section_key); setSImageUrl(s.image_url); setSOrder(String(s.display_order));
+    setSKey(s.section_key); setSImageFile(null); setSCurrentImageUrl(s.image_url);
+    setSOrder(String(s.display_order));
     setSLabelAz(s.label?.az || ""); setSLabelEn(s.label?.en || "");
     setSBaseAz(s.base_path?.az || ""); setSBaseEn(s.base_path?.en || "");
+    setSDirectUrl(s.direct_url || "");
     setModal({ type: "section", mode: "edit", target: s });
   };
 
   const openCreateItem = () => {
-    setISlug(""); setIOrder("1"); setITitleAz(""); setITitleEn(""); setIIsCategory(false);
+    setISlug(""); setIOrder("1"); setITitleAz(""); setITitleEn(""); setIItemType("link");
     setModal({ type: "item", mode: "create" });
   };
 
   const openEditItem = (item: AdminHeaderItem) => {
     setISlug(item.slug || ""); setIOrder(String(item.display_order));
     setITitleAz(item.title?.az || ""); setITitleEn(item.title?.en || "");
-    setIIsCategory(item.slug === null);
+    setIItemType(item.item_type || (item.slug === null ? "subheader" : "link"));
     setModal({ type: "item", mode: "edit", target: item });
   };
 
@@ -139,17 +144,37 @@ export default function HeaderManager() {
     setSaving(true);
 
     if (modal.type === "section") {
-      const label: BiLang = { az: sLabelAz, en: sLabelEn };
-      const base_path: BiLang = { az: sBaseAz, en: sBaseEn };
-
       if (modal.mode === "create") {
-        const res = await createHeaderSection({ section_key: sKey, image_url: sImageUrl, display_order: Number(sOrder), label, base_path });
+        if (!sImageFile) {
+          Swal.fire({ icon: "warning", title: "Şəkil seçilməyib", timer: 2000, showConfirmButton: false });
+          setSaving(false);
+          return;
+        }
+        const res = await createHeaderSection({
+          section_key: sKey,
+          image: sImageFile,
+          display_order: Number(sOrder),
+          label_az: sLabelAz,
+          label_en: sLabelEn,
+          base_path_az: sBaseAz,
+          base_path_en: sBaseEn,
+          direct_url: sDirectUrl || undefined,
+        });
         if (res === "CONFLICT") { Swal.fire({ icon: "warning", title: "Bu açar artıq mövcuddur", timer: 2000, showConfirmButton: false }); }
         else if (res === "ERROR") { Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false }); }
         else { Swal.fire({ icon: "success", title: "Bölmə yaradıldı", timer: 1500, showConfirmButton: false }); fetch(); }
       } else {
         const target = modal.target as AdminHeaderSection;
-        const res = await updateHeaderSection(target.id, { image_url: sImageUrl, display_order: Number(sOrder), label, base_path });
+        const updatePayload: Parameters<typeof updateHeaderSection>[1] = {
+          display_order: Number(sOrder),
+          label_az: sLabelAz,
+          label_en: sLabelEn,
+          base_path_az: sBaseAz,
+          base_path_en: sBaseEn,
+          direct_url: sDirectUrl,
+        };
+        if (sImageFile) updatePayload.image = sImageFile;
+        const res = await updateHeaderSection(target.id, updatePayload);
         if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
         else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); fetch(); }
       }
@@ -157,15 +182,15 @@ export default function HeaderManager() {
 
     if (modal.type === "item" && selectedSection) {
       const title: BiLang = { az: iTitleAz, en: iTitleEn };
-      const slug = iIsCategory ? null : (iSlug || null);
+      const slug = iItemType === "subheader" ? null : (iSlug || null);
 
       if (modal.mode === "create") {
-        const res = await createHeaderItem({ section_id: selectedSection.id, slug, display_order: Number(iOrder), title });
+        const res = await createHeaderItem({ section_id: selectedSection.id, item_type: iItemType, slug, display_order: Number(iOrder), title });
         if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
         else { Swal.fire({ icon: "success", title: "Element yaradıldı", timer: 1500, showConfirmButton: false }); fetch(); }
       } else {
         const target = modal.target as AdminHeaderItem;
-        const res = await updateHeaderItem(target.id, { slug, display_order: Number(iOrder), title });
+        const res = await updateHeaderItem(target.id, { item_type: iItemType, slug, display_order: Number(iOrder), title });
         if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
         else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); fetch(); }
       }
@@ -357,7 +382,7 @@ export default function HeaderManager() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title?.az}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        {item.slug === null ? (
+                        {item.item_type === "subheader" ? (
                           <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded text-xs">Kateqoriya başlığı</span>
                         ) : (
                           <>Slug: <span className="font-mono">{item.slug}</span></>
@@ -366,7 +391,7 @@ export default function HeaderManager() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {item.slug === null && (
+                      {item.item_type === "subheader" && (
                         <button
                           onClick={() => { setSelectedItem(item); setView("subitems"); }}
                           className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -462,7 +487,20 @@ export default function HeaderManager() {
                 <Field label="Yol (AZ) *"><Input value={sBaseAz} onChange={setSBaseAz} placeholder="/haqqimizda" /></Field>
                 <Field label="Yol (EN) *"><Input value={sBaseEn} onChange={setSBaseEn} placeholder="/about" /></Field>
               </div>
-              <Field label="Şəkil URL *"><Input value={sImageUrl} onChange={setSImageUrl} placeholder="https://cdn.aztu.edu.az/..." /></Field>
+              <Field label={modal.mode === "edit" ? "Şəkil (dəyişdirmək üçün seçin)" : "Şəkil *"}>
+                {modal.mode === "edit" && sCurrentImageUrl && !sImageFile && (
+                  <img src={sCurrentImageUrl} alt="current" className="h-16 w-auto rounded mb-2 object-cover" />
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={(e) => setSImageFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </Field>
+              <Field label="Birbaşa URL (isteğe bağlı)">
+                <Input value={sDirectUrl} onChange={setSDirectUrl} placeholder="https://tqdk.gov.az" />
+              </Field>
               <Field label="Sıra *"><Input value={sOrder} onChange={setSOrder} placeholder="1" /></Field>
             </>
           )}
@@ -474,19 +512,18 @@ export default function HeaderManager() {
                 <Field label="Başlıq (AZ) *"><Input value={iTitleAz} onChange={setITitleAz} placeholder="Tarix" /></Field>
                 <Field label="Başlıq (EN) *"><Input value={iTitleEn} onChange={setITitleEn} placeholder="History" /></Field>
               </div>
-              <Field label="">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={iIsCategory}
-                    onChange={(e) => setIIsCategory(e.target.checked)}
-                    className="w-4 h-4 rounded"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Kateqoriya başlığı (link yoxdur)</span>
-                </label>
+              <Field label="Növ *">
+                <select
+                  value={iItemType}
+                  onChange={(e) => setIItemType(e.target.value as "link" | "subheader")}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="link">Link (birbaşa keçid)</option>
+                  <option value="subheader">Kateqoriya başlığı (alt-elementlər)</option>
+                </select>
               </Field>
-              {!iIsCategory && (
-                <Field label="Slug"><Input value={iSlug} onChange={setISlug} placeholder="history" /></Field>
+              {iItemType === "link" && (
+                <Field label="Slug *"><Input value={iSlug} onChange={setISlug} placeholder="/about/history" /></Field>
               )}
               <Field label="Sıra *"><Input value={iOrder} onChange={setIOrder} placeholder="1" /></Field>
             </>

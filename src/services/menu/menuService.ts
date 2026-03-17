@@ -17,12 +17,14 @@ export interface AdminHeaderSection {
   display_order: number;
   label: BiLang;
   base_path: BiLang;
+  direct_url: string | null;
   items?: AdminHeaderItem[];
 }
 
 export interface AdminHeaderItem {
   id: number;
   section_id: number;
+  item_type: "link" | "subheader";
   slug: string | null;
   display_order: number;
   title: BiLang;
@@ -132,13 +134,27 @@ export const getAdminHeader = async (): Promise<AdminHeaderSection[] | "ERROR"> 
 
 export const createHeaderSection = async (payload: {
   section_key: string;
-  image_url: string;
+  image: File;
   display_order: number;
-  label: BiLang;
-  base_path: BiLang;
+  label_az: string;
+  label_en: string;
+  base_path_az: string;
+  base_path_en: string;
+  direct_url?: string;
 }): Promise<{ id: number } | "ERROR" | "CONFLICT"> => {
   try {
-    const res = await apiClient.post("/api/menu/header/section", payload);
+    const formData = new FormData();
+    formData.append("section_key", payload.section_key);
+    formData.append("display_order", String(payload.display_order));
+    formData.append("label_az", payload.label_az);
+    formData.append("label_en", payload.label_en);
+    formData.append("base_path_az", payload.base_path_az);
+    formData.append("base_path_en", payload.base_path_en);
+    formData.append("image", payload.image);
+    if (payload.direct_url !== undefined) formData.append("direct_url", payload.direct_url);
+    const res = await apiClient.post("/api/menu/header/section", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     if (res.data.status_code === 201) return { id: res.data.id };
     if (res.data.status_code === 409) return "CONFLICT";
     return "ERROR";
@@ -150,10 +166,28 @@ export const createHeaderSection = async (payload: {
 
 export const updateHeaderSection = async (
   id: number,
-  payload: Partial<{ image_url: string; display_order: number; label: Partial<BiLang>; base_path: Partial<BiLang> }>
+  payload: Partial<{
+    display_order: number;
+    label_az: string;
+    label_en: string;
+    base_path_az: string;
+    base_path_en: string;
+    image: File;
+    direct_url: string;
+  }>
 ): Promise<"SUCCESS" | "ERROR" | "NOT FOUND"> => {
   try {
-    const res = await apiClient.put(`/api/menu/header/section/${id}`, payload);
+    const formData = new FormData();
+    if (payload.display_order !== undefined) formData.append("display_order", String(payload.display_order));
+    if (payload.label_az !== undefined) formData.append("label_az", payload.label_az);
+    if (payload.label_en !== undefined) formData.append("label_en", payload.label_en);
+    if (payload.base_path_az !== undefined) formData.append("base_path_az", payload.base_path_az);
+    if (payload.base_path_en !== undefined) formData.append("base_path_en", payload.base_path_en);
+    if (payload.image) formData.append("image", payload.image);
+    if (payload.direct_url !== undefined) formData.append("direct_url", payload.direct_url);
+    const res = await apiClient.put(`/api/menu/header/section/${id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     if (res.data.status_code === 200) return "SUCCESS";
     if (res.data.status_code === 404) return "NOT FOUND";
     return "ERROR";
@@ -181,7 +215,8 @@ export const deleteHeaderSection = async (id: number): Promise<"SUCCESS" | "NOT 
 
 export const createHeaderItem = async (payload: {
   section_id: number;
-  slug: string | null;
+  item_type: "link" | "subheader";
+  slug?: string | null;
   display_order: number;
   title: BiLang;
 }): Promise<{ id: number } | "ERROR"> => {
@@ -196,7 +231,7 @@ export const createHeaderItem = async (payload: {
 
 export const updateHeaderItem = async (
   id: number,
-  payload: Partial<{ slug: string | null; display_order: number; title: Partial<BiLang> }>
+  payload: Partial<{ item_type: "link" | "subheader"; slug: string | null; display_order: number; title: Partial<BiLang> }>
 ): Promise<"SUCCESS" | "NOT FOUND" | "ERROR"> => {
   try {
     const res = await apiClient.put(`/api/menu/header/item/${id}`, payload);
