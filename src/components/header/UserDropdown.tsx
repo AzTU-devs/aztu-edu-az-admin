@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
-import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link } from "react-router";
 import { RootState } from "../../redux/store";
+import { Dropdown } from "../ui/dropdown/Dropdown";
 import { logout } from "../../redux/slices/authSlice";
+import { useDispatch, useSelector } from "react-redux";
 import authService from "../../services/auth/authService";
+import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);

@@ -68,7 +68,6 @@ export default function SignInForm() {
                   placeholder="İstifadəçi adınızı daxil edin"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  required
                 />
               </div>
 
@@ -82,7 +81,6 @@ export default function SignInForm() {
                     placeholder="Şifrənizi daxil edin"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required
                   />
                   <span
                     onClick={() => setShowPassword(!showPassword)}
