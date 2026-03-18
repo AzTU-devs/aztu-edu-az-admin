@@ -11,6 +11,7 @@ import {
     Employee,
     EmployeeContact,
     EmployeeResearch,
+    MultiLang,
     OfficeHour,
     createEmployee,
     updateEmployee,
@@ -62,6 +63,33 @@ const hasOverlap = (hours: OfficeHour[]) => {
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+const toMultiLang = (v: string | MultiLang | undefined): MultiLang => {
+    if (!v) return { az: "", en: "" };
+    if (typeof v === "string") return { az: v, en: v };
+    return v;
+};
+
+// ─── LangToggle ──────────────────────────────────────────────────────────────
+
+const LangToggle = ({ lang, setLang }: { lang: "az" | "en"; setLang: (l: "az" | "en") => void }) => (
+    <div className="flex items-center gap-1 ml-auto bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+        {(["az", "en"] as const).map((l) => (
+            <button
+                key={l}
+                type="button"
+                onClick={() => setLang(l)}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                    lang === l
+                        ? "bg-white dark:bg-gray-700 text-brand-600 dark:text-brand-400 shadow-sm"
+                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+            >
+                {l.toUpperCase()}
+            </button>
+        ))}
+    </div>
+);
+
 // ─── Props ───────────────────────────────────────────────────────────────────
 
 interface EmployeeFormProps {
@@ -75,13 +103,15 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<TabId>("basic");
     const [loading, setLoading] = useState(false);
+    const [lang, setLang] = useState<"az" | "en">("az");
+    const [backendErrors, setBackendErrors] = useState<Record<string, string[]>>({});
 
     // ── Basic Info ──
-    const [firstName, setFirstName] = useState(initialData?.first_name ?? "");
-    const [lastName, setLastName] = useState(initialData?.last_name ?? "");
+    const [firstName, setFirstName] = useState<MultiLang>(toMultiLang(initialData?.first_name));
+    const [lastName, setLastName] = useState<MultiLang>(toMultiLang(initialData?.last_name));
     const [academicDegree, setAcademicDegree] = useState(initialData?.academic_degree ?? "");
     const [academicTitle, setAcademicTitle] = useState(initialData?.academic_title ?? "");
-    const [position, setPosition] = useState(initialData?.position ?? "");
+    const [position, setPosition] = useState<MultiLang>(toMultiLang(initialData?.position));
     const [facultyCode, setFacultyCode] = useState(initialData?.faculty_code ?? "");
     const [cafedraCode, setCafedraCode] = useState(initialData?.cafedra_code ?? "");
 
@@ -93,7 +123,7 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
     const imageInputRef = useRef<HTMLInputElement>(null);
 
     // ── Biography ──
-    const [biography, setBiography] = useState(initialData?.biography ?? "");
+    const [biography, setBiography] = useState<MultiLang>(toMultiLang(initialData?.biography));
 
     // ── Contact ──
     const [contact, setContact] = useState<EmployeeContact>(
@@ -107,12 +137,19 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
 
     // ── Education ──
     const [educationList, setEducationList] = useState<Education[]>(
-        initialData?.education ?? []
+        initialData?.education?.map((e) => ({
+            ...e,
+            institution: toMultiLang(e.institution as any),
+            specialization: toMultiLang(e.specialization as any),
+        })) ?? []
     );
 
     // ── Courses ──
     const [courseList, setCourseList] = useState<Course[]>(
-        initialData?.courses ?? []
+        initialData?.courses?.map((c) => ({
+            ...c,
+            course_name: toMultiLang(c.course_name as any),
+        })) ?? []
     );
 
     // ── Research ──
@@ -144,13 +181,35 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
     }, [facultyCode]);
 
     // ─── Derived ──────────────────────────────────────────────────────────────
-    const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+    const fullName = [firstName[lang].trim(), lastName[lang].trim()].filter(Boolean).join(" ");
+
+    // ─── Backend error helper ─────────────────────────────────────────────────
+    const fieldError = (key: string): string | undefined => backendErrors[key]?.[0];
 
     // ─── Validation ───────────────────────────────────────────────────────────
     const errors: string[] = [];
-    if (!firstName.trim()) errors.push("Ad tələb olunur");
-    if (!lastName.trim()) errors.push("Soyad tələb olunur");
+
+    if (!firstName.az.trim()) errors.push("Ad (AZ) tələb olunur");
+    if (!firstName.en.trim()) errors.push("Ad (EN) tələb olunur");
+    if (!lastName.az.trim())  errors.push("Soyad (AZ) tələb olunur");
+    if (!lastName.en.trim())  errors.push("Soyad (EN) tələb olunur");
+
+    if (mode === "create" && !profileImageFile) errors.push("Profil şəkli tələb olunur");
+
+    if (!facultyCode) errors.push("Fakültə tələb olunur");
+
+    if (!biography.az.trim()) errors.push("Bioqrafiya (AZ) tələb olunur");
+    if (!biography.en.trim()) errors.push("Bioqrafiya (EN) tələb olunur");
+
+    if (!contact.building?.trim()) errors.push("Bina tələb olunur");
+    if (!contact.floor?.trim())    errors.push("Mərtəbə tələb olunur");
+    if (!contact.room?.trim())     errors.push("Otaq tələb olunur");
+    if (!contact.email?.trim())    errors.push("E-poçt tələb olunur");
+    if (!contact.phone?.trim())    errors.push("Telefon tələb olunur");
+
     if (contact.email && !isValidEmail(contact.email)) errors.push("E-poçt formatı düzgün deyil");
+
+    if (officeHours.length === 0) errors.push("Ən azı 1 qəbul saatı tələb olunur");
     for (const h of officeHours) {
         if (h.start_time && h.end_time && timeToMinutes(h.start_time) >= timeToMinutes(h.end_time)) {
             errors.push("Qəbul saatı: başlama vaxtı bitmə vaxtından əvvəl olmalıdır");
@@ -158,6 +217,8 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
         }
     }
     if (hasOverlap(officeHours)) errors.push("Qəbul saatları üst-üstə düşür");
+
+    if (educationList.length === 0) errors.push("Ən azı 1 təhsil məlumatı tələb olunur");
 
     const isValid = errors.length === 0;
 
@@ -182,19 +243,30 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
         setOfficeHours(officeHours.map((h, idx) => (idx === i ? { ...h, [field]: value } : h)));
 
     // ─── Education ────────────────────────────────────────────────────────────
-    const addEducation = () => setEducationList([...educationList, { degree_level: "", institution: "", specialization: "", graduation_year: "" }]);
+    const addEducation = () => setEducationList([...educationList, {
+        degree_level: "",
+        institution: { az: "", en: "" },
+        specialization: { az: "", en: "" },
+        graduation_year: "",
+    }]);
     const removeEducation = (i: number) => setEducationList(educationList.filter((_, idx) => idx !== i));
-    const updateEducation = (i: number, field: keyof Education, value: string) =>
+    const updateEducation = (i: number, field: keyof Education, value: string | MultiLang) =>
         setEducationList(educationList.map((e, idx) => (idx === i ? { ...e, [field]: value } : e)));
 
     // ─── Courses ──────────────────────────────────────────────────────────────
-    const addCourse = () => setCourseList([...courseList, { course_name: "", education_level: "", publications: "" }]);
+    const addCourse = () => setCourseList([...courseList, {
+        course_name: { az: "", en: "" },
+        education_level: "",
+        publications: "",
+    }]);
     const removeCourse = (i: number) => setCourseList(courseList.filter((_, idx) => idx !== i));
-    const updateCourse = (i: number, field: keyof Course, value: string) =>
+    const updateCourse = (i: number, field: keyof Course, value: string | MultiLang) =>
         setCourseList(courseList.map((c, idx) => (idx === i ? { ...c, [field]: value } : c)));
 
     // ─── Submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
+        setBackendErrors({});
+
         if (!isValid) {
             Swal.fire({ icon: "warning", title: "Xəta", html: errors.map((e) => `<div>${e}</div>`).join(""), timer: 3000, showConfirmButton: false });
             return;
@@ -203,32 +275,29 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
         setLoading(true);
 
         const payload: CreateEmployeePayload = {
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
+            first_name: firstName,
+            last_name: lastName,
             academic_degree: academicDegree === "—" ? "" : academicDegree,
             academic_title: academicTitle === "—" ? "" : academicTitle,
-            position: position.trim(),
+            position,
             faculty_code: facultyCode,
             cafedra_code: cafedraCode,
             biography,
             profile_image: profileImageFile ?? undefined,
             contact: Object.values(contact).some(Boolean) ? contact : undefined,
             office_hours: officeHours.filter((h) => h.day && h.start_time && h.end_time),
-            education: educationList.filter((e) => e.institution),
-            courses: courseList.filter((c) => c.course_name),
+            education: educationList.filter((e) => e.institution.az),
+            courses: courseList.filter((c) => c.course_name.az),
             research: Object.values(research).some(Boolean) ? research : undefined,
         };
 
-        let result: string;
-        if (mode === "create") {
-            result = await createEmployee(payload);
-        } else {
-            result = await updateEmployee({ ...payload, employee_id: initialData!.id });
-        }
+        const result = mode === "create"
+            ? await createEmployee(payload)
+            : await updateEmployee({ ...payload, employee_id: initialData!.id });
 
         setLoading(false);
 
-        if (result === "SUCCESS") {
+        if (result.success) {
             Swal.fire({
                 icon: "success",
                 title: "Uğurlu",
@@ -237,7 +306,18 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                 showConfirmButton: false,
             }).then(() => navigate("/employees"));
         } else {
-            Swal.fire({ icon: "error", title: "Xəta", text: "Əməliyyat zamanı xəta baş verdi", timer: 2000, showConfirmButton: false });
+            if (result.errors && Object.keys(result.errors).length > 0) {
+                setBackendErrors(result.errors);
+                Swal.fire({
+                    icon: "error",
+                    title: "Xəta",
+                    html: Object.values(result.errors).flat().map((e) => `<div>${e}</div>`).join(""),
+                    timer: 4000,
+                    showConfirmButton: false,
+                });
+            } else {
+                Swal.fire({ icon: "error", title: "Xəta", text: "Əməliyyat zamanı xəta baş verdi", timer: 2000, showConfirmButton: false });
+            }
         }
     };
 
@@ -245,6 +325,7 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
     const sectionCard = "overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm";
     const sectionHeader = "flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50";
     const selectClass = "h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 text-sm text-gray-800 dark:text-white/90 px-3 focus:outline-none focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 appearance-none";
+    const selectErrorClass = "h-11 w-full rounded-lg border border-red-400 dark:border-red-500 bg-transparent dark:bg-gray-900 text-sm text-gray-800 dark:text-white/90 px-3 focus:outline-none focus:ring-3 focus:border-red-400 focus:ring-red-500/20 appearance-none";
     const textareaClass = "w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 text-sm text-gray-800 dark:text-white/90 px-4 py-2.5 focus:outline-none focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 resize-none placeholder:text-gray-400";
     const addBtnClass = "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors";
     const removeBtnClass = "p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors";
@@ -284,15 +365,17 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Profil şəkli</span>
-                            <span className="ml-auto text-[11px] text-gray-400">İstəyə bağlı</span>
+                            <span className={`ml-auto text-[11px] font-medium ${mode === "create" && !profileImageFile ? "text-red-500" : "text-gray-400"}`}>
+                                {mode === "create" ? "Məcburi" : "İstəyə bağlı"}
+                            </span>
                         </div>
                         <div className="p-5 flex items-center gap-5">
                             <div className="relative shrink-0">
                                 {profileImagePreview ? (
                                     <img src={profileImagePreview} alt="Preview" className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-100 dark:border-gray-700 shadow-sm" />
                                 ) : (
-                                    <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                        <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center ${mode === "create" && !profileImageFile ? "bg-red-50 dark:bg-red-900/20 border-2 border-dashed border-red-300 dark:border-red-700" : "bg-gray-100 dark:bg-gray-800"}`}>
+                                        <svg className={`w-8 h-8 ${mode === "create" && !profileImageFile ? "text-red-400" : "text-gray-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                     </div>
@@ -314,6 +397,9 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                     Şəkil yüklə
                                 </label>
                                 <p className="text-xs text-gray-400 mt-1.5">PNG, JPG, WebP — maks. 5 MB</p>
+                                {mode === "create" && !profileImageFile && (
+                                    <p className="text-xs text-red-500 mt-1">Profil şəkli tələb olunur</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -325,16 +411,33 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Şəxsi məlumat</span>
-                            <span className="ml-auto text-[11px] text-red-500 font-medium">Məcburi</span>
+                            <span className="text-[11px] text-red-500 font-medium">Məcburi</span>
+                            <LangToggle lang={lang} setLang={setLang} />
                         </div>
                         <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
-                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Ad <span className="text-red-500">*</span></Label>
-                                <Input placeholder="Adı daxil edin" value={firstName} onChange={(e) => setFirstName(e.target.value)} error={!firstName.trim()} />
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Ad ({lang.toUpperCase()}) <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    placeholder={lang === "az" ? "Adı daxil edin (AZ)" : "Enter first name (EN)"}
+                                    value={firstName[lang]}
+                                    onChange={(e) => setFirstName({ ...firstName, [lang]: e.target.value })}
+                                    error={!firstName[lang].trim() || !!fieldError("first_name")}
+                                    hint={fieldError("first_name")}
+                                />
                             </div>
                             <div>
-                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Soyad <span className="text-red-500">*</span></Label>
-                                <Input placeholder="Soyadı daxil edin" value={lastName} onChange={(e) => setLastName(e.target.value)} error={!lastName.trim()} />
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Soyad ({lang.toUpperCase()}) <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    placeholder={lang === "az" ? "Soyadı daxil edin (AZ)" : "Enter last name (EN)"}
+                                    value={lastName[lang]}
+                                    onChange={(e) => setLastName({ ...lastName, [lang]: e.target.value })}
+                                    error={!lastName[lang].trim() || !!fieldError("last_name")}
+                                    hint={fieldError("last_name")}
+                                />
                             </div>
                             <div>
                                 <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Tam ad (avtomatik)</Label>
@@ -350,6 +453,7 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                             </svg>
                             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Akademik məlumat</span>
+                            <LangToggle lang={lang} setLang={setLang} />
                         </div>
                         <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
@@ -367,8 +471,16 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                 </select>
                             </div>
                             <div>
-                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Vəzifə</Label>
-                                <Input placeholder="Vəzifəni daxil edin" value={position} onChange={(e) => setPosition(e.target.value)} />
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Vəzifə ({lang.toUpperCase()})
+                                </Label>
+                                <Input
+                                    placeholder={lang === "az" ? "Vəzifəni daxil edin (AZ)" : "Enter position (EN)"}
+                                    value={position[lang]}
+                                    onChange={(e) => setPosition({ ...position, [lang]: e.target.value })}
+                                    hint={fieldError("position")}
+                                    error={!!fieldError("position")}
+                                />
                             </div>
                         </div>
                     </div>
@@ -380,14 +492,22 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Fakültə və Kafedra</span>
+                            <span className="ml-auto text-[11px] text-red-500 font-medium">Məcburi</span>
                         </div>
                         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Fakültə</Label>
-                                <select className={selectClass} value={facultyCode} onChange={(e) => { setFacultyCode(e.target.value); setCafedraCode(""); }}>
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Fakültə <span className="text-red-500">*</span>
+                                </Label>
+                                <select
+                                    className={!facultyCode ? selectErrorClass : selectClass}
+                                    value={facultyCode}
+                                    onChange={(e) => { setFacultyCode(e.target.value); setCafedraCode(""); }}
+                                >
                                     <option value="">Fakültə seçin...</option>
                                     {faculties.map((f) => <option key={f.faculty_code} value={f.faculty_code}>{f.faculty_name}</option>)}
                                 </select>
+                                {!facultyCode && <p className="mt-1 text-xs text-red-500">Fakültə tələb olunur</p>}
                             </div>
                             <div>
                                 <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Kafedra</Label>
@@ -409,10 +529,21 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Bioqrafiya</span>
-                        <span className="ml-auto text-[11px] text-gray-400">İstəyə bağlı</span>
+                        <span className="text-[11px] text-red-500 font-medium">Məcburi</span>
+                        <LangToggle lang={lang} setLang={setLang} />
                     </div>
                     <div className="p-5">
-                        <Editor onUpdate={setBiography} initialContent={biography} />
+                        <Editor
+                            key={`biography-${lang}`}
+                            initialContent={biography[lang]}
+                            onUpdate={(html) => setBiography({ ...biography, [lang]: html })}
+                        />
+                        {!biography[lang].trim() && (
+                            <p className="mt-2 text-xs text-red-500">Bioqrafiya ({lang.toUpperCase()}) tələb olunur</p>
+                        )}
+                        {fieldError("biography") && (
+                            <p className="mt-2 text-xs text-red-500">{fieldError("biography")}</p>
+                        )}
                     </div>
                 </div>
             )}
@@ -428,19 +559,44 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Ofis məlumatı</span>
+                            <span className="ml-auto text-[11px] text-red-500 font-medium">Məcburi</span>
                         </div>
                         <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
-                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Bina</Label>
-                                <Input placeholder="Məs: A korpus" value={contact.building ?? ""} onChange={(e) => setContact({ ...contact, building: e.target.value })} />
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Bina <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    placeholder="Məs: A korpus"
+                                    value={contact.building ?? ""}
+                                    onChange={(e) => setContact({ ...contact, building: e.target.value })}
+                                    error={!contact.building?.trim() || !!fieldError("contact.building")}
+                                    hint={fieldError("contact.building") ?? (!contact.building?.trim() ? "Tələb olunur" : undefined)}
+                                />
                             </div>
                             <div>
-                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Mərtəbə</Label>
-                                <Input placeholder="Məs: 3" value={contact.floor ?? ""} onChange={(e) => setContact({ ...contact, floor: e.target.value })} />
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Mərtəbə <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    placeholder="Məs: 3"
+                                    value={contact.floor ?? ""}
+                                    onChange={(e) => setContact({ ...contact, floor: e.target.value })}
+                                    error={!contact.floor?.trim() || !!fieldError("contact.floor")}
+                                    hint={fieldError("contact.floor") ?? (!contact.floor?.trim() ? "Tələb olunur" : undefined)}
+                                />
                             </div>
                             <div>
-                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Otaq</Label>
-                                <Input placeholder="Məs: 312" value={contact.room ?? ""} onChange={(e) => setContact({ ...contact, room: e.target.value })} />
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Otaq <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    placeholder="Məs: 312"
+                                    value={contact.room ?? ""}
+                                    onChange={(e) => setContact({ ...contact, room: e.target.value })}
+                                    error={!contact.room?.trim() || !!fieldError("contact.room")}
+                                    hint={fieldError("contact.room") ?? (!contact.room?.trim() ? "Tələb olunur" : undefined)}
+                                />
                             </div>
                         </div>
                     </div>
@@ -451,22 +607,37 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Əlaqə məlumatı</span>
+                            <span className="ml-auto text-[11px] text-red-500 font-medium">Məcburi</span>
                         </div>
                         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">E-poçt</Label>
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    E-poçt <span className="text-red-500">*</span>
+                                </Label>
                                 <Input
                                     type="email"
                                     placeholder="example@aztu.edu.az"
                                     value={contact.email ?? ""}
                                     onChange={(e) => setContact({ ...contact, email: e.target.value })}
-                                    error={!!(contact.email && !isValidEmail(contact.email))}
-                                    hint={contact.email && !isValidEmail(contact.email) ? "E-poçt formatı düzgün deyil" : undefined}
+                                    error={!contact.email?.trim() || !!(contact.email && !isValidEmail(contact.email)) || !!fieldError("contact.email")}
+                                    hint={
+                                        fieldError("contact.email") ??
+                                        (contact.email && !isValidEmail(contact.email) ? "E-poçt formatı düzgün deyil" : undefined) ??
+                                        (!contact.email?.trim() ? "Tələb olunur" : undefined)
+                                    }
                                 />
                             </div>
                             <div>
-                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Telefon</Label>
-                                <Input placeholder="+994 XX XXX XX XX" value={contact.phone ?? ""} onChange={(e) => setContact({ ...contact, phone: e.target.value })} />
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Telefon <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    placeholder="+994 XX XXX XX XX"
+                                    value={contact.phone ?? ""}
+                                    onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+                                    error={!contact.phone?.trim() || !!fieldError("contact.phone")}
+                                    hint={fieldError("contact.phone") ?? (!contact.phone?.trim() ? "Tələb olunur" : undefined)}
+                                />
                             </div>
                         </div>
                     </div>
@@ -481,6 +652,7 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Qəbul saatları</span>
+                        <span className="text-[11px] text-red-500 font-medium">Min 1</span>
                         <button type="button" onClick={addOfficeHour} className={`${addBtnClass} ml-auto`}>
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" /></svg>
                             Əlavə et
@@ -489,13 +661,13 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                     <div className="p-5 space-y-3">
                         {officeHours.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10">
-                                <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-                                    <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-3">
+                                    <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Qəbul saatı yoxdur</p>
-                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Yeni qəbul saatı əlavə etmək üçün "Əlavə et" düyməsini basın</p>
+                                <p className="text-xs text-red-500 mt-1">Ən azı 1 qəbul saatı tələb olunur</p>
                             </div>
                         ) : (
                             officeHours.map((h, i) => {
@@ -544,7 +716,9 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                         </svg>
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Təhsil</span>
-                        <button type="button" onClick={addEducation} className={`${addBtnClass} ml-auto`}>
+                        <span className="text-[11px] text-red-500 font-medium">Min 1</span>
+                        <LangToggle lang={lang} setLang={setLang} />
+                        <button type="button" onClick={addEducation} className={addBtnClass}>
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" /></svg>
                             Əlavə et
                         </button>
@@ -552,12 +726,13 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                     <div className="p-5 space-y-4">
                         {educationList.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10">
-                                <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-                                    <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-3">
+                                    <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" />
                                     </svg>
                                 </div>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Təhsil məlumatı yoxdur</p>
+                                <p className="text-xs text-red-500 mt-1">Ən azı 1 təhsil məlumatı tələb olunur</p>
                             </div>
                         ) : (
                             educationList.map((edu, i) => (
@@ -581,12 +756,24 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                             <Input type="number" placeholder="2010" min="1950" max="2099" value={edu.graduation_year} onChange={(e) => updateEducation(i, "graduation_year", e.target.value)} />
                                         </div>
                                         <div>
-                                            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Müəssisə</Label>
-                                            <Input placeholder="Universitetin adı" value={edu.institution} onChange={(e) => updateEducation(i, "institution", e.target.value)} />
+                                            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                                Müəssisə ({lang.toUpperCase()})
+                                            </Label>
+                                            <Input
+                                                placeholder={lang === "az" ? "Universitetin adı (AZ)" : "University name (EN)"}
+                                                value={edu.institution[lang]}
+                                                onChange={(e) => updateEducation(i, "institution", { ...edu.institution, [lang]: e.target.value })}
+                                            />
                                         </div>
                                         <div>
-                                            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">İxtisas</Label>
-                                            <Input placeholder="İxtisasın adı" value={edu.specialization} onChange={(e) => updateEducation(i, "specialization", e.target.value)} />
+                                            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                                İxtisas ({lang.toUpperCase()})
+                                            </Label>
+                                            <Input
+                                                placeholder={lang === "az" ? "İxtisasın adı (AZ)" : "Specialization (EN)"}
+                                                value={edu.specialization[lang]}
+                                                onChange={(e) => updateEducation(i, "specialization", { ...edu.specialization, [lang]: e.target.value })}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -604,7 +791,8 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Tədris etdiyi fənlər</span>
-                        <button type="button" onClick={addCourse} className={`${addBtnClass} ml-auto`}>
+                        <LangToggle lang={lang} setLang={setLang} />
+                        <button type="button" onClick={addCourse} className={addBtnClass}>
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" /></svg>
                             Əlavə et
                         </button>
@@ -630,8 +818,14 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Fənnin adı</Label>
-                                            <Input placeholder="Fənnin adını daxil edin" value={course.course_name} onChange={(e) => updateCourse(i, "course_name", e.target.value)} />
+                                            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                                Fənnin adı ({lang.toUpperCase()})
+                                            </Label>
+                                            <Input
+                                                placeholder={lang === "az" ? "Fənnin adını daxil edin (AZ)" : "Enter course name (EN)"}
+                                                value={course.course_name[lang]}
+                                                onChange={(e) => updateCourse(i, "course_name", { ...course.course_name, [lang]: e.target.value })}
+                                            />
                                         </div>
                                         <div>
                                             <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Təhsil səviyyəsi</Label>

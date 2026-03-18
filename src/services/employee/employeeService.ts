@@ -1,5 +1,11 @@
 import apiClient from "../../util/apiClient";
 
+export type MultiLang = { az: string; en: string };
+
+export type MutationResult =
+    | { success: true }
+    | { success: false; errors?: Record<string, string[]> };
+
 export interface OfficeHour {
     day: string;
     start_time: string;
@@ -8,13 +14,13 @@ export interface OfficeHour {
 
 export interface Education {
     degree_level: string;
-    institution: string;
-    specialization: string;
+    institution: MultiLang;
+    specialization: MultiLang;
     graduation_year: string;
 }
 
 export interface Course {
-    course_name: string;
+    course_name: MultiLang;
     education_level: string;
     publications?: string;
 }
@@ -59,14 +65,14 @@ export interface Employee {
 }
 
 export interface CreateEmployeePayload {
-    first_name: string;
-    last_name: string;
+    first_name: MultiLang;
+    last_name: MultiLang;
     academic_degree: string;
     academic_title: string;
-    position: string;
+    position: MultiLang;
     faculty_code: string;
     cafedra_code: string;
-    biography: string;
+    biography: MultiLang;
     profile_image?: File;
     contact?: EmployeeContact;
     office_hours?: OfficeHour[];
@@ -113,14 +119,14 @@ export const getEmployeeDetails = async (employeeId: number) => {
 
 const buildFormData = (payload: CreateEmployeePayload): FormData => {
     const formData = new FormData();
-    formData.append("first_name", payload.first_name);
-    formData.append("last_name", payload.last_name);
+    formData.append("first_name", JSON.stringify(payload.first_name));
+    formData.append("last_name", JSON.stringify(payload.last_name));
     formData.append("academic_degree", payload.academic_degree);
     formData.append("academic_title", payload.academic_title);
-    formData.append("position", payload.position);
+    formData.append("position", JSON.stringify(payload.position));
     formData.append("faculty_code", payload.faculty_code);
     formData.append("cafedra_code", payload.cafedra_code);
-    formData.append("biography", payload.biography);
+    formData.append("biography", JSON.stringify(payload.biography));
     if (payload.profile_image) formData.append("profile_image", payload.profile_image);
     if (payload.contact) formData.append("contact", JSON.stringify(payload.contact));
     if (payload.office_hours?.length) formData.append("office_hours", JSON.stringify(payload.office_hours));
@@ -130,28 +136,36 @@ const buildFormData = (payload: CreateEmployeePayload): FormData => {
     return formData;
 };
 
-export const createEmployee = async (payload: CreateEmployeePayload) => {
+export const createEmployee = async (payload: CreateEmployeePayload): Promise<MutationResult> => {
+    const formData = buildFormData(payload);
+    console.log("FormData payload (createEmployee):", Object.fromEntries(formData.entries()));
     try {
-        const response = await apiClient.post("/api/employee/create", buildFormData(payload), {
+        const response = await apiClient.post("/api/employee/create", formData, {
             headers: { "Content-Type": "multipart/form-data" },
         });
-        if (response.data.status_code === 201) return "SUCCESS";
-        return "ERROR";
-    } catch {
-        return "ERROR";
+        if (response.data.status_code === 201) return { success: true };
+        console.error("Backend response error (createEmployee):", response.data);
+        return { success: false };
+    } catch (err: any) {
+        console.error("Backend response error (createEmployee catch):", err.response?.data);
+        return { success: false, errors: err.response?.data?.errors };
     }
 };
 
-export const updateEmployee = async (payload: UpdateEmployeePayload) => {
+export const updateEmployee = async (payload: UpdateEmployeePayload): Promise<MutationResult> => {
+    const formData = buildFormData(payload);
+    console.log("FormData payload (updateEmployee):", Object.fromEntries(formData.entries()));
     try {
-        const response = await apiClient.put(`/api/employee/${payload.employee_id}/update`, buildFormData(payload), {
+        const response = await apiClient.put(`/api/employee/${payload.employee_id}/update`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
         });
-        if (response.data.status_code === 200) return "SUCCESS";
-        return "ERROR";
+        if (response.data.status_code === 200) return { success: true };
+        console.error("Backend response error (updateEmployee):", response.data);
+        return { success: false };
     } catch (err: any) {
-        if (err.response?.status === 404) return "NOT FOUND";
-        return "ERROR";
+        console.error("Backend response error (updateEmployee catch):", err.response?.data);
+        if (err.response?.status === 404) return { success: false };
+        return { success: false, errors: err.response?.data?.errors };
     }
 };
 
