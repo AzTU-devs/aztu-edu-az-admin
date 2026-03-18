@@ -10,6 +10,7 @@ import CollectionsIcon from '@mui/icons-material/Collections';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SchoolIcon from '@mui/icons-material/School';
 import CategoryIcon from '@mui/icons-material/Category';
+import PeopleIcon from '@mui/icons-material/People';
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -86,6 +87,14 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Kafedralar", path: "/cafedras", pro: false },
       { name: "Yeni kafedra", path: "/cafedras/new", pro: false },
+    ],
+  },
+  {
+    icon: <PeopleIcon />,
+    name: "İşçilər",
+    subItems: [
+      { name: "İşçilər", path: "/employees", pro: false },
+      { name: "Yeni işçi", path: "/employees/new", pro: false },
     ],
   },
   {

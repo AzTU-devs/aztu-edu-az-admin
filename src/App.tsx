@@ -47,6 +47,9 @@ import MenuSharedPage from "./pages/Menu/MenuSharedPage";
 import CollaborationsPage from "./pages/Collaborations/CollaborationsPage";
 import NewCollaborationPage from "./pages/Collaborations/NewCollaborationPage";
 import CollaborationDetailsPage from "./pages/Collaborations/CollaborationDetailsPage";
+import EmployeesPage from "./pages/Employees/EmployeesPage";
+import NewEmployeePage from "./pages/Employees/NewEmployeePage";
+import EmployeeDetailsPage from "./pages/Employees/EmployeeDetailsPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
 function ProtectedRoute() {
@@ -125,6 +128,11 @@ export default function App() {
             <Route path="/collaborations" element={<CollaborationsPage />} />
             <Route path="/collaborations/new" element={<NewCollaborationPage />} />
             <Route path="/collaborations/:collaboration_id" element={<CollaborationDetailsPage />} />
+
+            {/* Employees */}
+            <Route path="/employees" element={<EmployeesPage />} />
+            <Route path="/employees/new" element={<NewEmployeePage />} />
+            <Route path="/employees/:employee_id" element={<EmployeeDetailsPage />} />
 
             {/* Hero */}
             <Route path="/hero" element={<HeroPage />} />
