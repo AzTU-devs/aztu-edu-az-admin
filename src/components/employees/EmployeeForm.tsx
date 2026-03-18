@@ -12,7 +12,6 @@ import {
     EmployeeContact,
     EmployeeResearch,
     OfficeHour,
-    UpdateEmployeePayload,
     createEmployee,
     updateEmployee,
 } from "../../services/employee/employeeService";
