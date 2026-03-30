@@ -2,7 +2,8 @@ import axios from 'axios';
 import { RootState, store } from "../redux/store";
 import { loginSuccess, logout } from "../redux/slices/authSlice";
 
-export const API_BASE_URL = 'https://api-aztu.karamshukurlu.site';
+export const API_BASE_URL = 'https://10.3.43.88:8000';
+// export const API_BASE_URL = 'https://api-aztu.karamshukurlu.site';
 // export const API_BASE_URL = 'http://localhost:8000';
 
 const apiClient = axios.create({
