@@ -68,7 +68,7 @@ apiClient.interceptors.response.use(
 
             try {
                 const response = await apiClient.post(
-                    '/api/v1/auth/refresh',
+                    '/api/auth/refresh',
                     {},
                     { withCredentials: true }
                 );

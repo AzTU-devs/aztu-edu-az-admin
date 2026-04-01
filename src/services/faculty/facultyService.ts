@@ -105,7 +105,7 @@ export interface UpdateFacultyPayload extends CreateFacultyPayload {
     faculty_code: string;
 }
 
-const FACULTY_ADMIN_BASE = "/api/v1/faculty";
+const FACULTY_ADMIN_BASE = "/api/faculty";
 
 export const getFaculties = async (start: number, end: number) => {
     try {
