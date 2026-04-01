@@ -9,7 +9,6 @@ import { Faculty, deleteFaculty, getFaculties } from "../../services/faculty/fac
 const PAGE_SIZE = 10;
 
 export default function Faculties() {
-  const lang = "az";
   const [end, setEnd] = useState(PAGE_SIZE);
   const [start, setStart] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -21,7 +20,7 @@ export default function Faculties() {
   const fetchFaculties = (s: number, e: number) => {
     setLoading(true);
     setError(null);
-    getFaculties(s, e, lang)
+    getFaculties(s, e)
       .then((res) => {
         if (res && typeof res === "object" && "faculties" in res) {
           setFaculties(res.faculties);

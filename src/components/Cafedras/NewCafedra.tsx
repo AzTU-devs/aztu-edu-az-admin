@@ -16,7 +16,7 @@ export default function NewCafedra() {
     const [faculties, setFaculties] = useState<Faculty[]>([]);
 
     useEffect(() => {
-        getFaculties(0, 100, "az").then((res) => {
+        getFaculties(0, 100).then((res) => {
             if (res && typeof res === "object" && "faculties" in res) {
                 setFaculties(res.faculties);
             }

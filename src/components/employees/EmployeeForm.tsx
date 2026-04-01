@@ -162,7 +162,7 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
     const [cafedras, setCafedras] = useState<Cafedra[]>([]);
 
     useEffect(() => {
-        getFaculties(0, 200, "az").then((res) => {
+        getFaculties(0, 200).then((res) => {
             if (res && typeof res === "object" && "faculties" in res) {
                 setFaculties(res.faculties);
             }
