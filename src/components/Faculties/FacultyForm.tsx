@@ -60,14 +60,19 @@ const blankFacultyPayload: CreateFacultyPayload = {
 const normalizeFacultyPayload = (value: any): CreateFacultyPayload => {
   if (!value) return blankFacultyPayload;
 
+  const topLevelAz = {
+    faculty_name: value.faculty_name ?? "",
+    about_text: value.about_text ?? "",
+  };
+
   return {
     az: {
-      faculty_name: value.az?.faculty_name ?? "",
-      about_text: value.az?.about_text ?? "",
+      faculty_name: value.az?.faculty_name ?? topLevelAz.faculty_name,
+      about_text: value.az?.about_text ?? topLevelAz.about_text,
     },
     en: {
-      faculty_name: value.en?.faculty_name ?? "",
-      about_text: value.en?.about_text ?? "",
+      faculty_name: value.en?.faculty_name ?? topLevelAz.faculty_name,
+      about_text: value.en?.about_text ?? topLevelAz.about_text,
     },
     director: value.director === null ? null : {
       first_name: value.director?.first_name ?? "",
