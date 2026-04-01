@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Pagination, Stack, CircularProgress } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { Faculty, deleteFaculty, getFaculties } from "../../services/faculty/facultyService";
 
 const PAGE_SIZE = 10;
@@ -110,6 +111,9 @@ export default function Faculties() {
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "55%" }}>{faculty.faculty_name}</p>
               <div className="flex justify-end items-center gap-1" style={{ width: "20%" }}>
+                <Link to={`/faculties/${faculty.faculty_code}/view`}>
+                  <button className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors" title="Bax"><VisibilityIcon sx={{ fontSize: 18 }} /></button>
+                </Link>
                 <Link to={`/faculties/${faculty.faculty_code}`}>
                   <button className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors" title="Düzəliş et"><EditIcon sx={{ fontSize: 18 }} /></button>
                 </Link>

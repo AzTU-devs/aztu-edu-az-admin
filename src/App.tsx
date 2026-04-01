@@ -36,6 +36,7 @@ import NewsCategoriesPage from "./pages/NewsCategories/NewsCategoriesPage";
 import FacultiesPage from "./pages/Faculties/FacultiesPage";
 import NewFacultyPage from "./pages/Faculties/NewFacultyPage";
 import FacultyDetailsPage from "./pages/Faculties/FacultyDetailsPage";
+import FacultyViewPage from "./pages/Faculties/FacultyViewPage";
 import CafedrasPage from "./pages/Cafedras/CafedrasPage";
 import NewCafedraPage from "./pages/Cafedras/NewCafedraPage";
 import CafedraDetailsPage from "./pages/Cafedras/CafedraDetailsPage";
@@ -117,6 +118,7 @@ export default function App() {
             {/* Faculties */}
             <Route path="/faculties" element={<FacultiesPage />} />
             <Route path="/faculties/new" element={<NewFacultyPage />} />
+            <Route path="/faculties/:faculty_code/view" element={<FacultyViewPage />} />
             <Route path="/faculties/:faculty_code" element={<FacultyDetailsPage />} />
 
             {/* Cafedras */}
