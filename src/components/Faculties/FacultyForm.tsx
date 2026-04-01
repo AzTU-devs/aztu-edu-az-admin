@@ -57,8 +57,46 @@ const blankFacultyPayload: CreateFacultyPayload = {
   workers: [],
 };
 
+const normalizeFacultyPayload = (value: any): CreateFacultyPayload => {
+  if (!value) return blankFacultyPayload;
+
+  return {
+    az: {
+      faculty_name: value.az?.faculty_name ?? "",
+      about_text: value.az?.about_text ?? "",
+    },
+    en: {
+      faculty_name: value.en?.faculty_name ?? "",
+      about_text: value.en?.about_text ?? "",
+    },
+    director: value.director === null ? null : {
+      first_name: value.director?.first_name ?? "",
+      last_name: value.director?.last_name ?? "",
+      father_name: value.director?.father_name ?? "",
+      scientific_degree: value.director?.scientific_degree ?? "",
+      scientific_title: value.director?.scientific_title ?? "",
+      email: value.director?.email ?? "",
+      phone: value.director?.phone ?? "",
+      room_number: value.director?.room_number ?? "",
+      profile_image: value.director?.profile_image ?? "",
+      working_hours: Array.isArray(value.director?.working_hours) ? value.director.working_hours : [],
+      scientific_events: Array.isArray(value.director?.scientific_events) ? value.director.scientific_events : [],
+      educations: Array.isArray(value.director?.educations) ? value.director.educations : [],
+    },
+    laboratories: Array.isArray(value.laboratories) ? value.laboratories : [],
+    research_works: Array.isArray(value.research_works) ? value.research_works : [],
+    partner_companies: Array.isArray(value.partner_companies) ? value.partner_companies : [],
+    objectives: Array.isArray(value.objectives) ? value.objectives : [],
+    duties: Array.isArray(value.duties) ? value.duties : [],
+    projects: Array.isArray(value.projects) ? value.projects : [],
+    deputy_deans: Array.isArray(value.deputy_deans) ? value.deputy_deans : [],
+    scientific_council: Array.isArray(value.scientific_council) ? value.scientific_council : [],
+    workers: Array.isArray(value.workers) ? value.workers : [],
+  };
+};
+
 export default function FacultyForm({ initialValue = null, onSubmit, submitLabel }: FacultyFormProps) {
-  const [payload, setPayload] = useState<CreateFacultyPayload>(initialValue ?? blankFacultyPayload);
+  const [payload, setPayload] = useState<CreateFacultyPayload>(normalizeFacultyPayload(initialValue));
   const [useDirector, setUseDirector] = useState<boolean>(Boolean(initialValue?.director));
   const [saving, setSaving] = useState(false);
 
@@ -131,7 +169,7 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
 
   const updateListItem = <K extends keyof CreateFacultyPayload>(section: K, index: number, field: string, value: string) => {
     setPayload((prev) => {
-      const list = [...(prev[section] as any)];
+      const list = Array.isArray(prev[section]) ? [...(prev[section] as any[])] : [];
       list[index] = { ...list[index], [field]: value };
       return { ...prev, [section]: list };
     });
@@ -139,7 +177,7 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
 
   const updateTranslatedListItem = (section: keyof CreateFacultyPayload, index: number, lang: "az" | "en", field: string, value: string) => {
     setPayload((prev) => {
-      const list = [...(prev[section] as any)];
+      const list = Array.isArray(prev[section]) ? [...(prev[section] as any[])] : [];
       list[index] = {
         ...list[index],
         [lang]: {
@@ -152,22 +190,25 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
   };
 
   const addListItem = <K extends keyof CreateFacultyPayload>(section: K, item: any) => {
-    setPayload((prev) => ({
-      ...prev,
-      [section]: [...(prev[section] as any), item],
-    }));
+    setPayload((prev) => {
+      const current = Array.isArray(prev[section]) ? [...(prev[section] as any[])] : [];
+      return {
+        ...prev,
+        [section]: [...current, item],
+      };
+    });
   };
 
   const removeListItem = <K extends keyof CreateFacultyPayload>(section: K, index: number) => {
     setPayload((prev) => {
-      const list = [...(prev[section] as any)];
+      const list = Array.isArray(prev[section]) ? [...(prev[section] as any[])] : [];
       list.splice(index, 1);
       return { ...prev, [section]: list };
     });
   };
 
   const renderTranslatedArraySection = (title: string, section: keyof CreateFacultyPayload) => {
-    const list = payload[section] as TranslatedTextItem[];
+    const list = Array.isArray(payload[section]) ? (payload[section] as TranslatedTextItem[]) : [];
     return (
       <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
@@ -211,7 +252,7 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
   };
 
   const renderSimpleArraySection = (title: string, section: keyof CreateFacultyPayload, fields: string[]) => {
-    const list = payload[section] as any[];
+    const list = Array.isArray(payload[section]) ? (payload[section] as any[]) : [];
     return (
       <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
