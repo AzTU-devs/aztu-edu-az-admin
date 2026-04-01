@@ -14,17 +14,26 @@ export default function FacultyDetails() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!faculty_code) return;
-        setLoading(true);
-        getFacultyDetails(faculty_code)
-            .then((res) => {
-                if (res && typeof res === "object" && "faculty_code" in res) {
-                    setFaculty(res as FacultyDetail);
-                } else if (res === "NOT FOUND") {
-                    setError("Fakültə tapılmadı");
-                } else {
-                    setError("Fakültə yüklənərkən xəta baş verdi");
-                }
+if (!faculty_code) {
+        setError("Fakültə kodu müəyyən edilmədi");
+        setLoading(false);
+        return;
+    }
+
+    setLoading(true);
+    getFacultyDetails(faculty_code)
+        .then((res) => {
+            if (res && typeof res === "object" && "faculty_code" in res) {
+                setFaculty(res as FacultyDetail);
+            } else if (res === "NOT FOUND") {
+                setError("Fakültə tapılmadı");
+            } else {
+                setError("Fakültə yüklənərkən xəta baş verdi");
+            }
+        })
+        .catch((err) => {
+            console.error("FacultyDetails load error", err);
+            setError("Fakültə yüklənərkən xəta baş verdi");
             })
             .finally(() => setLoading(false));
     }, [faculty_code]);

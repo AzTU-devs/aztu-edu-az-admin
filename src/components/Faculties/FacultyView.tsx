@@ -12,7 +12,12 @@ export default function FacultyView() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!faculty_code) return;
+    if (!faculty_code) {
+      setError("Fakültə kodu müəyyən edilmədi");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     getFacultyDetails(faculty_code)
       .then((res) => {
@@ -23,6 +28,10 @@ export default function FacultyView() {
         } else {
           setError("Fakültə yüklənərkən xəta baş verdi");
         }
+      })
+      .catch((err) => {
+        console.error("FacultyView load error", err);
+        setError("Fakültə yüklənərkən xəta baş verdi");
       })
       .finally(() => setLoading(false));
   }, [faculty_code]);
