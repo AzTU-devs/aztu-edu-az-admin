@@ -9,14 +9,13 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import MenuModal from "./MenuModal";
 import {
-  AdminHeaderSection,
-  AdminHeaderItem,
-  AdminHeaderSubItem,
-  BiLang,
+  AdminMenuHeader,
+  AdminMenuHeaderItem,
+  AdminMenuHeaderSubItem,
   getAdminHeader,
-  createHeaderSection,
-  updateHeaderSection,
-  deleteHeaderSection,
+  createMenuHeader,
+  updateMenuHeader,
+  deleteMenuHeader,
   createHeaderItem,
   updateHeaderItem,
   deleteHeaderItem,
@@ -24,6 +23,23 @@ import {
   updateHeaderSubItem,
   deleteHeaderSubItem,
 } from "../../services/menu/menuService";
+
+// ── slug preview helper ─────────────────────────────────────
+function makeSlug(title: string): string {
+  const az: Record<string, string> = {
+    ə: "e", Ə: "E", ü: "u", Ü: "U", ö: "o", Ö: "O",
+    ğ: "g", Ğ: "G", ı: "i", İ: "I", ç: "c", Ç: "C", ş: "s", Ş: "S",
+  };
+  return title
+    .replace(/[əƏüÜöÖğĞıİçÇşŞ]/g, (ch) => az[ch] ?? ch)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
 // ── helpers ────────────────────────────────────────────────
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -46,95 +62,98 @@ function Input({ value, onChange, placeholder }: { value: string; onChange: (v: 
   );
 }
 
+function SlugPreview({ title }: { title: string }) {
+  const slug = makeSlug(title);
+  if (!slug) return null;
+  return (
+    <p className="text-xs text-gray-400 mt-1 font-mono">
+      slug: <span className="text-blue-500">{slug}</span>
+    </p>
+  );
+}
+
 // ── types for breadcrumb nav ────────────────────────────────
-type View = "sections" | "items" | "subitems";
+type View = "headers" | "items" | "subitems";
 
 // ─────────────────────────────────────────────────────────────
 export default function HeaderManager() {
-  const [sections, setSections] = useState<AdminHeaderSection[]>([]);
+  const [headers, setHeaders] = useState<AdminMenuHeader[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<View>("sections");
-  const [selectedSection, setSelectedSection] = useState<AdminHeaderSection | null>(null);
-  const [selectedItem, setSelectedItem] = useState<AdminHeaderItem | null>(null);
+  const [view, setView] = useState<View>("headers");
+  const [selectedHeader, setSelectedHeader] = useState<AdminMenuHeader | null>(null);
+  const [selectedItem, setSelectedItem] = useState<AdminMenuHeaderItem | null>(null);
 
   // modal state
   const [modal, setModal] = useState<{
-    type: "section" | "item" | "subitem";
+    type: "header" | "item" | "subitem";
     mode: "create" | "edit";
-    target?: AdminHeaderSection | AdminHeaderItem | AdminHeaderSubItem;
+    target?: AdminMenuHeader | AdminMenuHeaderItem | AdminMenuHeaderSubItem;
   } | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // form state — sections
-  const [sKey, setSKey] = useState("");
-  const [sImageFile, setSImageFile] = useState<File | null>(null);
-  const [sCurrentImageUrl, setSCurrentImageUrl] = useState("");
-  const [sOrder, setSOrder] = useState("1");
-  const [sLabelAz, setSLabelAz] = useState("");
-  const [sLabelEn, setSLabelEn] = useState("");
-  const [sBaseAz, setSBaseAz] = useState("");
-  const [sBaseEn, setSBaseEn] = useState("");
-  const [sDirectUrl, setSDirectUrl] = useState("");
+  // form state — headers
+  const [hTitleAz, setHTitleAz] = useState("");
+  const [hTitleEn, setHTitleEn] = useState("");
+  const [hImageFile, setHImageFile] = useState<File | null>(null);
+  const [hCurrentImageUrl, setHCurrentImageUrl] = useState("");
+  const [hOrder, setHOrder] = useState("1");
+  const [hDirectUrl, setHDirectUrl] = useState("");
 
   // form state — items
-  const [iSlug, setISlug] = useState("");
-  const [iOrder, setIOrder] = useState("1");
   const [iTitleAz, setITitleAz] = useState("");
   const [iTitleEn, setITitleEn] = useState("");
-  const [iItemType, setIItemType] = useState<"link" | "subheader">("link");
+  const [iOrder, setIOrder] = useState("1");
+  const [iDirectUrl, setIDirectUrl] = useState("");
 
   // form state — sub-items
-  const [siSlug, setSiSlug] = useState("");
-  const [siOrder, setSiOrder] = useState("1");
   const [siTitleAz, setSiTitleAz] = useState("");
   const [siTitleEn, setSiTitleEn] = useState("");
+  const [siOrder, setSiOrder] = useState("1");
+  const [siDirectUrl, setSiDirectUrl] = useState("");
 
-  const fetch = async () => {
+  const loadData = async () => {
     setLoading(true);
     const res = await getAdminHeader();
-    if (res !== "ERROR") setSections(res);
+    if (res !== "ERROR") setHeaders(res);
     else Swal.fire({ icon: "error", title: "Məlumatlar yüklənə bilmədi", timer: 2000, showConfirmButton: false });
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { loadData(); }, []);
 
   // ── open modal helpers ─────────────────────────────────────
-  const openCreateSection = () => {
-    setSKey(""); setSImageFile(null); setSCurrentImageUrl(""); setSOrder("1");
-    setSLabelAz(""); setSLabelEn(""); setSBaseAz(""); setSBaseEn(""); setSDirectUrl("");
-    setModal({ type: "section", mode: "create" });
+  const openCreateHeader = () => {
+    setHTitleAz(""); setHTitleEn(""); setHImageFile(null);
+    setHCurrentImageUrl(""); setHOrder("1"); setHDirectUrl("");
+    setModal({ type: "header", mode: "create" });
   };
 
-  const openEditSection = (s: AdminHeaderSection) => {
-    setSKey(s.section_key); setSImageFile(null); setSCurrentImageUrl(s.image_url);
-    setSOrder(String(s.display_order));
-    setSLabelAz(s.label?.az || ""); setSLabelEn(s.label?.en || "");
-    setSBaseAz(s.base_path?.az || ""); setSBaseEn(s.base_path?.en || "");
-    setSDirectUrl(s.direct_url || "");
-    setModal({ type: "section", mode: "edit", target: s });
+  const openEditHeader = (h: AdminMenuHeader) => {
+    setHTitleAz(h.title); setHTitleEn(h.title);
+    setHImageFile(null); setHCurrentImageUrl(h.image_url || "");
+    setHOrder(String(h.display_order)); setHDirectUrl(h.direct_url || "");
+    setModal({ type: "header", mode: "edit", target: h });
   };
 
   const openCreateItem = () => {
-    setISlug(""); setIOrder("1"); setITitleAz(""); setITitleEn(""); setIItemType("link");
+    setITitleAz(""); setITitleEn(""); setIOrder("1"); setIDirectUrl("");
     setModal({ type: "item", mode: "create" });
   };
 
-  const openEditItem = (item: AdminHeaderItem) => {
-    setISlug(item.slug || ""); setIOrder(String(item.display_order));
-    setITitleAz(item.title?.az || ""); setITitleEn(item.title?.en || "");
-    setIItemType(item.item_type || (item.slug === null ? "subheader" : "link"));
+  const openEditItem = (item: AdminMenuHeaderItem) => {
+    setITitleAz(item.title); setITitleEn(item.title);
+    setIOrder(String(item.display_order)); setIDirectUrl(item.direct_url || "");
     setModal({ type: "item", mode: "edit", target: item });
   };
 
   const openCreateSubItem = () => {
-    setSiSlug(""); setSiOrder("1"); setSiTitleAz(""); setSiTitleEn("");
+    setSiTitleAz(""); setSiTitleEn(""); setSiOrder("1"); setSiDirectUrl("");
     setModal({ type: "subitem", mode: "create" });
   };
 
-  const openEditSubItem = (si: AdminHeaderSubItem) => {
-    setSiSlug(si.slug); setSiOrder(String(si.display_order));
-    setSiTitleAz(si.title?.az || ""); setSiTitleEn(si.title?.en || "");
+  const openEditSubItem = (si: AdminMenuHeaderSubItem) => {
+    setSiTitleAz(si.title); setSiTitleEn(si.title);
+    setSiOrder(String(si.display_order)); setSiDirectUrl(si.direct_url);
     setModal({ type: "subitem", mode: "edit", target: si });
   };
 
@@ -143,71 +162,84 @@ export default function HeaderManager() {
     if (!modal) return;
     setSaving(true);
 
-    if (modal.type === "section") {
+    if (modal.type === "header") {
       if (modal.mode === "create") {
-        if (!sImageFile) {
-          Swal.fire({ icon: "warning", title: "Şəkil seçilməyib", timer: 2000, showConfirmButton: false });
-          setSaving(false);
-          return;
-        }
-        const res = await createHeaderSection({
-          section_key: sKey,
-          image: sImageFile,
-          display_order: Number(sOrder),
-          label_az: sLabelAz,
-          label_en: sLabelEn,
-          base_path_az: sBaseAz,
-          base_path_en: sBaseEn,
-          direct_url: sDirectUrl || undefined,
+        const res = await createMenuHeader({
+          title_az: hTitleAz,
+          title_en: hTitleEn,
+          display_order: Number(hOrder),
+          direct_url: hDirectUrl || undefined,
+          image: hImageFile || undefined,
         });
-        if (res === "CONFLICT") { Swal.fire({ icon: "warning", title: "Bu açar artıq mövcuddur", timer: 2000, showConfirmButton: false }); }
-        else if (res === "ERROR") { Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false }); }
-        else { Swal.fire({ icon: "success", title: "Bölmə yaradıldı", timer: 1500, showConfirmButton: false }); fetch(); }
+        if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
+        else { Swal.fire({ icon: "success", title: "Başlıq yaradıldı", timer: 1500, showConfirmButton: false }); loadData(); }
       } else {
-        const target = modal.target as AdminHeaderSection;
-        const updatePayload: Parameters<typeof updateHeaderSection>[1] = {
-          display_order: Number(sOrder),
-          label_az: sLabelAz,
-          label_en: sLabelEn,
-          base_path_az: sBaseAz,
-          base_path_en: sBaseEn,
-          direct_url: sDirectUrl,
+        const target = modal.target as AdminMenuHeader;
+        const payload: Parameters<typeof updateMenuHeader>[1] = {
+          title_az: hTitleAz,
+          title_en: hTitleEn,
+          display_order: Number(hOrder),
+          direct_url: hDirectUrl,
         };
-        if (sImageFile) updatePayload.image = sImageFile;
-        const res = await updateHeaderSection(target.id, updatePayload);
+        if (hImageFile) payload.image = hImageFile;
+        const res = await updateMenuHeader(target.id, payload);
         if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); fetch(); }
+        else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); loadData(); }
       }
     }
 
-    if (modal.type === "item" && selectedSection) {
-      const title: BiLang = { az: iTitleAz, en: iTitleEn };
-      const slug = iItemType === "subheader" ? null : (iSlug || null);
-
+    if (modal.type === "item" && selectedHeader) {
       if (modal.mode === "create") {
-        const res = await createHeaderItem({ section_id: selectedSection.id, item_type: iItemType, slug, display_order: Number(iOrder), title });
-        if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Element yaradıldı", timer: 1500, showConfirmButton: false }); fetch(); }
+        const res = await createHeaderItem({
+          header_id: selectedHeader.id,
+          title_az: iTitleAz,
+          title_en: iTitleEn,
+          display_order: Number(iOrder),
+          direct_url: iDirectUrl || null,
+        });
+        if (res === "BAD REQUEST") Swal.fire({ icon: "warning", title: "Bu başlığın birbaşa URL-i var, element əlavə edilə bilməz", timer: 3000, showConfirmButton: false });
+        else if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
+        else { Swal.fire({ icon: "success", title: "Element yaradıldı", timer: 1500, showConfirmButton: false }); loadData(); }
       } else {
-        const target = modal.target as AdminHeaderItem;
-        const res = await updateHeaderItem(target.id, { item_type: iItemType, slug, display_order: Number(iOrder), title });
+        const target = modal.target as AdminMenuHeaderItem;
+        const res = await updateHeaderItem(target.id, {
+          title_az: iTitleAz,
+          title_en: iTitleEn,
+          display_order: Number(iOrder),
+          direct_url: iDirectUrl,
+        });
         if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); fetch(); }
+        else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); loadData(); }
       }
     }
 
     if (modal.type === "subitem" && selectedItem) {
-      const title: BiLang = { az: siTitleAz, en: siTitleEn };
-
       if (modal.mode === "create") {
-        const res = await createHeaderSubItem({ item_id: selectedItem.id, slug: siSlug, display_order: Number(siOrder), title });
-        if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Alt-element yaradıldı", timer: 1500, showConfirmButton: false }); fetch(); }
+        if (!siDirectUrl) {
+          Swal.fire({ icon: "warning", title: "Alt-element üçün URL mütləqdir", timer: 2000, showConfirmButton: false });
+          setSaving(false);
+          return;
+        }
+        const res = await createHeaderSubItem({
+          item_id: selectedItem.id,
+          title_az: siTitleAz,
+          title_en: siTitleEn,
+          direct_url: siDirectUrl,
+          display_order: Number(siOrder),
+        });
+        if (res === "BAD REQUEST") Swal.fire({ icon: "warning", title: "Bu elementin birbaşa URL-i var, alt-element əlavə edilə bilməz", timer: 3000, showConfirmButton: false });
+        else if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
+        else { Swal.fire({ icon: "success", title: "Alt-element yaradıldı", timer: 1500, showConfirmButton: false }); loadData(); }
       } else {
-        const target = modal.target as AdminHeaderSubItem;
-        const res = await updateHeaderSubItem(target.id, { slug: siSlug, display_order: Number(siOrder), title });
+        const target = modal.target as AdminMenuHeaderSubItem;
+        const res = await updateHeaderSubItem(target.id, {
+          title_az: siTitleAz,
+          title_en: siTitleEn,
+          direct_url: siDirectUrl,
+          display_order: Number(siOrder),
+        });
         if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); fetch(); }
+        else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); loadData(); }
       }
     }
 
@@ -216,10 +248,10 @@ export default function HeaderManager() {
   };
 
   // ── delete handlers ────────────────────────────────────────
-  const handleDeleteSection = async (s: AdminHeaderSection) => {
+  const handleDeleteHeader = async (h: AdminMenuHeader) => {
     const confirm = await Swal.fire({
-      title: `"${s.label?.az || s.section_key}" bölməsini silmək istəyirsiniz?`,
-      text: "Bu əməliyyat bütün elementləri də siləcək!",
+      title: `"${h.title}" başlığını silmək istəyirsiniz?`,
+      text: "Bu əməliyyat bütün elementləri və alt-elementləri də siləcək!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -228,14 +260,14 @@ export default function HeaderManager() {
       cancelButtonText: "İmtina",
     });
     if (!confirm.isConfirmed) return;
-    const res = await deleteHeaderSection(s.id);
-    if (res === "SUCCESS") { Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false }); fetch(); }
+    const res = await deleteMenuHeader(h.id);
+    if (res === "SUCCESS") { Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false }); loadData(); }
     else Swal.fire({ icon: "error", title: "Silinə bilmədi", timer: 2000, showConfirmButton: false });
   };
 
-  const handleDeleteItem = async (item: AdminHeaderItem) => {
+  const handleDeleteItem = async (item: AdminMenuHeaderItem) => {
     const confirm = await Swal.fire({
-      title: `"${item.title?.az}" elementini silmək istəyirsiniz?`,
+      title: `"${item.title}" elementini silmək istəyirsiniz?`,
       text: "Alt-elementlər də silinəcək!",
       icon: "warning",
       showCancelButton: true,
@@ -246,13 +278,13 @@ export default function HeaderManager() {
     });
     if (!confirm.isConfirmed) return;
     const res = await deleteHeaderItem(item.id);
-    if (res === "SUCCESS") { Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false }); fetch(); }
+    if (res === "SUCCESS") { Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false }); loadData(); }
     else Swal.fire({ icon: "error", title: "Silinə bilmədi", timer: 2000, showConfirmButton: false });
   };
 
-  const handleDeleteSubItem = async (si: AdminHeaderSubItem) => {
+  const handleDeleteSubItem = async (si: AdminMenuHeaderSubItem) => {
     const confirm = await Swal.fire({
-      title: `"${si.title?.az}" alt-elementini silmək istəyirsiniz?`,
+      title: `"${si.title}" alt-elementini silmək istəyirsiniz?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -262,16 +294,16 @@ export default function HeaderManager() {
     });
     if (!confirm.isConfirmed) return;
     const res = await deleteHeaderSubItem(si.id);
-    if (res === "SUCCESS") { Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false }); fetch(); }
+    if (res === "SUCCESS") { Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false }); loadData(); }
     else Swal.fire({ icon: "error", title: "Silinə bilmədi", timer: 2000, showConfirmButton: false });
   };
 
-  // ── get current items/sub-items from sections state ────────
-  const currentItems: AdminHeaderItem[] = selectedSection
-    ? (sections.find(s => s.id === selectedSection.id)?.items || [])
+  // ── get current items/sub-items from headers state ─────────
+  const currentItems: AdminMenuHeaderItem[] = selectedHeader
+    ? (headers.find(h => h.id === selectedHeader.id)?.items || [])
     : [];
 
-  const currentSubItems: AdminHeaderSubItem[] = selectedItem
+  const currentSubItems: AdminMenuHeaderSubItem[] = selectedItem
     ? (currentItems.find(i => i.id === selectedItem.id)?.sub_items || [])
     : [];
 
@@ -281,68 +313,75 @@ export default function HeaderManager() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
         <button
-          onClick={() => setView("sections")}
-          className={view === "sections" ? "text-blue-600 font-medium" : "hover:text-gray-700 dark:hover:text-gray-200"}
+          onClick={() => setView("headers")}
+          className={view === "headers" ? "text-blue-600 font-medium" : "hover:text-gray-700 dark:hover:text-gray-200"}
         >
-          Bölmələr
+          Başlıqlar
         </button>
-        {view !== "sections" && selectedSection && (
+        {view !== "headers" && selectedHeader && (
           <>
             <ChevronRightIcon sx={{ fontSize: 16 }} />
             <button
               onClick={() => setView("items")}
               className={view === "items" ? "text-blue-600 font-medium" : "hover:text-gray-700 dark:hover:text-gray-200"}
             >
-              {selectedSection.label?.az || selectedSection.section_key}
+              {selectedHeader.title}
             </button>
           </>
         )}
         {view === "subitems" && selectedItem && (
           <>
             <ChevronRightIcon sx={{ fontSize: 16 }} />
-            <span className="text-blue-600 font-medium">{selectedItem.title?.az}</span>
+            <span className="text-blue-600 font-medium">{selectedItem.title}</span>
           </>
         )}
       </div>
 
-      {/* ── SECTIONS VIEW ─────────────────────────────────── */}
-      {view === "sections" && (
+      {/* ── HEADERS VIEW ──────────────────────────────────── */}
+      {view === "headers" && (
         <>
           <div className="flex justify-end">
             <button
-              onClick={openCreateSection}
+              onClick={openCreateHeader}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
             >
-              <AddIcon sx={{ fontSize: 18 }} /> Yeni bölmə
+              <AddIcon sx={{ fontSize: 18 }} /> Yeni başlıq
             </button>
           </div>
 
           {loading ? (
             <div className="flex justify-center py-12"><CircularProgress /></div>
-          ) : sections.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-12">Bölmə yoxdur</p>
+          ) : headers.length === 0 ? (
+            <p className="text-center text-gray-500 dark:text-gray-400 py-12">Başlıq yoxdur</p>
           ) : (
             <div className="space-y-2">
-              {sections.map((s) => (
-                <div key={s.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 overflow-hidden">
+              {headers.map((h) => (
+                <div key={h.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 overflow-hidden">
                   <div className="flex items-center px-4 py-3 gap-3">
+                    {h.image_url && (
+                      <img src={h.image_url} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                    )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{s.label?.az || s.section_key}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        Key: <span className="font-mono">{s.section_key}</span> · Sıra: {s.display_order} · {s.base_path?.az}
+                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{h.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
+                        /{h.slug}
+                        {h.direct_url && <span className="ml-2 not-italic text-green-600 dark:text-green-400">→ {h.direct_url}</span>}
+                        <span className="not-italic ml-2">· Sıra: {h.display_order}</span>
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => { setSelectedSection(s); setView("items"); }}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        Elementlər <ExpandMoreIcon sx={{ fontSize: 16 }} />
-                      </button>
-                      <button onClick={() => openEditSection(s)} className="p-1.5 bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
+                      {!h.direct_url && (
+                        <button
+                          onClick={() => { setSelectedHeader(h); setView("items"); }}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          Elementlər <ExpandMoreIcon sx={{ fontSize: 16 }} />
+                        </button>
+                      )}
+                      <button onClick={() => openEditHeader(h)} className="p-1.5 bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
                         <EditIcon sx={{ fontSize: 16, color: "white" }} />
                       </button>
-                      <button onClick={() => handleDeleteSection(s)} className="p-1.5 bg-red-500 rounded-lg hover:bg-red-600 transition-colors">
+                      <button onClick={() => handleDeleteHeader(h)} className="p-1.5 bg-red-500 rounded-lg hover:bg-red-600 transition-colors">
                         <DeleteIcon sx={{ fontSize: 16, color: "white" }} />
                       </button>
                     </div>
@@ -355,11 +394,11 @@ export default function HeaderManager() {
       )}
 
       {/* ── ITEMS VIEW ────────────────────────────────────── */}
-      {view === "items" && selectedSection && (
+      {view === "items" && selectedHeader && (
         <>
           <div className="flex items-center justify-between">
             <button
-              onClick={() => setView("sections")}
+              onClick={() => setView("headers")}
               className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
             >
               <ArrowBackIcon sx={{ fontSize: 18 }} /> Geri
@@ -380,18 +419,15 @@ export default function HeaderManager() {
                 <div key={item.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
                   <div className="flex items-center px-4 py-3 gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title?.az}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        {item.item_type === "subheader" ? (
-                          <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded text-xs">Kateqoriya başlığı</span>
-                        ) : (
-                          <>Slug: <span className="font-mono">{item.slug}</span></>
-                        )}
-                        {" "}· Sıra: {item.display_order}
+                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
+                        {item.slug && <>/{item.slug}</>}
+                        {item.direct_url && <span className="text-green-600 dark:text-green-400"> → {item.direct_url}</span>}
+                        <span className="not-italic ml-2">· Sıra: {item.display_order}</span>
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {item.item_type === "subheader" && (
+                      {!item.direct_url && (
                         <button
                           onClick={() => { setSelectedItem(item); setView("subitems"); }}
                           className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -440,9 +476,11 @@ export default function HeaderManager() {
                 <div key={si.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
                   <div className="flex items-center px-4 py-3 gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{si.title?.az}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        Slug: <span className="font-mono">{si.slug}</span> · Sıra: {si.display_order}
+                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{si.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
+                        {si.slug && <>/{si.slug} · </>}
+                        <span className="text-green-600 dark:text-green-400">{si.direct_url}</span>
+                        <span className="not-italic ml-2">· Sıra: {si.display_order}</span>
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -465,7 +503,7 @@ export default function HeaderManager() {
       {modal && (
         <MenuModal
           title={
-            modal.type === "section" ? (modal.mode === "create" ? "Yeni bölmə" : "Bölməni düzəlt") :
+            modal.type === "header" ? (modal.mode === "create" ? "Yeni başlıq" : "Başlığı düzəlt") :
             modal.type === "item" ? (modal.mode === "create" ? "Yeni element" : "Elementi düzəlt") :
             (modal.mode === "create" ? "Yeni alt-element" : "Alt-elementi düzəlt")
           }
@@ -473,35 +511,38 @@ export default function HeaderManager() {
           onSubmit={handleSubmit}
           loading={saving}
         >
-          {/* SECTION FORM */}
-          {modal.type === "section" && (
+          {/* HEADER FORM */}
+          {modal.type === "header" && (
             <>
-              <Field label="Açar (section_key) *">
-                <Input value={sKey} onChange={setSKey} placeholder="about" />
-              </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Başlıq (AZ) *"><Input value={sLabelAz} onChange={setSLabelAz} placeholder="HAQQIMIZDA" /></Field>
-                <Field label="Başlıq (EN) *"><Input value={sLabelEn} onChange={setSLabelEn} placeholder="ABOUT" /></Field>
+                <div>
+                  <Field label="Başlıq (AZ) *">
+                    <Input value={hTitleAz} onChange={setHTitleAz} placeholder="Universitet" />
+                  </Field>
+                  <SlugPreview title={hTitleAz} />
+                </div>
+                <div>
+                  <Field label="Başlıq (EN) *">
+                    <Input value={hTitleEn} onChange={setHTitleEn} placeholder="University" />
+                  </Field>
+                  <SlugPreview title={hTitleEn} />
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Yol (AZ) *"><Input value={sBaseAz} onChange={setSBaseAz} placeholder="/haqqimizda" /></Field>
-                <Field label="Yol (EN) *"><Input value={sBaseEn} onChange={setSBaseEn} placeholder="/about" /></Field>
-              </div>
-              <Field label={modal.mode === "edit" ? "Şəkil (dəyişdirmək üçün seçin)" : "Şəkil *"}>
-                {modal.mode === "edit" && sCurrentImageUrl && !sImageFile && (
-                  <img src={sCurrentImageUrl} alt="current" className="h-16 w-auto rounded mb-2 object-cover" />
+              <Field label={modal.mode === "edit" ? "Şəkil (dəyişdirmək üçün seçin)" : "Şəkil (isteğe bağlı)"}>
+                {modal.mode === "edit" && hCurrentImageUrl && !hImageFile && (
+                  <img src={hCurrentImageUrl} alt="current" className="h-16 w-auto rounded mb-2 object-cover" />
                 )}
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={(e) => setSImageFile(e.target.files?.[0] || null)}
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => setHImageFile(e.target.files?.[0] || null)}
                   className="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </Field>
-              <Field label="Birbaşa URL (isteğe bağlı)">
-                <Input value={sDirectUrl} onChange={setSDirectUrl} placeholder="https://tqdk.gov.az" />
+              <Field label="Birbaşa URL (isteğe bağlı — bu varsa element əlavə edilə bilməz)">
+                <Input value={hDirectUrl} onChange={setHDirectUrl} placeholder="https://tqdk.gov.az" />
               </Field>
-              <Field label="Sıra *"><Input value={sOrder} onChange={setSOrder} placeholder="1" /></Field>
+              <Field label="Sıra *"><Input value={hOrder} onChange={setHOrder} placeholder="1" /></Field>
             </>
           )}
 
@@ -509,22 +550,22 @@ export default function HeaderManager() {
           {modal.type === "item" && (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Başlıq (AZ) *"><Input value={iTitleAz} onChange={setITitleAz} placeholder="Tarix" /></Field>
-                <Field label="Başlıq (EN) *"><Input value={iTitleEn} onChange={setITitleEn} placeholder="History" /></Field>
+                <div>
+                  <Field label="Başlıq (AZ) *">
+                    <Input value={iTitleAz} onChange={setITitleAz} placeholder="Haqqımızda" />
+                  </Field>
+                  <SlugPreview title={iTitleAz} />
+                </div>
+                <div>
+                  <Field label="Başlıq (EN) *">
+                    <Input value={iTitleEn} onChange={setITitleEn} placeholder="About Us" />
+                  </Field>
+                  <SlugPreview title={iTitleEn} />
+                </div>
               </div>
-              <Field label="Növ *">
-                <select
-                  value={iItemType}
-                  onChange={(e) => setIItemType(e.target.value as "link" | "subheader")}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="link">Link (birbaşa keçid)</option>
-                  <option value="subheader">Kateqoriya başlığı (alt-elementlər)</option>
-                </select>
+              <Field label="Birbaşa URL (isteğe bağlı — bu varsa alt-element əlavə edilə bilməz)">
+                <Input value={iDirectUrl} onChange={setIDirectUrl} placeholder="/az/universitet/elaqe" />
               </Field>
-              {iItemType === "link" && (
-                <Field label="Slug *"><Input value={iSlug} onChange={setISlug} placeholder="/about/history" /></Field>
-              )}
               <Field label="Sıra *"><Input value={iOrder} onChange={setIOrder} placeholder="1" /></Field>
             </>
           )}
@@ -533,10 +574,22 @@ export default function HeaderManager() {
           {modal.type === "subitem" && (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Başlıq (AZ) *"><Input value={siTitleAz} onChange={setSiTitleAz} placeholder="Rektor" /></Field>
-                <Field label="Başlıq (EN) *"><Input value={siTitleEn} onChange={setSiTitleEn} placeholder="Rector" /></Field>
+                <div>
+                  <Field label="Başlıq (AZ) *">
+                    <Input value={siTitleAz} onChange={setSiTitleAz} placeholder="Rektor" />
+                  </Field>
+                  <SlugPreview title={siTitleAz} />
+                </div>
+                <div>
+                  <Field label="Başlıq (EN) *">
+                    <Input value={siTitleEn} onChange={setSiTitleEn} placeholder="Rector" />
+                  </Field>
+                  <SlugPreview title={siTitleEn} />
+                </div>
               </div>
-              <Field label="Slug *"><Input value={siSlug} onChange={setSiSlug} placeholder="leadership/rector" /></Field>
+              <Field label="URL *">
+                <Input value={siDirectUrl} onChange={setSiDirectUrl} placeholder="/az/universitet/haqqimizda/rektor" />
+              </Field>
               <Field label="Sıra *"><Input value={siOrder} onChange={setSiOrder} placeholder="1" /></Field>
             </>
           )}
