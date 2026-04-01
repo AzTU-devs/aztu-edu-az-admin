@@ -62,13 +62,13 @@ export default function FacultyView() {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">AZ adı</p>
-            <p className="mt-2 text-base font-semibold text-gray-900 dark:text-white">{faculty?.az.faculty_name || "–"}</p>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{faculty?.az.about_text || "Məlumat yoxdur."}</p>
+            <p className="mt-2 text-base font-semibold text-gray-900 dark:text-white">{faculty?.az?.faculty_name || "–"}</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{faculty?.az?.about_text || "Məlumat yoxdur."}</p>
           </div>
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">EN name</p>
-            <p className="mt-2 text-base font-semibold text-gray-900 dark:text-white">{faculty?.en.faculty_name || "–"}</p>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{faculty?.en.about_text || "No description."}</p>
+            <p className="mt-2 text-base font-semibold text-gray-900 dark:text-white">{faculty?.en?.faculty_name || "–"}</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{faculty?.en?.about_text || "No description."}</p>
           </div>
         </div>
 
@@ -103,15 +103,15 @@ export default function FacultyView() {
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
             <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Laboratoriyalar</p>
-            <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">{faculty?.laboratories.length ?? 0}</p>
+            <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">{faculty?.laboratories?.length ?? 0}</p>
           </div>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
             <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Tədqiqat işləri</p>
-            <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">{faculty?.research_works.length ?? 0}</p>
+            <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">{faculty?.research_works?.length ?? 0}</p>
           </div>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
             <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Partnyor şirkətlər</p>
-            <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">{faculty?.partner_companies.length ?? 0}</p>
+            <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">{faculty?.partner_companies?.length ?? 0}</p>
           </div>
         </div>
       </div>
