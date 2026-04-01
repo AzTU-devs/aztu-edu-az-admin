@@ -102,7 +102,7 @@ export default function SignInForm() {
               )}
 
               <div>
-                <Button className="w-full" size="sm" disabled={loading}>
+                <Button type="submit" className="w-full" size="sm" disabled={loading}>
                   {loading ? "Gözləyin..." : "Daxil ol"}
                 </Button>
               </div>
