@@ -10,33 +10,33 @@ export interface BiLang {
 }
 
 // --- HEADER ---
-export interface AdminHeaderSection {
+export interface AdminMenuHeader {
   id: number;
-  section_key: string;
-  image_url: string;
+  image_url: string | null;
   display_order: number;
-  label: BiLang;
-  base_path: BiLang;
+  title: string;
+  slug: string;
   direct_url: string | null;
-  items?: AdminHeaderItem[];
+  items?: AdminMenuHeaderItem[];
 }
 
-export interface AdminHeaderItem {
+export interface AdminMenuHeaderItem {
   id: number;
-  section_id: number;
-  item_type: "link" | "subheader";
-  slug: string | null;
+  header_id: number;
   display_order: number;
-  title: BiLang;
-  sub_items?: AdminHeaderSubItem[];
+  title: string;
+  slug: string | null;
+  direct_url: string | null;
+  sub_items?: AdminMenuHeaderSubItem[];
 }
 
-export interface AdminHeaderSubItem {
+export interface AdminMenuHeaderSubItem {
   id: number;
   item_id: number;
-  slug: string;
   display_order: number;
-  title: BiLang;
+  title: string;
+  slug: string;
+  direct_url: string;
 }
 
 // --- FOOTER ---
