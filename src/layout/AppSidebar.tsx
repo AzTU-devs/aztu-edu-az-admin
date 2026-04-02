@@ -90,6 +90,14 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    icon: <CategoryIcon />,
+    name: "Departamentlər",
+    subItems: [
+      { name: "Departamentlər", path: "/admin/departments", pro: false },
+      { name: "Yeni departament", path: "/admin/departments/create", pro: false },
+    ],
+  },
+  {
     icon: <PeopleIcon />,
     name: "İşçilər",
     subItems: [

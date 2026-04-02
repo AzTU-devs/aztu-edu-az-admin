@@ -48,7 +48,7 @@ export default function FacultyView() {
     return <div className="text-center text-red-500 py-10">{error}</div>;
   }
 
-  const facultyData = faculty as FacultyDetail & { faculty_name?: string; about_text?: string };
+  const facultyData = faculty as FacultyDetail & { title?: string; html_content?: string };
 
   return (
     <div className="space-y-5">
@@ -64,13 +64,13 @@ export default function FacultyView() {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">AZ adı</p>
-            <p className="mt-2 text-base font-semibold text-gray-900 dark:text-white">{facultyData?.az?.faculty_name || facultyData?.faculty_name || "–"}</p>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{facultyData?.az?.about_text || facultyData?.about_text || "Məlumat yoxdur."}</p>
+            <p className="mt-2 text-base font-semibold text-gray-900 dark:text-white">{facultyData?.az?.title || "–"}</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{facultyData?.az?.html_content || "Məlumat yoxdur."}</p>
           </div>
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">EN name</p>
-            <p className="mt-2 text-base font-semibold text-gray-900 dark:text-white">{facultyData?.en?.faculty_name || facultyData?.faculty_name || "–"}</p>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{facultyData?.en?.about_text || facultyData?.about_text || "No description."}</p>
+            <p className="mt-2 text-base font-semibold text-gray-900 dark:text-white">{facultyData?.en?.title || "–"}</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{facultyData?.en?.html_content || "No description."}</p>
           </div>
         </div>
 
@@ -87,6 +87,14 @@ export default function FacultyView() {
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Soyad</p>
                 <p className="text-sm text-gray-900 dark:text-white">{faculty.director.last_name}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Elmi dərəcə (AZ)</p>
+                <p className="text-sm text-gray-900 dark:text-white">{faculty.director.az?.scientific_degree || "–"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Scientific degree (EN)</p>
+                <p className="text-sm text-gray-900 dark:text-white">{faculty.director.en?.scientific_degree || "–"}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>

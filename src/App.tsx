@@ -40,6 +40,9 @@ import FacultyViewPage from "./pages/Faculties/FacultyViewPage";
 import CafedrasPage from "./pages/Cafedras/CafedrasPage";
 import NewCafedraPage from "./pages/Cafedras/NewCafedraPage";
 import CafedraDetailsPage from "./pages/Cafedras/CafedraDetailsPage";
+import DepartmentsPage from "./pages/Departments/DepartmentsPage";
+import NewDepartmentPage from "./pages/Departments/NewDepartmentPage";
+import DepartmentDetailsPage from "./pages/Departments/DepartmentDetailsPage";
 import HeroPage from "./pages/Hero/HeroPage";
 import MenuHeaderPage from "./pages/Menu/MenuHeaderPage";
 import MenuFooterPage from "./pages/Menu/MenuFooterPage";
@@ -125,6 +128,11 @@ export default function App() {
             <Route path="/cafedras" element={<CafedrasPage />} />
             <Route path="/cafedras/new" element={<NewCafedraPage />} />
             <Route path="/cafedras/:cafedra_code" element={<CafedraDetailsPage />} />
+
+            {/* Departments */}
+            <Route path="/admin/departments" element={<DepartmentsPage />} />
+            <Route path="/admin/departments/create" element={<NewDepartmentPage />} />
+            <Route path="/admin/departments/:department_code/edit" element={<DepartmentDetailsPage />} />
 
             {/* Collaborations */}
             <Route path="/collaborations" element={<CollaborationsPage />} />

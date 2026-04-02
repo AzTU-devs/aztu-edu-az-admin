@@ -114,7 +114,7 @@ export default function HeaderManager() {
   const loadData = async () => {
     setLoading(true);
     const res = await getAdminHeader();
-    if (res !== "ERROR") setHeaders(res);
+    if (res !== "ERROR") setHeaders(Array.isArray(res) ? res : []);
     else Swal.fire({ icon: "error", title: "Məlumatlar yüklənə bilmədi", timer: 2000, showConfirmButton: false });
     setLoading(false);
   };

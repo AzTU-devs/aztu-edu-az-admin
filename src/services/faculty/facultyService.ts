@@ -1,8 +1,8 @@
 import apiClient from "../../util/apiClient";
 
 export interface LanguageSection {
-    faculty_name: string;
-    about_text?: string;
+    title: string;
+    html_content?: string;
 }
 
 export interface TranslatedTextItem {
@@ -17,18 +17,19 @@ export interface TranslatedTextItem {
 }
 
 export interface WorkingHour {
-    day: string;
+    az: { day: string };
+    en: { day: string };
     time_range: string;
 }
 
 export interface ScientificEvent {
-    event_title: string;
-    event_description: string;
+    az: { event_title: string; event_description: string };
+    en: { event_title: string; event_description: string };
 }
 
 export interface EducationItem {
-    degree: string;
-    university: string;
+    az: { degree: string; university: string };
+    en: { degree: string; university: string };
     start_year: string;
     end_year: string;
 }
@@ -37,44 +38,42 @@ export interface DirectorPayload {
     first_name: string;
     last_name: string;
     father_name: string;
-    scientific_degree: string;
-    scientific_title: string;
+    az: { scientific_degree: string; scientific_title: string; bio: string };
+    en: { scientific_degree: string; scientific_title: string; bio: string };
     email: string;
     phone: string;
     room_number: string;
-    profile_image?: string | null;
     working_hours: WorkingHour[];
     scientific_events: ScientificEvent[];
     educations: EducationItem[];
 }
 
 export interface DeputyDean {
+    id?: number;
     first_name: string;
     last_name: string;
     father_name: string;
-    scientific_name: string;
-    scientific_degree: string;
     email: string;
     phone: string;
-    duty: string;
-    profile_image?: string | null;
+    az: { scientific_name: string; scientific_degree: string; duty: string };
+    en: { scientific_name: string; scientific_degree: string; duty: string };
 }
 
 export interface ScientificCouncilMember {
     first_name: string;
     last_name: string;
     father_name: string;
-    duty: string;
+    az: { duty: string };
+    en: { duty: string };
 }
 
 export interface Worker {
     first_name: string;
     last_name: string;
     father_name: string;
-    duty: string;
-    scientific_name: string;
-    scientific_degree: string;
     email: string;
+    az: { duty: string; scientific_name: string; scientific_degree: string };
+    en: { duty: string; scientific_name: string; scientific_degree: string };
 }
 
 export interface Faculty {
@@ -96,6 +95,7 @@ export interface CreateFacultyPayload {
     objectives: TranslatedTextItem[];
     duties: TranslatedTextItem[];
     projects: TranslatedTextItem[];
+    directions_of_action: TranslatedTextItem[];
     deputy_deans: DeputyDean[];
     scientific_council: ScientificCouncilMember[];
     workers: Worker[];
@@ -191,6 +191,38 @@ export const deleteFaculty = async (facultyCode: string) => {
         if (err.response && err.response.status === 404) {
             return "NOT FOUND";
         }
+        return "ERROR";
+    }
+};
+
+export const uploadDirectorImage = async (facultyCode: string, imageFile: File) => {
+    try {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/${facultyCode}/director/image`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        if (response.data.status_code === 200) {
+            return "SUCCESS";
+        }
+        return "ERROR";
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
+
+export const uploadDeputyDeanImage = async (deputyDeanId: number, imageFile: File) => {
+    try {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/deputy-deans/${deputyDeanId}/image`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        if (response.data.status_code === 200) {
+            return "SUCCESS";
+        }
+        return "ERROR";
+    } catch (err: any) {
         return "ERROR";
     }
 };
