@@ -171,7 +171,7 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
 
     useEffect(() => {
         if (!facultyCode) return;
-        getCafedras(0, 200, "az", facultyCode).then((res) => {
+        getCafedras(0, 200, facultyCode).then((res) => {
             if (res && typeof res === "object" && "cafedras" in res) {
                 setCafedras(res.cafedras);
             } else {
@@ -505,7 +505,7 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
                                     onChange={(e) => { setFacultyCode(e.target.value); setCafedraCode(""); }}
                                 >
                                     <option value="">Fakültə seçin...</option>
-                                    {faculties.map((f) => <option key={f.faculty_code} value={f.faculty_code}>{f.faculty_name}</option>)}
+                                    {faculties.map((f) => <option key={f.faculty_code} value={f.faculty_code}>{f.title}</option>)}
                                 </select>
                                 {!facultyCode && <p className="mt-1 text-xs text-red-500">Fakültə tələb olunur</p>}
                             </div>
@@ -938,3 +938,4 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
         </div>
     );
 }
+

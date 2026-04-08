@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router";
-import Swal from "sweetalert2";
+import { useParams } from "react-router";
 import { CircularProgress } from "@mui/material";
 import FacultyForm from "./FacultyForm";
 import { getFacultyDetails, updateFaculty, FacultyDetail, CreateFacultyPayload } from "../../services/faculty/facultyService";
 
 export default function FacultyDetails() {
     const { faculty_code } = useParams();
-    const navigate = useNavigate();
 
     const [faculty, setFaculty] = useState<FacultyDetail | null>(null);
     const [loading, setLoading] = useState(true);

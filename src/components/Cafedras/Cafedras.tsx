@@ -98,7 +98,7 @@ export default function Cafedras() {
           >
             <option value="">Hamısı</option>
             {faculties.map((f) => (
-              <option key={f.faculty_code} value={f.faculty_code}>{f.faculty_name}</option>
+              <option key={f.faculty_code} value={f.faculty_code}>{f.title}</option>
             ))}
           </select>
         </div>

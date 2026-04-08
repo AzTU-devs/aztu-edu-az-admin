@@ -434,7 +434,7 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
             <option value="">-- Fakültə seçin --</option>
             {faculties.map((f) => (
               <option key={f.faculty_code} value={f.faculty_code}>
-                {f.faculty_name} ({f.faculty_code})
+                {f.title} ({f.faculty_code})
               </option>
             ))}
           </select>
