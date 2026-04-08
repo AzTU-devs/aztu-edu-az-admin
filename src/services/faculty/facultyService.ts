@@ -22,11 +22,6 @@ export interface WorkingHour {
     time_range: string;
 }
 
-export interface ScientificEvent {
-    az: { event_title: string; event_description: string };
-    en: { event_title: string; event_description: string };
-}
-
 export interface EducationItem {
     az: { degree: string; university: string };
     en: { degree: string; university: string };
@@ -38,14 +33,14 @@ export interface DirectorPayload {
     first_name: string;
     last_name: string;
     father_name: string;
-    az: { scientific_degree: string; scientific_title: string; bio: string };
-    en: { scientific_degree: string; scientific_title: string; bio: string };
+    az: { scientific_degree: string; scientific_title: string; bio: string; scientific_research_fields: string[] };
+    en: { scientific_degree: string; scientific_title: string; bio: string; scientific_research_fields: string[] };
     email: string;
     phone: string;
     room_number: string;
     working_hours: WorkingHour[];
-    scientific_events: ScientificEvent[];
     educations: EducationItem[];
+    profile_image?: string;
 }
 
 export interface DeputyDean {
@@ -57,28 +52,34 @@ export interface DeputyDean {
     phone: string;
     az: { scientific_name: string; scientific_degree: string; duty: string };
     en: { scientific_name: string; scientific_degree: string; duty: string };
+    profile_image?: string;
 }
 
 export interface ScientificCouncilMember {
     first_name: string;
     last_name: string;
     father_name: string;
-    az: { duty: string };
-    en: { duty: string };
-}
-
-export interface Worker {
-    first_name: string;
-    last_name: string;
-    father_name: string;
     email: string;
+    phone: string;
     az: { duty: string; scientific_name: string; scientific_degree: string };
     en: { duty: string; scientific_name: string; scientific_degree: string };
 }
 
+export interface Worker {
+    id?: number;
+    first_name: string;
+    last_name: string;
+    father_name: string;
+    email: string;
+    phone: string;
+    az: { duty: string; scientific_name: string; scientific_degree: string };
+    en: { duty: string; scientific_name: string; scientific_degree: string };
+    profile_image?: string;
+}
+
 export interface Faculty {
     faculty_code: string;
-    faculty_name: string;
+    title: string;
 }
 
 export interface FacultyDetail extends CreateFacultyPayload {
@@ -99,6 +100,14 @@ export interface CreateFacultyPayload {
     deputy_deans: DeputyDean[];
     scientific_council: ScientificCouncilMember[];
     workers: Worker[];
+    bachelor_programs_count: number;
+    master_programs_count: number;
+    phd_programs_count: number;
+    international_collaborations_count: number;
+    laboratories_count: number;
+    projects_patents_count: number;
+    industrial_collaborations_count: number;
+    sdgs: number[];
 }
 
 export interface UpdateFacultyPayload extends CreateFacultyPayload {
@@ -150,12 +159,12 @@ export const createFaculty = async (payload: CreateFacultyPayload) => {
         });
 
         if (response.data.status_code === 201) {
-            return "SUCCESS";
+            return { status: "SUCCESS", faculty: response.data.faculty as FacultyDetail };
         }
 
-        return "ERROR";
+        return { status: "ERROR" };
     } catch (err: any) {
-        return "ERROR";
+        return { status: "ERROR" };
     }
 };
 
@@ -166,15 +175,15 @@ export const updateFaculty = async (payload: UpdateFacultyPayload) => {
         });
 
         if (response.data.status_code === 200) {
-            return "SUCCESS";
+            return { status: "SUCCESS", faculty: response.data.faculty as FacultyDetail };
         }
 
-        return "ERROR";
+        return { status: "ERROR" };
     } catch (err: any) {
         if (err.response && err.response.status === 404) {
-            return "NOT FOUND";
+            return { status: "NOT FOUND" };
         }
-        return "ERROR";
+        return { status: "ERROR" };
     }
 };
 
@@ -216,6 +225,22 @@ export const uploadDeputyDeanImage = async (deputyDeanId: number, imageFile: Fil
         const formData = new FormData();
         formData.append("image", imageFile);
         const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/deputy-deans/${deputyDeanId}/image`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        if (response.data.status_code === 200) {
+            return "SUCCESS";
+        }
+        return "ERROR";
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
+
+export const uploadWorkerImage = async (workerId: number, imageFile: File) => {
+    try {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/workers/${workerId}/image`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
         });
         if (response.data.status_code === 200) {

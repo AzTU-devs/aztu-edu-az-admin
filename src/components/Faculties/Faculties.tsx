@@ -109,7 +109,7 @@ export default function Faculties() {
                   {faculty.faculty_code}
                 </span>
               </div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "55%" }}>{faculty.faculty_name}</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "55%" }}>{faculty.title}</p>
               <div className="flex justify-end items-center gap-1" style={{ width: "20%" }}>
                 <Link to={`/faculties/${faculty.faculty_code}/view`}>
                   <button className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors" title="Bax"><VisibilityIcon sx={{ fontSize: 18 }} /></button>

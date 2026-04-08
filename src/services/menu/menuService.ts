@@ -17,6 +17,7 @@ export interface AdminMenuHeader {
   title: string;
   slug: string;
   direct_url: string | null;
+  has_subitems: boolean;
   items?: AdminMenuHeaderItem[];
 }
 
@@ -27,6 +28,7 @@ export interface AdminMenuHeaderItem {
   title: string;
   slug: string | null;
   direct_url: string | null;
+  has_subitems: boolean;
   sub_items?: AdminMenuHeaderSubItem[];
 }
 
@@ -36,7 +38,7 @@ export interface AdminMenuHeaderSubItem {
   display_order: number;
   title: string;
   slug: string;
-  direct_url: string;
+  direct_url: string | null;
 }
 
 // --- FOOTER ---
@@ -136,6 +138,7 @@ export const createMenuHeader = async (payload: {
   title_az: string;
   title_en: string;
   display_order: number;
+  has_subitems: boolean;
   direct_url?: string;
   image?: File;
 }): Promise<{ id: number } | "ERROR"> => {
@@ -144,6 +147,7 @@ export const createMenuHeader = async (payload: {
     formData.append("title_az", payload.title_az);
     formData.append("title_en", payload.title_en);
     formData.append("display_order", String(payload.display_order));
+    formData.append("has_subitems", payload.has_subitems ? "1" : "0");
     if (payload.direct_url !== undefined) formData.append("direct_url", payload.direct_url);
     if (payload.image) formData.append("image", payload.image);
     const res = await apiClient.post("/api/menu/header", formData, {
@@ -162,6 +166,7 @@ export const updateMenuHeader = async (
     title_az: string;
     title_en: string;
     display_order: number;
+    has_subitems: boolean;
     direct_url: string;
     is_active: boolean;
     image: File;
@@ -172,8 +177,9 @@ export const updateMenuHeader = async (
     if (payload.title_az !== undefined) formData.append("title_az", payload.title_az);
     if (payload.title_en !== undefined) formData.append("title_en", payload.title_en);
     if (payload.display_order !== undefined) formData.append("display_order", String(payload.display_order));
+    if (payload.has_subitems !== undefined) formData.append("has_subitems", payload.has_subitems ? "1" : "0");
     if (payload.direct_url !== undefined) formData.append("direct_url", payload.direct_url);
-    if (payload.is_active !== undefined) formData.append("is_active", String(payload.is_active));
+    if (payload.is_active !== undefined) formData.append("is_active", payload.is_active ? "1" : "0");
     if (payload.image) formData.append("image", payload.image);
     const res = await apiClient.put(`/api/menu/header/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -208,10 +214,14 @@ export const createHeaderItem = async (payload: {
   title_az: string;
   title_en: string;
   display_order: number;
+  has_subitems: boolean;
   direct_url?: string | null;
 }): Promise<{ id: number } | "ERROR" | "BAD REQUEST"> => {
   try {
-    const res = await apiClient.post("/api/menu/header/item", payload);
+    const res = await apiClient.post("/api/menu/header/item", {
+      ...payload,
+      has_subitems: payload.has_subitems ? 1 : 0,
+    });
     if (res.data.status_code === 201) return { id: res.data.id };
     if (res.data.status_code === 400) return "BAD REQUEST";
     return "ERROR";
@@ -227,12 +237,18 @@ export const updateHeaderItem = async (
     title_az: string;
     title_en: string;
     display_order: number;
-    direct_url: string;
+    has_subitems: boolean;
+    direct_url: string | null;
     is_active: boolean;
   }>
 ): Promise<"SUCCESS" | "NOT FOUND" | "ERROR"> => {
   try {
-    const res = await apiClient.put(`/api/menu/header/item/${id}`, payload);
+    const body = {
+      ...payload,
+      has_subitems: payload.has_subitems !== undefined ? (payload.has_subitems ? 1 : 0) : undefined,
+      is_active: payload.is_active !== undefined ? (payload.is_active ? 1 : 0) : undefined,
+    };
+    const res = await apiClient.put(`/api/menu/header/item/${id}`, body);
     if (res.data.status_code === 200) return "SUCCESS";
     if (res.data.status_code === 404) return "NOT FOUND";
     return "ERROR";
@@ -262,8 +278,8 @@ export const createHeaderSubItem = async (payload: {
   item_id: number;
   title_az: string;
   title_en: string;
-  direct_url: string;
   display_order: number;
+  direct_url?: string | null;
 }): Promise<{ id: number } | "ERROR" | "BAD REQUEST"> => {
   try {
     const res = await apiClient.post("/api/menu/header/sub-item", payload);
@@ -281,8 +297,8 @@ export const updateHeaderSubItem = async (
   payload: Partial<{
     title_az: string;
     title_en: string;
-    direct_url: string;
     display_order: number;
+    direct_url: string | null;
     is_active: boolean;
   }>
 ): Promise<"SUCCESS" | "NOT FOUND" | "ERROR"> => {

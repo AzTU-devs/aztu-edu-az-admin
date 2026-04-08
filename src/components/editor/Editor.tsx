@@ -79,7 +79,7 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                 },
             }),
         ],
-        content: readOnlyContent ?? initialContent ?? '<p>Mətni daxil edin...</p>',
+        content: readOnlyContent ?? initialContent ?? "",
         editorProps: {
             attributes: {
                 spellcheck: 'true',

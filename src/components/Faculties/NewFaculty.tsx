@@ -7,27 +7,7 @@ export default function NewFaculty() {
     const navigate = useNavigate();
 
     const handleSubmit = async (payload: CreateFacultyPayload) => {
-        const result = await createFaculty(payload);
-
-        if (result === "SUCCESS") {
-            Swal.fire({
-                icon: "success",
-                title: "Uğurlu",
-                text: "Fakültə uğurla əlavə edildi!",
-                timer: 2000,
-                showConfirmButton: false,
-            }).then(() => navigate("/faculties"));
-        } else {
-            Swal.fire({
-                icon: "error",
-                title: "Xəta",
-                text: "Fakültə əlavə edərkən xəta baş verdi",
-                timer: 2000,
-                showConfirmButton: false,
-            });
-        }
-
-        return result;
+        return await createFaculty(payload);
     };
 
     return <FacultyForm submitLabel="Yadda saxla" onSubmit={handleSubmit} />;

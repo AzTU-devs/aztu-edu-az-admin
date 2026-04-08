@@ -29,8 +29,8 @@ const blankTranslatedSection = {
 };
 
 const blankHtmlItem = {
-  az: { html_content: "<p></p>" },
-  en: { html_content: "<p></p>" },
+  az: { html_content: "" },
+  en: { html_content: "" },
 };
 
 const blankWorkingHour: WorkingHour = {
@@ -483,14 +483,14 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">AZ HTML</Label>
                     <Editor
-                      initialContent={item.az.html_content || "<p></p>"}
+                      initialContent={item.az.html_content || ""}
                       onUpdate={(html) => updateTranslatedListItem("objectives", index, "az", html)}
                     />
                   </div>
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">EN HTML</Label>
                     <Editor
-                      initialContent={item.en.html_content || "<p></p>"}
+                      initialContent={item.en.html_content || ""}
                       onUpdate={(html) => updateTranslatedListItem("objectives", index, "en", html)}
                     />
                   </div>
@@ -523,14 +523,14 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">AZ HTML</Label>
                     <Editor
-                      initialContent={item.az.html_content || "<p></p>"}
+                      initialContent={item.az.html_content || ""}
                       onUpdate={(html) => updateTranslatedListItem("core_functions", index, "az", html)}
                     />
                   </div>
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">EN HTML</Label>
                     <Editor
-                      initialContent={item.en.html_content || "<p></p>"}
+                      initialContent={item.en.html_content || ""}
                       onUpdate={(html) => updateTranslatedListItem("core_functions", index, "en", html)}
                     />
                   </div>

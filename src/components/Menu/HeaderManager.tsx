@@ -62,13 +62,15 @@ function Input({ value, onChange, placeholder }: { value: string; onChange: (v: 
   );
 }
 
-function SlugPreview({ title }: { title: string }) {
+function SlugPreview({ title, parentPath }: { title: string; parentPath?: string }) {
   const slug = makeSlug(title);
   if (!slug) return null;
+  const prefix = parentPath ? `/${parentPath}` : "";
   return (
-    <p className="text-xs text-gray-400 mt-1 font-mono">
-      slug: <span className="text-blue-500">{slug}</span>
-    </p>
+    <div className="text-xs text-gray-400 mt-1 font-mono space-y-0.5">
+      <p>az: <span className="text-blue-500">/az{prefix}/{slug}</span></p>
+      <p>en: <span className="text-blue-500">/en{prefix}/{slug}</span></p>
+    </div>
   );
 }
 
@@ -98,12 +100,14 @@ export default function HeaderManager() {
   const [hCurrentImageUrl, setHCurrentImageUrl] = useState("");
   const [hOrder, setHOrder] = useState("1");
   const [hDirectUrl, setHDirectUrl] = useState("");
+  const [hHasSubitems, setHHasSubitems] = useState(true);
 
   // form state — items
   const [iTitleAz, setITitleAz] = useState("");
   const [iTitleEn, setITitleEn] = useState("");
   const [iOrder, setIOrder] = useState("1");
   const [iDirectUrl, setIDirectUrl] = useState("");
+  const [iHasSubitems, setIHasSubitems] = useState(false);
 
   // form state — sub-items
   const [siTitleAz, setSiTitleAz] = useState("");
@@ -125,6 +129,7 @@ export default function HeaderManager() {
   const openCreateHeader = () => {
     setHTitleAz(""); setHTitleEn(""); setHImageFile(null);
     setHCurrentImageUrl(""); setHOrder("1"); setHDirectUrl("");
+    setHHasSubitems(true);
     setModal({ type: "header", mode: "create" });
   };
 
@@ -132,17 +137,20 @@ export default function HeaderManager() {
     setHTitleAz(h.title); setHTitleEn(h.title);
     setHImageFile(null); setHCurrentImageUrl(h.image_url || "");
     setHOrder(String(h.display_order)); setHDirectUrl(h.direct_url || "");
+    setHHasSubitems((String(h.has_subitems) === "1" || h.has_subitems === true));
     setModal({ type: "header", mode: "edit", target: h });
   };
 
   const openCreateItem = () => {
     setITitleAz(""); setITitleEn(""); setIOrder("1"); setIDirectUrl("");
+    setIHasSubitems(false);
     setModal({ type: "item", mode: "create" });
   };
 
   const openEditItem = (item: AdminMenuHeaderItem) => {
     setITitleAz(item.title); setITitleEn(item.title);
     setIOrder(String(item.display_order)); setIDirectUrl(item.direct_url || "");
+    setIHasSubitems((String(item.has_subitems) === "1" || item.has_subitems === true));
     setModal({ type: "item", mode: "edit", target: item });
   };
 
@@ -153,7 +161,7 @@ export default function HeaderManager() {
 
   const openEditSubItem = (si: AdminMenuHeaderSubItem) => {
     setSiTitleAz(si.title); setSiTitleEn(si.title);
-    setSiOrder(String(si.display_order)); setSiDirectUrl(si.direct_url);
+    setSiOrder(String(si.display_order)); setSiDirectUrl(si.direct_url || "");
     setModal({ type: "subitem", mode: "edit", target: si });
   };
 
@@ -167,7 +175,8 @@ export default function HeaderManager() {
         const res = await createMenuHeader({
           title_az: hTitleAz,
           title_en: hTitleEn,
-          display_order: Number(hOrder),
+          display_order: parseInt(hOrder) || 0,
+          has_subitems: hHasSubitems,
           direct_url: hDirectUrl || undefined,
           image: hImageFile || undefined,
         });
@@ -178,7 +187,8 @@ export default function HeaderManager() {
         const payload: Parameters<typeof updateMenuHeader>[1] = {
           title_az: hTitleAz,
           title_en: hTitleEn,
-          display_order: Number(hOrder),
+          display_order: parseInt(hOrder) || 0,
+          has_subitems: hHasSubitems,
           direct_url: hDirectUrl,
         };
         if (hImageFile) payload.image = hImageFile;
@@ -194,7 +204,8 @@ export default function HeaderManager() {
           header_id: selectedHeader.id,
           title_az: iTitleAz,
           title_en: iTitleEn,
-          display_order: Number(iOrder),
+          display_order: parseInt(iOrder) || 0,
+          has_subitems: iHasSubitems,
           direct_url: iDirectUrl || null,
         });
         if (res === "BAD REQUEST") Swal.fire({ icon: "warning", title: "Bu başlığın birbaşa URL-i var, element əlavə edilə bilməz", timer: 3000, showConfirmButton: false });
@@ -205,7 +216,8 @@ export default function HeaderManager() {
         const res = await updateHeaderItem(target.id, {
           title_az: iTitleAz,
           title_en: iTitleEn,
-          display_order: Number(iOrder),
+          display_order: parseInt(iOrder) || 0,
+          has_subitems: iHasSubitems,
           direct_url: iDirectUrl,
         });
         if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
@@ -215,17 +227,12 @@ export default function HeaderManager() {
 
     if (modal.type === "subitem" && selectedItem) {
       if (modal.mode === "create") {
-        if (!siDirectUrl) {
-          Swal.fire({ icon: "warning", title: "Alt-element üçün URL mütləqdir", timer: 2000, showConfirmButton: false });
-          setSaving(false);
-          return;
-        }
         const res = await createHeaderSubItem({
           item_id: selectedItem.id,
           title_az: siTitleAz,
           title_en: siTitleEn,
-          direct_url: siDirectUrl,
-          display_order: Number(siOrder),
+          direct_url: siDirectUrl || null,
+          display_order: parseInt(siOrder) || 0,
         });
         if (res === "BAD REQUEST") Swal.fire({ icon: "warning", title: "Bu elementin birbaşa URL-i var, alt-element əlavə edilə bilməz", timer: 3000, showConfirmButton: false });
         else if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
@@ -235,8 +242,8 @@ export default function HeaderManager() {
         const res = await updateHeaderSubItem(target.id, {
           title_az: siTitleAz,
           title_en: siTitleEn,
-          direct_url: siDirectUrl,
-          display_order: Number(siOrder),
+          direct_url: siDirectUrl || null,
+          display_order: parseInt(siOrder) || 0,
         });
         if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
         else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); loadData(); }
@@ -362,7 +369,14 @@ export default function HeaderManager() {
                       <img src={h.image_url} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{h.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{h.title}</p>
+                        {(String(h.has_subitems) === "1" || h.has_subitems === true) ? (
+                          <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider">KATEQORİYA</span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded uppercase tracking-wider">KEÇİD</span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
                         /{h.slug}
                         {h.direct_url && <span className="ml-2 not-italic text-green-600 dark:text-green-400">→ {h.direct_url}</span>}
@@ -370,7 +384,7 @@ export default function HeaderManager() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {!h.direct_url && (
+                      {(String(h.has_subitems) === "1" || h.has_subitems === true) && (
                         <button
                           onClick={() => { setSelectedHeader(h); setView("items"); }}
                           className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -419,7 +433,14 @@ export default function HeaderManager() {
                 <div key={item.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
                   <div className="flex items-center px-4 py-3 gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title}</p>
+                        {(String(item.has_subitems) === "1" || item.has_subitems === true) ? (
+                          <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider">KATEQORİYA</span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded uppercase tracking-wider">KEÇİD</span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
                         {item.slug && <>/{item.slug}</>}
                         {item.direct_url && <span className="text-green-600 dark:text-green-400"> → {item.direct_url}</span>}
@@ -427,7 +448,7 @@ export default function HeaderManager() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {!item.direct_url && (
+                      {(String(item.has_subitems) === "1" || item.has_subitems === true) && (
                         <button
                           onClick={() => { setSelectedItem(item); setView("subitems"); }}
                           className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -519,15 +540,48 @@ export default function HeaderManager() {
                   <Field label="Başlıq (AZ) *">
                     <Input value={hTitleAz} onChange={setHTitleAz} placeholder="Universitet" />
                   </Field>
-                  <SlugPreview title={hTitleAz} />
                 </div>
                 <div>
                   <Field label="Başlıq (EN) *">
                     <Input value={hTitleEn} onChange={setHTitleEn} placeholder="University" />
                   </Field>
-                  <SlugPreview title={hTitleEn} />
                 </div>
               </div>
+
+              <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={hHasSubitems}
+                    onChange={(e) => {
+                      setHHasSubitems(e.target.checked);
+                      if (e.target.checked) setHDirectUrl("");
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
+                    Alt-elementləri var? (Kateqoriya kimi davranır)
+                  </span>
+                </label>
+
+                {!hHasSubitems ? (
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <Field label="Birbaşa URL (isteğe bağlı — boş qalarsa avtomatik daxili link yaradılacaq)">
+                      <Input value={hDirectUrl} onChange={setHDirectUrl} placeholder="https://..." />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <SlugPreview title={hTitleAz} />
+                      <SlugPreview title={hTitleEn} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <SlugPreview title={hTitleAz} />
+                    <SlugPreview title={hTitleEn} />
+                  </div>
+                )}
+              </div>
+
               <Field label={modal.mode === "edit" ? "Şəkil (dəyişdirmək üçün seçin)" : "Şəkil (isteğe bağlı)"}>
                 {modal.mode === "edit" && hCurrentImageUrl && !hImageFile && (
                   <img src={hCurrentImageUrl} alt="current" className="h-16 w-auto rounded mb-2 object-cover" />
@@ -538,9 +592,6 @@ export default function HeaderManager() {
                   onChange={(e) => setHImageFile(e.target.files?.[0] || null)}
                   className="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
-              </Field>
-              <Field label="Birbaşa URL (isteğe bağlı — bu varsa element əlavə edilə bilməz)">
-                <Input value={hDirectUrl} onChange={setHDirectUrl} placeholder="https://tqdk.gov.az" />
               </Field>
               <Field label="Sıra *"><Input value={hOrder} onChange={setHOrder} placeholder="1" /></Field>
             </>
@@ -554,18 +605,47 @@ export default function HeaderManager() {
                   <Field label="Başlıq (AZ) *">
                     <Input value={iTitleAz} onChange={setITitleAz} placeholder="Haqqımızda" />
                   </Field>
-                  <SlugPreview title={iTitleAz} />
+                  <SlugPreview 
+                    title={iTitleAz} 
+                    parentPath={selectedHeader?.slug || ""} 
+                  />
                 </div>
                 <div>
                   <Field label="Başlıq (EN) *">
                     <Input value={iTitleEn} onChange={setITitleEn} placeholder="About Us" />
                   </Field>
-                  <SlugPreview title={iTitleEn} />
+                  <SlugPreview 
+                    title={iTitleEn} 
+                    parentPath={selectedHeader?.slug || ""} 
+                  />
                 </div>
               </div>
-              <Field label="Birbaşa URL (isteğe bağlı — bu varsa alt-element əlavə edilə bilməz)">
-                <Input value={iDirectUrl} onChange={setIDirectUrl} placeholder="/az/universitet/elaqe" />
-              </Field>
+
+              <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={iHasSubitems}
+                    onChange={(e) => {
+                      setIHasSubitems(e.target.checked);
+                      if (e.target.checked) setIDirectUrl("");
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
+                    Alt-elementləri var? (Dropdown sütun başlığı)
+                  </span>
+                </label>
+
+                {!iHasSubitems && (
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <Field label="Birbaşa URL (isteğe bağlı — boş qalarsa avtomatik daxili link yaradılacaq)">
+                      <Input value={iDirectUrl} onChange={setIDirectUrl} placeholder="/az/..." />
+                    </Field>
+                  </div>
+                )}
+              </div>
+
               <Field label="Sıra *"><Input value={iOrder} onChange={setIOrder} placeholder="1" /></Field>
             </>
           )}
@@ -578,17 +658,23 @@ export default function HeaderManager() {
                   <Field label="Başlıq (AZ) *">
                     <Input value={siTitleAz} onChange={setSiTitleAz} placeholder="Rektor" />
                   </Field>
-                  <SlugPreview title={siTitleAz} />
+                  <SlugPreview 
+                    title={siTitleAz} 
+                    parentPath={`${selectedHeader?.slug || ""}/${selectedItem?.slug || ""}`.split("/").filter(Boolean).join("/")} 
+                  />
                 </div>
                 <div>
                   <Field label="Başlıq (EN) *">
                     <Input value={siTitleEn} onChange={setSiTitleEn} placeholder="Rector" />
                   </Field>
-                  <SlugPreview title={siTitleEn} />
+                  <SlugPreview 
+                    title={siTitleEn} 
+                    parentPath={`${selectedHeader?.slug || ""}/${selectedItem?.slug || ""}`.split("/").filter(Boolean).join("/")} 
+                  />
                 </div>
               </div>
-              <Field label="URL *">
-                <Input value={siDirectUrl} onChange={setSiDirectUrl} placeholder="/az/universitet/haqqimizda/rektor" />
+              <Field label="Birbaşa URL (isteğe bağlı — boş qalarsa avtomatik yaradılacaq)">
+                <Input value={siDirectUrl} onChange={setSiDirectUrl} placeholder="/az/..." />
               </Field>
               <Field label="Sıra *"><Input value={siOrder} onChange={setSiOrder} placeholder="1" /></Field>
             </>

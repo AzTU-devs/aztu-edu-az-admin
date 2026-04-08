@@ -40,26 +40,10 @@ if (!faculty_code) {
 
     const handleSubmit = async (payload: CreateFacultyPayload) => {
         if (!faculty_code) {
-            return "ERROR";
+            return { status: "ERROR" };
         }
 
-        const result = await updateFaculty({ faculty_code, ...payload });
-
-        if (result === "SUCCESS") {
-            Swal.fire({
-                icon: "success",
-                title: "Uğurlu",
-                text: "Fakültə uğurla yeniləndi!",
-                timer: 2000,
-                showConfirmButton: false,
-            }).then(() => navigate("/faculties"));
-        } else if (result === "NOT FOUND") {
-            Swal.fire({ icon: "error", title: "Xəta", text: "Fakültə tapılmadı", timer: 2000, showConfirmButton: false });
-        } else {
-            Swal.fire({ icon: "error", title: "Xəta", text: "Fakültə yenilənərkən xəta baş verdi", timer: 2000, showConfirmButton: false });
-        }
-
-        return result;
+        return await updateFaculty({ faculty_code, ...payload });
     };
 
     if (loading) {
