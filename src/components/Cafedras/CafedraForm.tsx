@@ -10,7 +10,6 @@ import {
   DirectorPayload,
   TranslatedTextItem,
   WorkingHour,
-  ScientificEvent,
   EducationItem,
   CafedraDetail,
   uploadCafedraDirectorImage,
