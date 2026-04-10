@@ -11,6 +11,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SchoolIcon from '@mui/icons-material/School';
 import CategoryIcon from '@mui/icons-material/Category';
 import PeopleIcon from '@mui/icons-material/People';
+import ScienceIcon from '@mui/icons-material/Science';
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -24,7 +25,7 @@ type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  subItems?: { name: string; path: string; pro?: boolean; name_az?: string; name_en?: string }[];
 };
 
 const navItems: NavItem[] = [
@@ -42,75 +43,83 @@ const navItems: NavItem[] = [
     icon: <AccountTreeIcon />,
     name: "Layihələr",
     subItems: [
-      { name: "Layihələr", path: "/projects", pro: false },
-      { name: "Yeni layihə", path: "/projects/new", pro: false }
+      { name: "Layihələr", path: "/projects" },
+      { name: "Yeni layihə", path: "/projects/new" }
     ],
   },
   {
     icon: <CampaignIcon />,
     name: "Elanlar",
     subItems: [
-      { name: "Elanlar", path: "/announcements", pro: false },
-      { name: "Yeni elan", path: "/announcements/new", pro: false }
+      { name: "Elanlar", path: "/announcements" },
+      { name: "Yeni elan", path: "/announcements/new" }
     ],
   },
   {
     name: "Xəbərlər",
     icon: <NewspaperIcon />,
     subItems: [
-      { name: "Xəbərlər", path: "/news", pro: false },
-      { name: "Yeni xəbər", path: "/news/new", pro: false },
-      { name: "Xəbər kateqoriyaları", path: "/news-categories", pro: false }
+      { name: "Xəbərlər", path: "/news" },
+      { name: "Yeni xəbər", path: "/news/new" },
+      { name: "Xəbər kateqoriyaları", path: "/news-categories" }
     ],
   },
   {
     name: "Menyular",
     icon: <MenuIcon />,
     subItems: [
-      { name: "Header", path: "/menu-header", pro: false },
-      { name: "Footer", path: "/menu-footer", pro: false },
-      { name: "Sürətli Menyu", path: "/menu-quick", pro: false },
-      { name: "Paylaşılan", path: "/menu-shared", pro: false },
+      { name: "Header", path: "/menu-header" },
+      { name: "Footer", path: "/menu-footer" },
+      { name: "Sürətli Menyu", path: "/menu-quick" },
+      { name: "Paylaşılan", path: "/menu-shared" },
     ],
   },
   {
     icon: <SchoolIcon />,
     name: "Fakültələr",
     subItems: [
-      { name: "Fakültələr", path: "/faculties", pro: false },
-      { name: "Yeni fakültə", path: "/faculties/new", pro: false },
+      { name: "Fakültələr", path: "/faculties" },
+      { name: "Yeni fakültə", path: "/faculties/new" },
+    ],
+  },
+  {
+    icon: <ScienceIcon />,
+    name: "Tədqiqat İnstitutları",
+    subItems: [
+      { name: "İnstitutlar", path: "/research-institutes" },
+      { name: "Yeni institut", path: "/research-institutes/new" },
     ],
   },
   {
     icon: <CategoryIcon />,
     name: "Kafedralar",
     subItems: [
-      { name: "Kafedralar", path: "/cafedras", pro: false },
-      { name: "Yeni kafedra", path: "/cafedras/new", pro: false },
+      { name: "Kafedralar", path: "/cafedras" },
+      { name: "Yeni kafedra", path: "/cafedras/new" },
     ],
   },
   {
     icon: <CategoryIcon />,
     name: "Departamentlər",
     subItems: [
-      { name: "Departamentlər", path: "/admin/departments", pro: false },
-      { name: "Yeni departament", path: "/admin/departments/create", pro: false },
+      { name: "Departamentlər", path: "/admin/departments" },
+      { name: "Yeni departament", path: "/admin/departments/create" },
     ],
   },
   {
     icon: <PeopleIcon />,
     name: "İşçilər",
     subItems: [
-      { name: "İşçilər", path: "/employees", pro: false },
-      { name: "Yeni işçi", path: "/employees/new", pro: false },
+      { name: "İşçilər", path: "/employees" },
+      { name: "Yeni işçi", path: "/employees/new" },
     ],
   },
   {
     name: "Əməkdaşlıqlar",
     icon: <HandshakeIcon />,
     subItems: [
-      { name: "Əməkdaşlıqlar", path: "/collaborations", pro: false },
-      { name: "Yeni əməkdaşlıq", path: "/collaborations/new", pro: false },
+      { name: "Əməkdaşlıqlar", path: "/collaborations" },
+      { name: "Yeni əməkdaşlıq", path: "/collaborations/new" },
     ],
   },
   {

@@ -33,6 +33,9 @@ import SlidersPage from "./pages/Sliders/SlidersPage";
 import NewSliderPage from "./pages/Sliders/NewSliderPage";
 import SliderDetailsPage from "./pages/Sliders/SliderDetailsPage";
 import NewsCategoriesPage from "./pages/NewsCategories/NewsCategoriesPage";
+import ResearchInstitutesPage from "./pages/ResearchInstitute/ResearchInstitutesPage";
+import NewResearchInstitutePage from "./pages/ResearchInstitute/NewResearchInstitutePage";
+import ResearchInstituteDetailsPage from "./pages/ResearchInstitute/ResearchInstituteDetailsPage";
 import FacultiesPage from "./pages/Faculties/FacultiesPage";
 import NewFacultyPage from "./pages/Faculties/NewFacultyPage";
 import FacultyDetailsPage from "./pages/Faculties/FacultyDetailsPage";
@@ -118,6 +121,11 @@ export default function App() {
 
             {/* News Categories */}
             <Route path="/news-categories" element={<NewsCategoriesPage />} />
+
+            {/* Research Institutes */}
+            <Route path="/research-institutes" element={<ResearchInstitutesPage />} />
+            <Route path="/research-institutes/new" element={<NewResearchInstitutePage />} />
+            <Route path="/research-institutes/:institute_code" element={<ResearchInstituteDetailsPage />} />
 
             {/* Faculties */}
             <Route path="/faculties" element={<FacultiesPage />} />
