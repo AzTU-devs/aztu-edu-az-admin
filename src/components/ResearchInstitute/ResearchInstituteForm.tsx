@@ -118,7 +118,7 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
         <div className="grid grid-cols-1 gap-4">
           <div>
             <Label>Ad (AZ)</Label>
-            <Input value={formData.az.name} onChange={(e) => setFormData({ ...formData, az: { ...formData.az, name: e.target.value } })} placeholder="İnstitutun adı" required />
+            <Input value={formData.az.name} onChange={(e) => setFormData({ ...formData, az: { ...formData.az, name: e.target.value } })} placeholder="İnstitutun adı"  />
           </div>
           <div>
             <Label>Haqqında (AZ)</Label>
@@ -159,7 +159,7 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
         <div className="grid grid-cols-1 gap-4">
           <div>
             <Label>Name (EN)</Label>
-            <Input value={formData.en.name} onChange={(e) => setFormData({ ...formData, en: { ...formData.en, name: e.target.value } })} placeholder="Institute name" required />
+            <Input value={formData.en.name} onChange={(e) => setFormData({ ...formData, en: { ...formData.en, name: e.target.value } })} placeholder="Institute name"  />
           </div>
           <div>
             <Label>About (EN)</Label>
@@ -194,21 +194,21 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label>Ad</Label>
-            <Input value={formData.director.first_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, first_name: e.target.value } })} required />
+            <Input value={formData.director.first_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, first_name: e.target.value } })}  />
           </div>
           <div>
             <Label>Soyad</Label>
-            <Input value={formData.director.last_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, last_name: e.target.value } })} required />
+            <Input value={formData.director.last_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, last_name: e.target.value } })}  />
           </div>
           <div>
             <Label>Ata adı</Label>
-            <Input value={formData.director.father_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, father_name: e.target.value } })} required />
+            <Input value={formData.director.father_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, father_name: e.target.value } })}  />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Email</Label>
-            <Input type="email" value={formData.director.email} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, email: e.target.value } })} required />
+            <Input type="email" value={formData.director.email} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, email: e.target.value } })}  />
           </div>
           <div>
             <Label>Otaq nömrəsi</Label>
@@ -354,7 +354,7 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
                     const newStaff = [...formData.staff];
                     newStaff[idx] = { ...member, first_name: e.target.value };
                     setFormData({ ...formData, staff: newStaff });
-                  }} required />
+                  }}  />
                 </div>
                 <div>
                   <Label>Soyad</Label>
@@ -362,7 +362,7 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
                     const newStaff = [...formData.staff];
                     newStaff[idx] = { ...member, last_name: e.target.value };
                     setFormData({ ...formData, staff: newStaff });
-                  }} required />
+                  }}  />
                 </div>
                 <div>
                   <Label>Ata adı</Label>
@@ -370,7 +370,7 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
                     const newStaff = [...formData.staff];
                     newStaff[idx] = { ...member, father_name: e.target.value };
                     setFormData({ ...formData, staff: newStaff });
-                  }} required />
+                  }}  />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -380,7 +380,7 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
                     const newStaff = [...formData.staff];
                     newStaff[idx] = { ...member, email: e.target.value };
                     setFormData({ ...formData, staff: newStaff });
-                  }} required />
+                  }}  />
                 </div>
                 <div>
                   <Label>Telefon</Label>
