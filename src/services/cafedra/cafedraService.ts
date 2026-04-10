@@ -70,7 +70,16 @@ export interface CreateCafedraPayload {
     az: LanguageSection;
     en: LanguageSection;
     director?: DirectorPayload | null;
+    deputy_dean_count: number;
+    deputy_deans: Worker[];
+    scientific_council: Worker[];
     workers: Worker[];
+    laboratories: TranslatedTextItem[];
+    research_works: TranslatedTextItem[];
+    partner_companies: TranslatedTextItem[];
+    objectives: TranslatedTextItem[];
+    duties: TranslatedTextItem[];
+    projects: TranslatedTextItem[];
     directions_of_action: TranslatedTextItem[];
     bachelor_programs_count: number;
     master_programs_count: number;
