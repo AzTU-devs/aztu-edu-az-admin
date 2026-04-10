@@ -100,6 +100,8 @@ export interface CreateFacultyPayload {
     deputy_deans: DeputyDean[];
     scientific_council: ScientificCouncilMember[];
     workers: Worker[];
+    cafedra_count: number;
+    deputy_dean_count: number;
     bachelor_programs_count: number;
     master_programs_count: number;
     phd_programs_count: number;

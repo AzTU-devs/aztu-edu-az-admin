@@ -57,6 +57,8 @@ const blankFacultyPayload: CreateFacultyPayload = {
   deputy_deans: [],
   scientific_council: [],
   workers: [],
+  cafedra_count: 0,
+  deputy_dean_count: 0,
   bachelor_programs_count: 0,
   master_programs_count: 0,
   phd_programs_count: 0,
@@ -194,6 +196,8 @@ const normalizeFacultyPayload = (value: any): CreateFacultyPayload => {
         scientific_degree: item.en?.scientific_degree ?? "" 
       },
     })),
+    cafedra_count: value.cafedra_count ?? 0,
+    deputy_dean_count: value.deputy_dean_count ?? 0,
     bachelor_programs_count: value.bachelor_programs_count ?? 0,
     master_programs_count: value.master_programs_count ?? 0,
     phd_programs_count: value.phd_programs_count ?? 0,
@@ -322,21 +326,6 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
     setPayload((prev) => {
       if (!prev.director) return prev;
       const array = [...(prev.director[arrayName] as any)];
-      const item = { ...array[index] };
-
-      if (field === "day" || field === "degree" || field === "university") {
-        const lang = field === "day" ? (field as any) : (field as any); // just typing
-        // This logic is a bit complex in the original, I'll keep it simple for now if possible
-        // Let's check how it was originally.
-      }
-      return prev;
-    });
-  };
-
-  // Skip some methods for brevity in this replace call, I'll use a more targeted replace if needed.
-  // Wait, I should not skip methods if I'm replacing the whole block.
-  // Let's just focus on handleSave for now and add getDirtyFields.
-
       array[index] = { ...array[index], [field]: value };
       return {
         ...prev,
@@ -634,6 +623,14 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
           <p className="text-xs text-gray-500 dark:text-gray-400">Fakültənin əsas göstəriciləri.</p>
         </div>
         <div className="p-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Kafedra sayı</Label>
+            <Input type="number" value={payload.cafedra_count} onChange={(e) => changeStatField("cafedra_count", parseInt(e.target.value) || 0)} />
+          </div>
+          <div>
+            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Dekan müavini sayı</Label>
+            <Input type="number" value={payload.deputy_dean_count} onChange={(e) => changeStatField("deputy_dean_count", parseInt(e.target.value) || 0)} />
+          </div>
           <div>
             <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Bakalavr proqramları</Label>
             <Input type="number" value={payload.bachelor_programs_count} onChange={(e) => changeStatField("bachelor_programs_count", parseInt(e.target.value) || 0)} />
