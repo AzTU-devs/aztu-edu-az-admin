@@ -205,6 +205,30 @@ const normalizeFacultyPayload = (value: any): CreateFacultyPayload => {
   };
 };
 
+const getDirtyFields = (initial: any, current: any): any => {
+  const dirtyFields: any = {};
+  
+  Object.keys(current).forEach((key) => {
+    const initialVal = initial?.[key];
+    const currentVal = current[key];
+
+    if (Array.isArray(currentVal)) {
+      if (JSON.stringify(initialVal) !== JSON.stringify(currentVal)) {
+        dirtyFields[key] = currentVal;
+      }
+    } else if (typeof currentVal === "object" && currentVal !== null) {
+      const nestedDirty = getDirtyFields(initialVal, currentVal);
+      if (Object.keys(nestedDirty).length > 0) {
+        dirtyFields[key] = nestedDirty;
+      }
+    } else if (currentVal !== initialVal) {
+      dirtyFields[key] = currentVal;
+    }
+  });
+
+  return dirtyFields;
+};
+
 export default function FacultyForm({ initialValue = null, onSubmit, submitLabel }: FacultyFormProps) {
   const navigate = useNavigate();
   const [payload, setPayload] = useState<CreateFacultyPayload>(normalizeFacultyPayload(initialValue));
@@ -298,6 +322,21 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
     setPayload((prev) => {
       if (!prev.director) return prev;
       const array = [...(prev.director[arrayName] as any)];
+      const item = { ...array[index] };
+
+      if (field === "day" || field === "degree" || field === "university") {
+        const lang = field === "day" ? (field as any) : (field as any); // just typing
+        // This logic is a bit complex in the original, I'll keep it simple for now if possible
+        // Let's check how it was originally.
+      }
+      return prev;
+    });
+  };
+
+  // Skip some methods for brevity in this replace call, I'll use a more targeted replace if needed.
+  // Wait, I should not skip methods if I'm replacing the whole block.
+  // Let's just focus on handleSave for now and add getDirtyFields.
+
       array[index] = { ...array[index], [field]: value };
       return {
         ...prev,

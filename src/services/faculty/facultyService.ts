@@ -168,9 +168,9 @@ export const createFaculty = async (payload: CreateFacultyPayload) => {
     }
 };
 
-export const updateFaculty = async (payload: UpdateFacultyPayload) => {
+export const updateFaculty = async (payload: Partial<UpdateFacultyPayload> & { faculty_code: string }) => {
     try {
-        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/${payload.faculty_code}`, payload, {
+        const response = await apiClient.patch(`${FACULTY_ADMIN_BASE}/${payload.faculty_code}`, payload, {
             headers: { "Content-Type": "application/json" },
         });
 
