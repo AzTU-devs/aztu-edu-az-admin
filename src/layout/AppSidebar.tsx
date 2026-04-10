@@ -25,7 +25,7 @@ type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; name_az?: string; name_en?: string }[];
+  subItems?: { name: string; path: string; pro?: boolean; new?: boolean; name_az?: string; name_en?: string }[];
 };
 
 const navItems: NavItem[] = [
