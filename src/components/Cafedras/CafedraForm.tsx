@@ -71,7 +71,7 @@ const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
     },
     en: {
       title: value.en?.title ?? "",
-      html_content: value.en?.html_content ?? "",
+      html_content: value.en?.title ?? "",
     },
     director: value.director === null ? null : {
       first_name: value.director?.first_name ?? "",
@@ -92,11 +92,42 @@ const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
       email: value.director?.email ?? "",
       phone: value.director?.phone ?? "",
       room_number: value.director?.room_number ?? "",
-      working_hours: Array.isArray(value.director?.working_hours) ? value.director.working_hours : [],
-      educations: Array.isArray(value.director?.educations) ? value.director.educations : [],
+      working_hours: (Array.isArray(value.director?.working_hours) ? value.director.working_hours : []).map((wh: any) => ({
+        az: { day: wh.az?.day ?? "" },
+        en: { day: wh.en?.day ?? "" },
+        time_range: wh.time_range ?? "",
+      })),
+      educations: (Array.isArray(value.director?.educations) ? value.director.educations : []).map((ed: any) => ({
+        az: { degree: ed.az?.degree ?? "", university: ed.az?.university ?? "" },
+        en: { degree: ed.en?.degree ?? "", university: ed.en?.university ?? "" },
+        start_year: ed.start_year ?? "",
+        end_year: ed.end_year ?? "",
+      })),
+      profile_image: value.director?.profile_image,
     },
-    workers: Array.isArray(value.workers) ? value.workers : [],
-    directions_of_action: Array.isArray(value.directions_of_action) ? value.directions_of_action : [],
+    workers: (Array.isArray(value.workers) ? value.workers : []).map((item: any) => ({
+      id: item.id,
+      profile_image: item.profile_image,
+      first_name: item.first_name ?? "",
+      last_name: item.last_name ?? "",
+      father_name: item.father_name ?? "",
+      email: item.email ?? "",
+      phone: item.phone ?? "",
+      az: { 
+        duty: item.az?.duty ?? "", 
+        scientific_name: item.az?.scientific_name ?? "", 
+        scientific_degree: item.az?.scientific_degree ?? "" 
+      },
+      en: { 
+        duty: item.en?.duty ?? "", 
+        scientific_name: item.en?.scientific_name ?? "", 
+        scientific_degree: item.en?.scientific_degree ?? "" 
+      },
+    })),
+    directions_of_action: (Array.isArray(value.directions_of_action) ? value.directions_of_action : []).map((item: any) => ({
+      az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
+      en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
+    })),
     bachelor_programs_count: value.bachelor_programs_count ?? 0,
     master_programs_count: value.master_programs_count ?? 0,
     phd_programs_count: value.phd_programs_count ?? 0,

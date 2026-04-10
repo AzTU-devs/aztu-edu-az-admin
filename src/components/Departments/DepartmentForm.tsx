@@ -106,12 +106,22 @@ const normalizePayload = (value: CreateDepartmentPayload | null | undefined): Cr
       department_name: value.en?.department_name ?? "",
       about_html: value.en?.about_html ?? "",
     },
-    objectives: Array.isArray(value.objectives) ? value.objectives : [],
-    core_functions: Array.isArray(value.core_functions) ? value.core_functions : [],
+    objectives: (Array.isArray(value.objectives) ? value.objectives : []).map((item: any) => ({
+      az: { html_content: item.az?.html_content ?? "" },
+      en: { html_content: item.en?.html_content ?? "" },
+    })),
+    core_functions: (Array.isArray(value.core_functions) ? value.core_functions : []).map((item: any) => ({
+      az: { html_content: item.az?.html_content ?? "" },
+      en: { html_content: item.en?.html_content ?? "" },
+    })),
     director: value.director
       ? {
-          ...blankDirector,
-          ...value.director,
+          first_name: value.director.first_name ?? "",
+          last_name: value.director.last_name ?? "",
+          father_name: value.director.father_name ?? "",
+          email: value.director.email ?? "",
+          phone: value.director.phone ?? "",
+          room_number: value.director.room_number ?? "",
           profile_image: value.director.profile_image ?? "",
           az: {
             scientific_degree: value.director.az?.scientific_degree ?? "",
@@ -123,18 +133,37 @@ const normalizePayload = (value: CreateDepartmentPayload | null | undefined): Cr
             scientific_title: value.director.en?.scientific_title ?? "",
             bio: value.director.en?.bio ?? "",
           },
-          working_hours: Array.isArray(value.director.working_hours)
-            ? value.director.working_hours
-            : [],
-          educations: Array.isArray(value.director.educations) ? value.director.educations : [],
+          working_hours: (Array.isArray(value.director.working_hours) ? value.director.working_hours : []).map((wh: any) => ({
+            time_range: wh.time_range ?? "",
+            az: { day: wh.az?.day ?? "" },
+            en: { day: wh.en?.day ?? "" },
+          })),
+          educations: (Array.isArray(value.director.educations) ? value.director.educations : []).map((ed: any) => ({
+            start_year: ed.start_year ?? "",
+            end_year: ed.end_year ?? "",
+            az: { degree: ed.az?.degree ?? "", university: ed.az?.university ?? "" },
+            en: { degree: ed.en?.degree ?? "", university: ed.en?.university ?? "" },
+          })),
         }
       : null,
-    workers: Array.isArray(value.workers)
-      ? value.workers.map((w) => ({
-          ...w,
-          profile_image: w.profile_image ?? "",
-        }))
-      : [],
+    workers: (Array.isArray(value.workers) ? value.workers : []).map((w: any) => ({
+      first_name: w.first_name ?? "",
+      last_name: w.last_name ?? "",
+      father_name: w.father_name ?? "",
+      email: w.email ?? "",
+      phone: w.phone ?? "",
+      profile_image: w.profile_image ?? "",
+      az: {
+        duty: w.az?.duty ?? "",
+        scientific_degree: w.az?.scientific_degree ?? "",
+        scientific_name: w.az?.scientific_name ?? "",
+      },
+      en: {
+        duty: w.en?.duty ?? "",
+        scientific_degree: w.en?.scientific_degree ?? "",
+        scientific_name: w.en?.scientific_name ?? "",
+      },
+    })),
   };
 };
 

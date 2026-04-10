@@ -98,19 +98,102 @@ const normalizeFacultyPayload = (value: any): CreateFacultyPayload => {
       email: value.director?.email ?? "",
       phone: value.director?.phone ?? "",
       room_number: value.director?.room_number ?? "",
-      working_hours: Array.isArray(value.director?.working_hours) ? value.director.working_hours : [],
-      educations: Array.isArray(value.director?.educations) ? value.director.educations : [],
+      working_hours: (Array.isArray(value.director?.working_hours) ? value.director.working_hours : []).map((wh: any) => ({
+        az: { day: wh.az?.day ?? "" },
+        en: { day: wh.en?.day ?? "" },
+        time_range: wh.time_range ?? "",
+      })),
+      educations: (Array.isArray(value.director?.educations) ? value.director.educations : []).map((ed: any) => ({
+        az: { degree: ed.az?.degree ?? "", university: ed.az?.university ?? "" },
+        en: { degree: ed.en?.degree ?? "", university: ed.en?.university ?? "" },
+        start_year: ed.start_year ?? "",
+        end_year: ed.end_year ?? "",
+      })),
+      profile_image: value.director?.profile_image,
     },
-    laboratories: Array.isArray(value.laboratories) ? value.laboratories : [],
-    research_works: Array.isArray(value.research_works) ? value.research_works : [],
-    partner_companies: Array.isArray(value.partner_companies) ? value.partner_companies : [],
-    objectives: Array.isArray(value.objectives) ? value.objectives : [],
-    duties: Array.isArray(value.duties) ? value.duties : [],
-    projects: Array.isArray(value.projects) ? value.projects : [],
-    directions_of_action: Array.isArray(value.directions_of_action) ? value.directions_of_action : [],
-    deputy_deans: Array.isArray(value.deputy_deans) ? value.deputy_deans : [],
-    scientific_council: Array.isArray(value.scientific_council) ? value.scientific_council : [],
-    workers: Array.isArray(value.workers) ? value.workers : [],
+    laboratories: (Array.isArray(value.laboratories) ? value.laboratories : []).map((item: any) => ({
+      az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
+      en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
+    })),
+    research_works: (Array.isArray(value.research_works) ? value.research_works : []).map((item: any) => ({
+      az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
+      en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
+    })),
+    partner_companies: (Array.isArray(value.partner_companies) ? value.partner_companies : []).map((item: any) => ({
+      az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
+      en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
+    })),
+    objectives: (Array.isArray(value.objectives) ? value.objectives : []).map((item: any) => ({
+      az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
+      en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
+    })),
+    duties: (Array.isArray(value.duties) ? value.duties : []).map((item: any) => ({
+      az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
+      en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
+    })),
+    projects: (Array.isArray(value.projects) ? value.projects : []).map((item: any) => ({
+      az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
+      en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
+    })),
+    directions_of_action: (Array.isArray(value.directions_of_action) ? value.directions_of_action : []).map((item: any) => ({
+      az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
+      en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
+    })),
+    deputy_deans: (Array.isArray(value.deputy_deans) ? value.deputy_deans : []).map((item: any) => ({
+      id: item.id,
+      profile_image: item.profile_image,
+      first_name: item.first_name ?? "",
+      last_name: item.last_name ?? "",
+      father_name: item.father_name ?? "",
+      email: item.email ?? "",
+      phone: item.phone ?? "",
+      az: { 
+        scientific_name: item.az?.scientific_name ?? "", 
+        scientific_degree: item.az?.scientific_degree ?? "", 
+        duty: item.az?.duty ?? "" 
+      },
+      en: { 
+        scientific_name: item.en?.scientific_name ?? "", 
+        scientific_degree: item.en?.scientific_degree ?? "", 
+        duty: item.en?.duty ?? "" 
+      },
+    })),
+    scientific_council: (Array.isArray(value.scientific_council) ? value.scientific_council : []).map((item: any) => ({
+      first_name: item.first_name ?? "",
+      last_name: item.last_name ?? "",
+      father_name: item.father_name ?? "",
+      email: item.email ?? "",
+      phone: item.phone ?? "",
+      az: { 
+        duty: item.az?.duty ?? "", 
+        scientific_name: item.az?.scientific_name ?? "", 
+        scientific_degree: item.az?.scientific_degree ?? "" 
+      },
+      en: { 
+        duty: item.en?.duty ?? "", 
+        scientific_name: item.en?.scientific_name ?? "", 
+        scientific_degree: item.en?.scientific_degree ?? "" 
+      },
+    })),
+    workers: (Array.isArray(value.workers) ? value.workers : []).map((item: any) => ({
+      id: item.id,
+      profile_image: item.profile_image,
+      first_name: item.first_name ?? "",
+      last_name: item.last_name ?? "",
+      father_name: item.father_name ?? "",
+      email: item.email ?? "",
+      phone: item.phone ?? "",
+      az: { 
+        duty: item.az?.duty ?? "", 
+        scientific_name: item.az?.scientific_name ?? "", 
+        scientific_degree: item.az?.scientific_degree ?? "" 
+      },
+      en: { 
+        duty: item.en?.duty ?? "", 
+        scientific_name: item.en?.scientific_name ?? "", 
+        scientific_degree: item.en?.scientific_degree ?? "" 
+      },
+    })),
     bachelor_programs_count: value.bachelor_programs_count ?? 0,
     master_programs_count: value.master_programs_count ?? 0,
     phd_programs_count: value.phd_programs_count ?? 0,
