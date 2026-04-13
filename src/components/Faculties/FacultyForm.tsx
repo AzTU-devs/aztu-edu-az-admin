@@ -19,7 +19,7 @@ import {
 
 interface FacultyFormProps {
   initialValue?: FacultyDetail | null;
-  onSubmit: (payload: CreateFacultyPayload) => Promise<{ status: string; faculty?: FacultyDetail }>;
+  onSubmit: (payload: any) => Promise<{ status: string; faculty?: FacultyDetail }>;
   submitLabel: string;
 }
 
@@ -536,10 +536,27 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
 
     setSaving(true);
 
-    const payloadToSend: CreateFacultyPayload = {
+    let payloadToSend: any = {
       ...payload,
       director: useDirector ? payload.director ?? blankDirector : null,
     };
+
+    if (initialValue) {
+      const normalizedInitial = normalizeFacultyPayload(initialValue);
+      payloadToSend = getDirtyFields(normalizedInitial, payloadToSend);
+      
+      if (Object.keys(payloadToSend).length === 0 && !directorImage && Object.keys(deputyDeanImages).length === 0 && Object.keys(workerImages).length === 0) {
+        Swal.fire({
+          icon: "info",
+          title: "Məlumat",
+          text: "Heç bir dəyişiklik edilməyib.",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => navigate("/faculties"));
+        setSaving(false);
+        return;
+      }
+    }
 
     const result = await onSubmit(payloadToSend);
 

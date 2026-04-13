@@ -1,90 +1,118 @@
 import apiClient from "../../util/apiClient";
 
+export interface MultilingualContent {
+  content: string;
+}
+
+export interface ResearchArea {
+  az: MultilingualContent;
+  en: MultilingualContent;
+  display_order: number;
+}
+
+export interface Objective {
+  az: MultilingualContent;
+  en: MultilingualContent;
+  display_order: number;
+}
+
+export interface ResearchDirection {
+  az: MultilingualContent;
+  en: MultilingualContent;
+  display_order: number;
+}
+
+export interface EducationMultilingual {
+  university: string;
+  degree: string;
+}
+
+export interface EducationEntry {
+  az: EducationMultilingual;
+  en: EducationMultilingual;
+  start_year: string;
+  end_year: string | null;
+  display_order: number;
+}
+
+export interface PersonLanguageSection {
+  title: string;
+  biography: string;
+}
+
+export interface Director {
+  id?: number | string;
+  full_name: string;
+  email: string;
+  office: string;
+  image_url?: string;
+  az: PersonLanguageSection;
+  en: PersonLanguageSection;
+  educations: EducationEntry[];
+  research_areas: ResearchArea[];
+}
+
+export interface StaffMemberLanguageSection {
+  title: string;
+}
+
+export interface StaffMember {
+  id?: number;
+  full_name: string;
+  email: string;
+  phone: string;
+  image_url?: string;
+  display_order: number;
+  az: StaffMemberLanguageSection;
+  en: StaffMemberLanguageSection;
+}
+
 export interface InstituteLanguageSection {
   name: string;
-  about_html: string;
-  vision_html: string;
-  mission_html: string;
-  goals_html: string;
-  direction_html: string;
+  about: string;
+  vision: string;
+  mission: string;
 }
 
-export interface EducationSection {
-  university_name: string;
-  start_year: string;
-  end_year: string;
-  az: { degree: string };
-  en: { degree: string };
+export interface ResearchInstituteDetail {
+  institute_code: string;
+  image_url?: string;
+  az: InstituteLanguageSection;
+  en: InstituteLanguageSection;
+  director: Director;
+  objectives: Objective[];
+  research_directions: ResearchDirection[];
+  staff: StaffMember[];
 }
 
-export interface DirectorLanguageSection {
-  scientific_name: string;
-  scientific_degree: string;
-  bio: string;
-  researcher_areas: string;
+export interface CreateResearchInstitute {
+  institute_code: string;
+  image_url?: string;
+  az: InstituteLanguageSection;
+  en: InstituteLanguageSection;
+  director: Director;
+  objectives: Objective[];
+  research_directions: ResearchDirection[];
+  staff: StaffMember[];
 }
 
-export interface DirectorSection {
-  first_name: string;
-  last_name: string;
-  father_name: string;
-  email: string;
-  room_number: string;
-  az: DirectorLanguageSection;
-  en: DirectorLanguageSection;
-  educations: EducationSection[];
-  profile_image?: string;
-}
+export interface UpdateResearchInstitute extends Partial<CreateResearchInstitute> {}
 
-export interface StaffLanguageSection {
-  scientific_name: string;
-  scientific_degree: string;
-}
-
-export interface StaffSection {
-  id?: number;
-  first_name: string;
-  last_name: string;
-  father_name: string;
-  email: string;
-  phone_number: string;
-  az: StaffLanguageSection;
-  en: StaffLanguageSection;
-  profile_image?: string;
-}
-
-export interface Institute {
+export interface InstituteListItem {
   institute_code: string;
   name: string;
   staff_count: number;
 }
 
-export interface ResearchInstituteDetail {
-  institute_code: string;
-  image?: string;
-  az: InstituteLanguageSection;
-  en: InstituteLanguageSection;
-  director: DirectorSection;
-  staff: StaffSection[];
-}
-
-export interface CreateInstitutePayload {
-  image?: string;
-  az: InstituteLanguageSection;
-  en: InstituteLanguageSection;
-  director: DirectorSection;
-  staff: StaffSection[];
-}
-
 const RESEARCH_INSTITUTE_BASE = "/api/research-institute";
 
-export const getInstitutes = async (start: number, end: number) => {
+export const getInstitutes = async (start: number, end: number, lang: string = "az") => {
   try {
-    const response = await apiClient.get(`${RESEARCH_INSTITUTE_BASE}/admin/all?start=${start}&end=${end}`);
+    const response = await apiClient.get(`${RESEARCH_INSTITUTE_BASE}/admin/all?start=${start}&end=${end}&lang=${lang}`);
 
     if (response.data.status_code === 200) {
       return {
-        institutes: response.data.institutes as Institute[],
+        institutes: response.data.data as InstituteListItem[],
         total: response.data.total as number,
       };
     } else if (response.data.status_code === 204) {
@@ -114,11 +142,9 @@ export const getInstituteDetails = async (instituteCode: string) => {
   }
 };
 
-export const createInstitute = async (payload: CreateInstitutePayload) => {
+export const createInstitute = async (payload: CreateResearchInstitute) => {
   try {
-    const response = await apiClient.post(`${RESEARCH_INSTITUTE_BASE}/create`, payload, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await apiClient.post(`${RESEARCH_INSTITUTE_BASE}/create`, payload);
 
     if (response.data.status_code === 201) {
       return { status: "SUCCESS", institute: response.data.institute as ResearchInstituteDetail };
@@ -130,11 +156,9 @@ export const createInstitute = async (payload: CreateInstitutePayload) => {
   }
 };
 
-export const updateInstitute = async (instituteCode: string, payload: Partial<CreateInstitutePayload>) => {
+export const updateInstitute = async (instituteCode: string, payload: UpdateResearchInstitute) => {
   try {
-    const response = await apiClient.put(`${RESEARCH_INSTITUTE_BASE}/${instituteCode}`, payload, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await apiClient.patch(`${RESEARCH_INSTITUTE_BASE}/${instituteCode}`, payload);
 
     if (response.data.status_code === 200) {
       return { status: "SUCCESS", institute: response.data.institute as ResearchInstituteDetail };
@@ -182,11 +206,11 @@ export const uploadInstituteImage = async (instituteCode: string, imageFile: Fil
   }
 };
 
-export const uploadDirectorImage = async (instituteCode: string, imageFile: File) => {
+export const uploadDirectorImage = async (directorId: number | string, imageFile: File) => {
   try {
     const formData = new FormData();
     formData.append("image", imageFile);
-    const response = await apiClient.put(`${RESEARCH_INSTITUTE_BASE}/${instituteCode}/director/image`, formData, {
+    const response = await apiClient.put(`${RESEARCH_INSTITUTE_BASE}/director/${directorId}/image`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     if (response.data.status_code === 200) {
@@ -213,3 +237,4 @@ export const uploadStaffImage = async (staffId: number, imageFile: File) => {
     return "ERROR";
   }
 };
+

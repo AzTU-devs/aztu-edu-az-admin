@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Pagination, Stack, CircularProgress } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import { Institute, deleteInstitute, getInstitutes } from "../../services/researchInstitute/researchInstituteService";
+import { InstituteListItem, deleteInstitute, getInstitutes } from "../../services/researchInstitute/researchInstituteService";
 
 const PAGE_SIZE = 10;
 
@@ -12,7 +12,7 @@ export default function ResearchInstitutes() {
   const [end, setEnd] = useState(PAGE_SIZE);
   const [start, setStart] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [institutes, setInstitutes] = useState<Institute[]>([]);
+  const [institutes, setInstitutes] = useState<InstituteListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [deletingCode, setDeletingCode] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -107,7 +107,7 @@ export default function ResearchInstitutes() {
             </div>
             <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
           </div>
-        ) : institutes.length > 0 ? (
+        ) : Array.isArray(institutes) && institutes.length > 0 ? (
           institutes.map((institute) => (
             <div key={institute.institute_code} className="flex items-center px-5 py-3.5 border-b border-gray-50 dark:border-gray-800 last:border-b-0 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors duration-150">
               <div style={{ width: "20%" }}>
@@ -117,7 +117,7 @@ export default function ResearchInstitutes() {
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "45%" }}>{institute.name}</p>
               <div style={{ width: "15%" }}>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{institute.staff_count}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{institute.staff_count ?? 0}</span>
               </div>
               <div className="flex justify-end items-center gap-1" style={{ width: "20%" }}>
                 <Link to={`/research-institutes/${institute.institute_code}`}>
