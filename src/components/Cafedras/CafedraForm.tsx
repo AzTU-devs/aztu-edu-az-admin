@@ -80,7 +80,7 @@ const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
     },
     en: {
       title: value.en?.title ?? "",
-      html_content: value.en?.title ?? "",
+      html_content: value.en?.html_content ?? "",
     },
     director: value.director === null ? null : {
       first_name: value.director?.first_name ?? "",

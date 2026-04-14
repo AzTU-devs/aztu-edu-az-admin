@@ -23,6 +23,7 @@ interface FacultyFormProps {
   submitLabel: string;
 }
 
+
 const blankTranslatedItem: TranslatedTextItem = {
   az: { title: "", description: "" },
   en: { title: "", description: "" },
@@ -536,23 +537,46 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
 
     setSaving(true);
 
+<<<<<<< HEAD
     let payloadToSend: any = {
+=======
+    const payloadWithDirector: CreateFacultyPayload = {
+>>>>>>> d2c0092 (fix: update html_content field in normalizeCafedraPayload and adjust FacultyForm onSubmit type)
       ...payload,
       director: useDirector ? payload.director ?? blankDirector : null,
     };
 
+<<<<<<< HEAD
     if (initialValue) {
       const normalizedInitial = normalizeFacultyPayload(initialValue);
       payloadToSend = getDirtyFields(normalizedInitial, payloadToSend);
       
       if (Object.keys(payloadToSend).length === 0 && !directorImage && Object.keys(deputyDeanImages).length === 0 && Object.keys(workerImages).length === 0) {
+=======
+    let payloadToSend: any = payloadWithDirector;
+
+    if (initialValue) {
+      const normalizedInitial = normalizeFacultyPayload(initialValue);
+      const initialToCompare = {
+        ...normalizedInitial,
+        director: initialValue.director === null ? null : normalizedInitial.director
+      };
+      
+      payloadToSend = getDirtyFields(initialToCompare, payloadWithDirector);
+
+      if (Object.keys(payloadToSend).length === 0) {
+>>>>>>> d2c0092 (fix: update html_content field in normalizeCafedraPayload and adjust FacultyForm onSubmit type)
         Swal.fire({
           icon: "info",
           title: "Məlumat",
           text: "Heç bir dəyişiklik edilməyib.",
           timer: 2000,
           showConfirmButton: false,
+<<<<<<< HEAD
         }).then(() => navigate("/faculties"));
+=======
+        });
+>>>>>>> d2c0092 (fix: update html_content field in normalizeCafedraPayload and adjust FacultyForm onSubmit type)
         setSaving(false);
         return;
       }

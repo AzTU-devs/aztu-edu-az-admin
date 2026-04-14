@@ -111,7 +111,16 @@ export default function FacultyView() {
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Fakültə detalları</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Kod: {faculty?.faculty_code}</p>
         </div>
-        <Button className="w-full sm:w-auto" type="button" onClick={() => navigate("/faculties")}>Geri</Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            className="w-full sm:w-auto" 
+            type="button" 
+            onClick={() => navigate(`/faculties/${faculty_code}`)}
+          >
+            Redaktə et
+          </Button>
+          <Button className="w-full sm:w-auto" variant="outline" type="button" onClick={() => navigate("/faculties")}>Geri</Button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-5 space-y-4">
