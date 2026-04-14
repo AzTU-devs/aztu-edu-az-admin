@@ -251,11 +251,7 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
         <div className="space-y-4">
           <div>
             <Label>Ad (AZ)</Label>
-<<<<<<< HEAD
             <Input value={formData.az.name} onChange={(e) => setFormData({ ...formData, az: { ...formData.az, name: e.target.value } })} placeholder="İnstitutun adı" />
-=======
-            <Input value={formData.az.name} onChange={(e) => setFormData({ ...formData, az: { ...formData.az, name: e.target.value } })} placeholder="İnstitutun adı"  />
->>>>>>> d2c0092 (fix: update html_content field in normalizeCafedraPayload and adjust FacultyForm onSubmit type)
           </div>
           <div>
             <Label>Haqqında (AZ)</Label>
@@ -283,11 +279,7 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
         <div className="space-y-4">
           <div>
             <Label>Name (EN)</Label>
-<<<<<<< HEAD
             <Input value={formData.en.name} onChange={(e) => setFormData({ ...formData, en: { ...formData.en, name: e.target.value } })} placeholder="Institute Name" />
-=======
-            <Input value={formData.en.name} onChange={(e) => setFormData({ ...formData, en: { ...formData.en, name: e.target.value } })} placeholder="Institute name"  />
->>>>>>> d2c0092 (fix: update html_content field in normalizeCafedraPayload and adjust FacultyForm onSubmit type)
           </div>
           <div>
             <Label>About (EN)</Label>
@@ -308,7 +300,6 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
 
       {/* Objectives */}
       <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
-<<<<<<< HEAD
         <div className="flex justify-between items-center border-b pb-2">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Məqsədlər</h3>
           <Button type="button" onClick={addObjective} size="sm" variant="outline">Məqsəd əlavə et</Button>
@@ -316,85 +307,6 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
         <div className="space-y-4">
           {formData.objectives.map((obj, idx) => (
             <div key={idx} className="p-4 border border-gray-100 dark:border-gray-800 rounded-xl space-y-3 relative bg-gray-50/30 dark:bg-gray-800/20">
-=======
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white border-b pb-2">Direktor Məlumatları</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Label>Ad</Label>
-            <Input value={formData.director.first_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, first_name: e.target.value } })}  />
-          </div>
-          <div>
-            <Label>Soyad</Label>
-            <Input value={formData.director.last_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, last_name: e.target.value } })}  />
-          </div>
-          <div>
-            <Label>Ata adı</Label>
-            <Input value={formData.director.father_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, father_name: e.target.value } })}  />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>Email</Label>
-            <Input type="email" value={formData.director.email} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, email: e.target.value } })}  />
-          </div>
-          <div>
-            <Label>Otaq nömrəsi</Label>
-            <Input value={formData.director.room_number} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, room_number: e.target.value } })} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-          <div className="space-y-4">
-            <h4 className="font-medium text-gray-700 dark:text-gray-300">Direktor (AZ)</h4>
-            <div>
-              <Label>Elmi ad</Label>
-              <Input value={formData.director.az.scientific_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, az: { ...formData.director.az, scientific_name: e.target.value } } })} />
-            </div>
-            <div>
-              <Label>Elmi dərəcə</Label>
-              <Input value={formData.director.az.scientific_degree} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, az: { ...formData.director.az, scientific_degree: e.target.value } } })} />
-            </div>
-            <div>
-              <Label>Tədqiqat sahələri</Label>
-              <Input value={formData.director.az.researcher_areas} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, az: { ...formData.director.az, researcher_areas: e.target.value } } })} />
-            </div>
-            <div>
-              <Label>Bioqrafiya</Label>
-              <Editor initialContent={formData.director.az.bio} onUpdate={(html) => setFormData({ ...formData, director: { ...formData.director, az: { ...formData.director.az, bio: html } } })} />
-            </div>
-          </div>
-          <div className="space-y-4">
-            <h4 className="font-medium text-gray-700 dark:text-gray-300">Director (EN)</h4>
-            <div>
-              <Label>Scientific name</Label>
-              <Input value={formData.director.en.scientific_name} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, en: { ...formData.director.en, scientific_name: e.target.value } } })} />
-            </div>
-            <div>
-              <Label>Scientific degree</Label>
-              <Input value={formData.director.en.scientific_degree} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, en: { ...formData.director.en, scientific_degree: e.target.value } } })} />
-            </div>
-            <div>
-              <Label>Research areas</Label>
-              <Input value={formData.director.en.researcher_areas} onChange={(e) => setFormData({ ...formData, director: { ...formData.director, en: { ...formData.director.en, researcher_areas: e.target.value } } })} />
-            </div>
-            <div>
-              <Label>Biography</Label>
-              <Editor initialContent={formData.director.en.bio} onUpdate={(html) => setFormData({ ...formData, director: { ...formData.director, en: { ...formData.director.en, bio: html } } })} />
-            </div>
-          </div>
-        </div>
-
-        {/* Educations */}
-        <div className="pt-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="font-medium text-gray-700 dark:text-gray-300">Təhsil Məlumatları</h4>
-            <Button type="button" onClick={() => setFormData({ ...formData, director: { ...formData.director, educations: [...formData.director.educations, blankEducation] } })} size="sm" variant="outline">
-              Təhsil əlavə et
-            </Button>
-          </div>
-          {formData.director.educations.map((edu, idx) => (
-            <div key={idx} className="p-4 border border-gray-100 dark:border-gray-800 rounded-xl space-y-3 relative">
->>>>>>> d2c0092 (fix: update html_content field in normalizeCafedraPayload and adjust FacultyForm onSubmit type)
               <button type="button" onClick={() => {
                 const newObjs = [...formData.objectives];
                 newObjs.splice(idx, 1);
@@ -681,7 +593,6 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
                 setFormData({ ...formData, staff: newStaff });
               }} className="absolute top-4 right-4 text-red-500 hover:text-red-700 text-sm font-medium">Sil</button>
               
-<<<<<<< HEAD
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -710,32 +621,6 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
                       }} />
                     </div>
                   </div>
-=======
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>Ad</Label>
-                  <Input value={member.first_name} onChange={(e) => {
-                    const newStaff = [...formData.staff];
-                    newStaff[idx] = { ...member, first_name: e.target.value };
-                    setFormData({ ...formData, staff: newStaff });
-                  }}  />
-                </div>
-                <div>
-                  <Label>Soyad</Label>
-                  <Input value={member.last_name} onChange={(e) => {
-                    const newStaff = [...formData.staff];
-                    newStaff[idx] = { ...member, last_name: e.target.value };
-                    setFormData({ ...formData, staff: newStaff });
-                  }}  />
-                </div>
-                <div>
-                  <Label>Ata adı</Label>
-                  <Input value={member.father_name} onChange={(e) => {
-                    const newStaff = [...formData.staff];
-                    newStaff[idx] = { ...member, father_name: e.target.value };
-                    setFormData({ ...formData, staff: newStaff });
-                  }}  />
->>>>>>> d2c0092 (fix: update html_content field in normalizeCafedraPayload and adjust FacultyForm onSubmit type)
                 </div>
                 <ImageUploadField 
                   label="İşçi Şəkli" 
@@ -753,19 +638,7 @@ export default function ResearchInstituteForm({ initialValue, onSubmit, submitLa
                   <Label>Sıralama</Label>
                   <Input type="number" value={member.display_order} onChange={(e) => {
                     const newStaff = [...formData.staff];
-<<<<<<< HEAD
                     newStaff[idx] = { ...member, display_order: Number(e.target.value) };
-=======
-                    newStaff[idx] = { ...member, email: e.target.value };
-                    setFormData({ ...formData, staff: newStaff });
-                  }}  />
-                </div>
-                <div>
-                  <Label>Telefon</Label>
-                  <Input value={member.phone_number} onChange={(e) => {
-                    const newStaff = [...formData.staff];
-                    newStaff[idx] = { ...member, phone_number: e.target.value };
->>>>>>> d2c0092 (fix: update html_content field in normalizeCafedraPayload and adjust FacultyForm onSubmit type)
                     setFormData({ ...formData, staff: newStaff });
                   }} />
                 </div>
