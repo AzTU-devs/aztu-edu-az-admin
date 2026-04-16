@@ -16,6 +16,20 @@ export interface TranslatedTextItem {
     };
 }
 
+export interface Laboratory {
+    id?: number;
+    cafedra_code?: string;
+    image_url?: string | null;
+    az: {
+        title: string;
+        description: string;
+    };
+    en: {
+        title: string;
+        description: string;
+    };
+}
+
 export interface WorkingHour {
     az: { day: string };
     en: { day: string };
@@ -74,7 +88,7 @@ export interface CreateCafedraPayload {
     deputy_deans: Worker[];
     scientific_council: Worker[];
     workers: Worker[];
-    laboratories: TranslatedTextItem[];
+    laboratories: Laboratory[];
     research_works: TranslatedTextItem[];
     partner_companies: TranslatedTextItem[];
     objectives: TranslatedTextItem[];
@@ -209,6 +223,65 @@ export const uploadCafedraWorkerImage = async (workerId: number, imageFile: File
         const formData = new FormData();
         formData.append("image", imageFile);
         const response = await apiClient.put(`${CAFEDRA_ADMIN_BASE}/workers/${workerId}/image`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        if (response.data.status_code === 200) {
+            return "SUCCESS";
+        }
+        return "ERROR";
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
+
+// ============================================================
+// LABORATORY API
+// ============================================================
+
+export const getAllLaboratories = async (start: number, end: number, lang: string = "az") => {
+    try {
+        const response = await apiClient.get(`${CAFEDRA_ADMIN_BASE}/laboratories/all?start=${start}&end=${end}&lang=${lang}`);
+        if (response.data.status_code === 200) {
+            return {
+                laboratories: response.data.data as Laboratory[],
+                total: response.data.total as number,
+            };
+        }
+        return "ERROR";
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
+
+export const getCafedraLaboratories = async (cafedraCode: string, lang: string = "az") => {
+    try {
+        const response = await apiClient.get(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/laboratories?lang=${lang}`);
+        if (response.data.status_code === 200) {
+            return response.data.data as Laboratory[];
+        }
+        return "ERROR";
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
+
+export const addLaboratoryToCafedra = async (cafedraCode: string, payload: Laboratory) => {
+    try {
+        const response = await apiClient.post(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/laboratories`, payload);
+        if (response.data.status_code === 201) {
+            return { status: "SUCCESS", id: response.data.id as number };
+        }
+        return { status: "ERROR" };
+    } catch (err: any) {
+        return { status: "ERROR" };
+    }
+};
+
+export const uploadLaboratoryImage = async (laboratoryId: number, imageFile: File) => {
+    try {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const response = await apiClient.put(`${CAFEDRA_ADMIN_BASE}/laboratories/${laboratoryId}/image`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
         });
         if (response.data.status_code === 200) {

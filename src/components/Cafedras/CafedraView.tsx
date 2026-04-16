@@ -102,6 +102,28 @@ export default function CafedraView() {
     );
   };
 
+  const renderLaboratories = (list: any[]) => {
+    if (!list || list.length === 0) return null;
+    return (
+      <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-5 space-y-4">
+        <p className="font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-100 dark:border-gray-800 pb-2">Laboratoriyalar</p>
+        <div className="grid gap-6 md:grid-cols-1">
+          {list.map((item, idx) => (
+            <div key={idx} className="p-4 rounded-xl border border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 flex flex-col md:flex-row gap-6">
+              {item.image_url && (
+                <img src={item.image_url} alt={item.az?.title} className="w-full md:w-48 h-32 object-cover rounded-xl border border-gray-200" />
+              )}
+              <div className="flex-1">
+                <p className="text-base font-bold text-gray-900 dark:text-white">{item.az?.title || item.en?.title}</p>
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: item.az?.description || item.en?.description || "" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -109,7 +131,10 @@ export default function CafedraView() {
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Kafedra detalları</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Kod: {cafedra?.cafedra_code} | Fakültə: {cafedra?.faculty_code}</p>
         </div>
-        <Button className="w-full sm:w-auto" type="button" onClick={() => navigate("/cafedras")}>Geri</Button>
+        <div className="flex gap-2">
+            <Button className="w-full sm:w-auto" type="button" onClick={() => navigate(`/cafedras/edit/${cafedra?.cafedra_code}`)}>Redaktə et</Button>
+            <Button className="w-full sm:w-auto" variant="outline" type="button" onClick={() => navigate("/cafedras")}>Geri</Button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-5 space-y-4">
@@ -212,8 +237,17 @@ export default function CafedraView() {
         )}
       </div>
 
+      {renderLaboratories(cafedra?.laboratories || [])}
+      {renderPersonnelSection("Müavinlər", cafedra?.deputy_deans || [])}
+      {renderPersonnelSection("Elmi Şura", cafedra?.scientific_council || [])}
       {renderPersonnelSection("İşçilər", cafedra?.workers || [])}
-      {renderDetailList("Fəaliyyət istiqamətləri", cafedra?.directions_of_action || [])}
+
+      {renderDetailList("Eyni vaxtında Tədbirləri", cafedra?.directions_of_action || [])}
+      {renderDetailList("Elmi-tədqiqat işləri", cafedra?.research_works || [])}
+      {renderDetailList("Tərəfdaş şirkətlər", cafedra?.partner_companies || [])}
+      {renderDetailList("Məqsədlər", cafedra?.objectives || [])}
+      {renderDetailList("Vəzifələr", cafedra?.duties || [])}
+      {renderDetailList("Layihələr", cafedra?.projects || [])}
     </div>
   );
 }

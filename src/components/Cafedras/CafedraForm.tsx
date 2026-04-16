@@ -5,15 +5,18 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import TextArea from "../form/input/TextArea";
 import Button from "../ui/button/Button";
+import Editor from "../editor/Editor";
 import {
   CreateCafedraPayload,
   DirectorPayload,
   TranslatedTextItem,
+  Laboratory,
   WorkingHour,
   EducationItem,
   CafedraDetail,
   uploadCafedraDirectorImage,
   uploadCafedraWorkerImage,
+  uploadLaboratoryImage,
 } from "../../services/cafedra/cafedraService";
 import { getFaculties, Faculty } from "../../services/faculty/facultyService";
 
@@ -26,6 +29,12 @@ interface CafedraFormProps {
 const blankTranslatedItem: TranslatedTextItem = {
   az: { title: "", description: "" },
   en: { title: "", description: "" },
+};
+
+const blankLaboratory: Laboratory = {
+  az: { title: "", description: "" },
+  en: { title: "", description: "" },
+  image_url: null,
 };
 
 const blankWorkingHour: WorkingHour = { az: { day: "" }, en: { day: "" }, time_range: "" };
@@ -157,6 +166,8 @@ const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
       },
     })),
     laboratories: (Array.isArray(value.laboratories) ? value.laboratories : []).map((item: any) => ({
+      id: item.id,
+      image_url: item.image_url ?? null,
       az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
       en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
     })),
@@ -206,6 +217,7 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
   const [workerImages, setWorkerImages] = useState<{ [index: number]: File }>({});
   const [deputyDeanImages, setDeputyDeanImages] = useState<{ [index: number]: File }>({});
   const [councilImages, setCouncilImages] = useState<{ [index: number]: File }>({});
+  const [labImages, setLabImages] = useState<{ [index: number]: File }>({});
 
   useEffect(() => {
     setPayload(normalizeCafedraPayload(initialValue));
@@ -549,6 +561,69 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
     );
   };
 
+  const renderLaboratorySection = () => {
+    const list = payload.laboratories;
+    return (
+      <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+        <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+          <div>
+            <p className="font-semibold text-gray-800 dark:text-gray-100">Laboratoriyalar</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Hər iki dildə başlıq, şəkil və ətraflı məlumat əlavə edin.</p>
+          </div>
+          <Button type="button" className="px-3 py-1.5 text-sm" onClick={() => addListItem("laboratories", blankLaboratory)}>
+            Yeni əlavə et
+          </Button>
+        </div>
+        <div className="p-5 space-y-4">
+          {list.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Heç bir laboratoriya yoxdur.</p>}
+          {list.map((item, idx) => (
+            <div key={`lab-${idx}`} className="rounded-2xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Laboratoriya #{idx + 1}</p>
+                <button type="button" className="text-sm text-red-500 hover:underline" onClick={() => removeListItem("laboratories", idx)}>
+                  Sil
+                </button>
+              </div>
+              <div className="grid gap-4 md:grid-cols-1">
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Laboratoriya Şəkli</Label>
+                  <input type="file" onChange={(e) => setLabImages(prev => ({ ...prev, [idx]: e.target.files?.[0] as File }))} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                  {item.image_url && !labImages[idx] && (
+                    <div className="mt-2">
+                      <img src={item.image_url} alt="Laboratory" className="w-32 h-20 object-cover rounded-lg border border-gray-200" />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">AZ başlıq</Label>
+                    <Input value={item.az.title} onChange={(e) => updateTranslatedListItem("laboratories", idx, "az", "title", e.target.value)} placeholder="Başlıq" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">AZ ətraflı məlumat (HTML)</Label>
+                    <Editor initialContent={item.az.description} onUpdate={(html) => updateTranslatedListItem("laboratories", idx, "az", "description", html)} />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">EN title</Label>
+                    <Input value={item.en.title} onChange={(e) => updateTranslatedListItem("laboratories", idx, "en", "title", e.target.value)} placeholder="Title" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">EN description (HTML)</Label>
+                    <Editor initialContent={item.en.description} onUpdate={(html) => updateTranslatedListItem("laboratories", idx, "en", "description", html)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const handleSave = async () => {
     if (!payload.faculty_code) {
       Swal.fire({ icon: "warning", title: "Xahiş olunur", text: "Fakültə seçilməlidir." });
@@ -594,6 +669,15 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
         const worker = result.cafedra.scientific_council[index];
         if (worker && worker.id) {
           await uploadCafedraWorkerImage(worker.id, councilImages[index]);
+        }
+      }
+
+      // Handle Laboratory Images
+      for (const indexStr in labImages) {
+        const index = parseInt(indexStr);
+        const lab = result.cafedra.laboratories[index];
+        if (lab && lab.id) {
+          await uploadLaboratoryImage(lab.id, labImages[index]);
         }
       }
 
@@ -909,7 +993,7 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
       {renderPersonnelSection("Elmi Şura", "Kafedra elmi şurasının üzvləri.", "scientific_council", councilImages, setCouncilImages)}
       {renderPersonnelSection("İşçilər", "Kafedra işçiləri məlumatları.", "workers", workerImages, setWorkerImages)}
 
-      {renderTranslatedArraySection("Laboratoriyalar", "laboratories")}
+      {renderLaboratorySection()}
       {renderTranslatedArraySection("Elmi-tədqiqat işləri", "research_works")}
       {renderTranslatedArraySection("Tərəfdaş şirkətlər", "partner_companies")}
       {renderTranslatedArraySection("Məqsədlər", "objectives")}
