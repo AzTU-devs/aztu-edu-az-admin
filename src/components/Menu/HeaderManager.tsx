@@ -7,6 +7,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import MenuModal from "./MenuModal";
 import {
   AdminMenuHeader,
@@ -101,6 +103,7 @@ export default function HeaderManager() {
   const [hOrder, setHOrder] = useState("1");
   const [hDirectUrl, setHDirectUrl] = useState("");
   const [hHasSubitems, setHHasSubitems] = useState(true);
+  const [hIsActive, setHIsActive] = useState(true);
 
   // form state — items
   const [iTitleAz, setITitleAz] = useState("");
@@ -108,12 +111,14 @@ export default function HeaderManager() {
   const [iOrder, setIOrder] = useState("1");
   const [iDirectUrl, setIDirectUrl] = useState("");
   const [iHasSubitems, setIHasSubitems] = useState(false);
+  const [iIsActive, setIIsActive] = useState(true);
 
   // form state — sub-items
   const [siTitleAz, setSiTitleAz] = useState("");
   const [siTitleEn, setSiTitleEn] = useState("");
   const [siOrder, setSiOrder] = useState("1");
   const [siDirectUrl, setSiDirectUrl] = useState("");
+  const [siIsActive, setSiIsActive] = useState(true);
 
   const loadData = async () => {
     setLoading(true);
@@ -128,40 +133,47 @@ export default function HeaderManager() {
   // ── open modal helpers ─────────────────────────────────────
   const openCreateHeader = () => {
     setHTitleAz(""); setHTitleEn(""); setHImageFile(null);
-    setHCurrentImageUrl(""); setHOrder("1"); setHDirectUrl("");
-    setHHasSubitems(true);
+    setHCurrentImageUrl(""); setHOrder(String(headers.length + 1)); setHDirectUrl("");
+    setHHasSubitems(true); setHIsActive(true);
     setModal({ type: "header", mode: "create" });
   };
 
   const openEditHeader = (h: AdminMenuHeader) => {
-    setHTitleAz(h.title); setHTitleEn(h.title);
+    setHTitleAz(h.title_az || h.title); setHTitleEn(h.title_en || h.title);
     setHImageFile(null); setHCurrentImageUrl(h.image_url || "");
     setHOrder(String(h.display_order)); setHDirectUrl(h.direct_url || "");
     setHHasSubitems((String(h.has_subitems) === "1" || h.has_subitems === true));
+    setHIsActive(h.is_active);
     setModal({ type: "header", mode: "edit", target: h });
   };
 
   const openCreateItem = () => {
-    setITitleAz(""); setITitleEn(""); setIOrder("1"); setIDirectUrl("");
-    setIHasSubitems(false);
+    const currentItemsCount = selectedHeader?.items?.length || 0;
+    setITitleAz(""); setITitleEn(""); setIOrder(String(currentItemsCount + 1)); setIDirectUrl("");
+    setIHasSubitems(false); setIIsActive(true);
     setModal({ type: "item", mode: "create" });
   };
 
   const openEditItem = (item: AdminMenuHeaderItem) => {
-    setITitleAz(item.title); setITitleEn(item.title);
+    setITitleAz(item.title_az || item.title); setITitleEn(item.title_en || item.title);
     setIOrder(String(item.display_order)); setIDirectUrl(item.direct_url || "");
     setIHasSubitems((String(item.has_subitems) === "1" || item.has_subitems === true));
+    setIIsActive(item.is_active);
     setModal({ type: "item", mode: "edit", target: item });
   };
 
   const openCreateSubItem = () => {
-    setSiTitleAz(""); setSiTitleEn(""); setSiOrder("1"); setSiDirectUrl("");
+    const it = currentItems.find(i => i.id === selectedItem?.id);
+    const currentSubItemsCount = it?.sub_items?.length || it?.subitems?.length || 0;
+    setSiTitleAz(""); setSiTitleEn(""); setSiOrder(String(currentSubItemsCount + 1)); setSiDirectUrl("");
+    setSiIsActive(true);
     setModal({ type: "subitem", mode: "create" });
   };
 
   const openEditSubItem = (si: AdminMenuHeaderSubItem) => {
-    setSiTitleAz(si.title); setSiTitleEn(si.title);
+    setSiTitleAz(si.title_az || si.title); setSiTitleEn(si.title_en || si.title);
     setSiOrder(String(si.display_order)); setSiDirectUrl(si.direct_url || "");
+    setSiIsActive(si.is_active);
     setModal({ type: "subitem", mode: "edit", target: si });
   };
 
@@ -190,6 +202,7 @@ export default function HeaderManager() {
           display_order: parseInt(hOrder) || 0,
           has_subitems: hHasSubitems,
           direct_url: hDirectUrl,
+          is_active: hIsActive,
         };
         if (hImageFile) payload.image = hImageFile;
         const res = await updateMenuHeader(target.id, payload);
@@ -219,6 +232,7 @@ export default function HeaderManager() {
           display_order: parseInt(iOrder) || 0,
           has_subitems: iHasSubitems,
           direct_url: iDirectUrl,
+          is_active: iIsActive,
         });
         if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
         else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); loadData(); }
@@ -244,6 +258,7 @@ export default function HeaderManager() {
           title_en: siTitleEn,
           direct_url: siDirectUrl || null,
           display_order: parseInt(siOrder) || 0,
+          is_active: siIsActive,
         });
         if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
         else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); loadData(); }
@@ -252,6 +267,48 @@ export default function HeaderManager() {
 
     setSaving(false);
     setModal(null);
+  };
+
+  // ── reorder handlers ───────────────────────────────────────
+  const handleMove = async (type: "header" | "item" | "subitem", id: number, direction: "up" | "down") => {
+    let list: any[] = [];
+    if (type === "header") list = [...headers].sort((a, b) => a.display_order - b.display_order);
+    else if (type === "item") list = [...(selectedHeader?.items || [])].sort((a, b) => a.display_order - b.display_order);
+    else if (type === "subitem") list = [...(selectedItem?.sub_items || (selectedItem as any)?.subitems || [])].sort((a, b) => a.display_order - b.display_order);
+
+    const idx = list.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    if (direction === "up" && idx === 0) return;
+    if (direction === "down" && idx === list.length - 1) return;
+
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    const a = list[idx];
+    const b = list[targetIdx];
+
+    // Swap display_orders
+    const tempOrder = a.display_order;
+    a.display_order = b.display_order;
+    b.display_order = tempOrder;
+
+    setLoading(true);
+    let resA: any, resB: any;
+    if (type === "header") {
+      resA = await updateMenuHeader(a.id, { display_order: a.display_order });
+      resB = await updateMenuHeader(b.id, { display_order: b.display_order });
+    } else if (type === "item") {
+      resA = await updateHeaderItem(a.id, { display_order: a.display_order });
+      resB = await updateHeaderItem(b.id, { display_order: b.display_order });
+    } else {
+      resA = await updateHeaderSubItem(a.id, { display_order: a.display_order });
+      resB = await updateHeaderSubItem(b.id, { display_order: b.display_order });
+    }
+
+    if (resA === "SUCCESS" && resB === "SUCCESS") {
+      await loadData();
+    } else {
+      Swal.fire({ icon: "error", title: "Sıralama yenilənə bilmədi", timer: 2000, showConfirmButton: false });
+      setLoading(false);
+    }
   };
 
   // ── delete handlers ────────────────────────────────────────
@@ -311,7 +368,7 @@ export default function HeaderManager() {
     : [];
 
   const currentSubItems: AdminMenuHeaderSubItem[] = selectedItem
-    ? (currentItems.find(i => i.id === selectedItem.id)?.sub_items || [])
+    ? (currentItems.find(i => i.id === selectedItem.id)?.sub_items || (currentItems.find(i => i.id === selectedItem.id) as any)?.subitems || [])
     : [];
 
   // ── render ─────────────────────────────────────────────────
@@ -362,9 +419,27 @@ export default function HeaderManager() {
             <p className="text-center text-gray-500 dark:text-gray-400 py-12">Başlıq yoxdur</p>
           ) : (
             <div className="space-y-2">
-              {headers.map((h) => (
-                <div key={h.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 overflow-hidden">
+              {headers
+                .sort((a, b) => a.display_order - b.display_order)
+                .map((h, idx) => (
+                <div key={h.id} className={`border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 overflow-hidden ${!h.is_active ? "opacity-50" : ""}`}>
                   <div className="flex items-center px-4 py-3 gap-3">
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <button 
+                        disabled={idx === 0}
+                        onClick={() => handleMove("header", h.id, "up")}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
+                      >
+                        <ArrowUpwardIcon sx={{ fontSize: 16 }} />
+                      </button>
+                      <button 
+                        disabled={idx === headers.length - 1}
+                        onClick={() => handleMove("header", h.id, "down")}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
+                      >
+                        <ArrowDownwardIcon sx={{ fontSize: 16 }} />
+                      </button>
+                    </div>
                     {h.image_url && (
                       <img src={h.image_url} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
                     )}
@@ -375,6 +450,9 @@ export default function HeaderManager() {
                           <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider">KATEQORİYA</span>
                         ) : (
                           <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded uppercase tracking-wider">KEÇİD</span>
+                        )}
+                        {!h.is_active && (
+                          <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-bold rounded uppercase tracking-wider">Passiv</span>
                         )}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
@@ -429,9 +507,27 @@ export default function HeaderManager() {
             <p className="text-center text-gray-500 dark:text-gray-400 py-12">Element yoxdur</p>
           ) : (
             <div className="space-y-2">
-              {currentItems.map((item) => (
-                <div key={item.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
+              {currentItems
+                .sort((a, b) => a.display_order - b.display_order)
+                .map((item, idx) => (
+                <div key={item.id} className={`border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 ${!item.is_active ? "opacity-50" : ""}`}>
                   <div className="flex items-center px-4 py-3 gap-3">
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <button 
+                        disabled={idx === 0}
+                        onClick={() => handleMove("item", item.id, "up")}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
+                      >
+                        <ArrowUpwardIcon sx={{ fontSize: 16 }} />
+                      </button>
+                      <button 
+                        disabled={idx === currentItems.length - 1}
+                        onClick={() => handleMove("item", item.id, "down")}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
+                      >
+                        <ArrowDownwardIcon sx={{ fontSize: 16 }} />
+                      </button>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title}</p>
@@ -439,6 +535,9 @@ export default function HeaderManager() {
                           <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider">KATEQORİYA</span>
                         ) : (
                           <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded uppercase tracking-wider">KEÇİD</span>
+                        )}
+                        {!item.is_active && (
+                          <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-bold rounded uppercase tracking-wider">Passiv</span>
                         )}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
@@ -448,14 +547,12 @@ export default function HeaderManager() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {(String(item.has_subitems) === "1" || item.has_subitems === true) && (
-                        <button
-                          onClick={() => { setSelectedItem(item); setView("subitems"); }}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          Alt-elementlər <ExpandMoreIcon sx={{ fontSize: 16 }} />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => { setSelectedItem(item); setView("subitems"); }}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        Alt-elementlər <ExpandMoreIcon sx={{ fontSize: 16 }} />
+                      </button>
                       <button onClick={() => openEditItem(item)} className="p-1.5 bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
                         <EditIcon sx={{ fontSize: 16, color: "white" }} />
                       </button>
@@ -493,11 +590,34 @@ export default function HeaderManager() {
             <p className="text-center text-gray-500 dark:text-gray-400 py-12">Alt-element yoxdur</p>
           ) : (
             <div className="space-y-2">
-              {currentSubItems.map((si) => (
-                <div key={si.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
+              {currentSubItems
+                .sort((a, b) => a.display_order - b.display_order)
+                .map((si, idx) => (
+                <div key={si.id} className={`border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 ${!si.is_active ? "opacity-50" : ""}`}>
                   <div className="flex items-center px-4 py-3 gap-3">
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <button 
+                        disabled={idx === 0}
+                        onClick={() => handleMove("subitem", si.id, "up")}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
+                      >
+                        <ArrowUpwardIcon sx={{ fontSize: 16 }} />
+                      </button>
+                      <button 
+                        disabled={idx === currentSubItems.length - 1}
+                        onClick={() => handleMove("subitem", si.id, "down")}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
+                      >
+                        <ArrowDownwardIcon sx={{ fontSize: 16 }} />
+                      </button>
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{si.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{si.title}</p>
+                        {!si.is_active && (
+                          <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-bold rounded uppercase tracking-wider">Passiv</span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
                         {si.slug && <>/{si.slug} · </>}
                         <span className="text-green-600 dark:text-green-400">{si.direct_url}</span>
@@ -532,6 +652,28 @@ export default function HeaderManager() {
           onSubmit={handleSubmit}
           loading={saving}
         >
+          {/* COMMON IS_ACTIVE TOGGLE */}
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={
+                  modal.type === "header" ? hIsActive :
+                  modal.type === "item" ? iIsActive : siIsActive
+                }
+                onChange={(e) => {
+                  if (modal.type === "header") setHIsActive(e.target.checked);
+                  else if (modal.type === "item") setIIsActive(e.target.checked);
+                  else setSiIsActive(e.target.checked);
+                }}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
+                Aktivdir? (Saytda göstərilsin)
+              </span>
+            </label>
+          </div>
+
           {/* HEADER FORM */}
           {modal.type === "header" && (
             <>
