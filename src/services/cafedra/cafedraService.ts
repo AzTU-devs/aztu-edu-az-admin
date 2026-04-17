@@ -16,18 +16,34 @@ export interface TranslatedTextItem {
     };
 }
 
+export interface LaboratoryObjective {
+    id?: number;
+    az: { title: string };
+    en: { title: string };
+}
+
+export interface LaboratoryGalleryImage {
+    id: number;
+    image_url: string;
+}
+
 export interface Laboratory {
     id?: number;
     cafedra_code?: string;
     image_url?: string | null;
+    room_number?: string;
+    email?: string;
+    phone_number?: string;
     az: {
         title: string;
-        description: string;
+        html_content: string;
     };
     en: {
         title: string;
-        description: string;
+        html_content: string;
     };
+    objectives: LaboratoryObjective[];
+    gallery_images: LaboratoryGalleryImage[];
 }
 
 export interface WorkingHour {
@@ -265,7 +281,7 @@ export const getCafedraLaboratories = async (cafedraCode: string, lang: string =
     }
 };
 
-export const addLaboratoryToCafedra = async (cafedraCode: string, payload: Laboratory) => {
+export const createLaboratory = async (cafedraCode: string, payload: Laboratory) => {
     try {
         const response = await apiClient.post(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/laboratories`, payload);
         if (response.data.status_code === 201) {
@@ -285,6 +301,34 @@ export const uploadLaboratoryImage = async (laboratoryId: number, imageFile: Fil
             headers: { "Content-Type": "multipart/form-data" },
         });
         if (response.data.status_code === 200) {
+            return "SUCCESS";
+        }
+        return "ERROR";
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
+
+export const uploadLaboratoryGalleryImage = async (laboratoryId: number, imageFile: File) => {
+    try {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const response = await apiClient.post(`${CAFEDRA_ADMIN_BASE}/laboratories/${laboratoryId}/gallery`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        if (response.data.status_code === 201 || response.data.status_code === 200) {
+            return { status: "SUCCESS", id: response.data.id as number | undefined, image_url: response.data.image_url as string | undefined };
+        }
+        return { status: "ERROR" };
+    } catch (err: any) {
+        return { status: "ERROR" };
+    }
+};
+
+export const deleteLaboratoryGalleryImage = async (galleryImageId: number) => {
+    try {
+        const response = await apiClient.delete(`${CAFEDRA_ADMIN_BASE}/laboratories/gallery/${galleryImageId}`);
+        if (response.data.status_code === 200 || response.data.status_code === 204) {
             return "SUCCESS";
         }
         return "ERROR";

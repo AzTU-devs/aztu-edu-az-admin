@@ -11,12 +11,15 @@ import {
   DirectorPayload,
   TranslatedTextItem,
   Laboratory,
+  LaboratoryObjective,
   WorkingHour,
   EducationItem,
   CafedraDetail,
   uploadCafedraDirectorImage,
   uploadCafedraWorkerImage,
   uploadLaboratoryImage,
+  uploadLaboratoryGalleryImage,
+  deleteLaboratoryGalleryImage,
 } from "../../services/cafedra/cafedraService";
 import { getFaculties, Faculty } from "../../services/faculty/facultyService";
 
@@ -32,9 +35,19 @@ const blankTranslatedItem: TranslatedTextItem = {
 };
 
 const blankLaboratory: Laboratory = {
-  az: { title: "", description: "" },
-  en: { title: "", description: "" },
+  az: { title: "", html_content: "" },
+  en: { title: "", html_content: "" },
   image_url: null,
+  room_number: "",
+  email: "",
+  phone_number: "",
+  objectives: [],
+  gallery_images: [],
+};
+
+const blankLaboratoryObjective: LaboratoryObjective = {
+  az: { title: "" },
+  en: { title: "" },
 };
 
 const blankWorkingHour: WorkingHour = { az: { day: "" }, en: { day: "" }, time_range: "" };
@@ -168,8 +181,20 @@ const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
     laboratories: (Array.isArray(value.laboratories) ? value.laboratories : []).map((item: any) => ({
       id: item.id,
       image_url: item.image_url ?? null,
-      az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
-      en: { title: item.en?.title ?? "", description: item.en?.description ?? "" },
+      room_number: item.room_number ?? "",
+      email: item.email ?? "",
+      phone_number: item.phone_number ?? "",
+      az: { title: item.az?.title ?? "", html_content: item.az?.html_content ?? item.az?.description ?? "" },
+      en: { title: item.en?.title ?? "", html_content: item.en?.html_content ?? item.en?.description ?? "" },
+      objectives: (Array.isArray(item.objectives) ? item.objectives : []).map((obj: any) => ({
+        id: obj.id,
+        az: { title: obj.az?.title ?? obj.title ?? "" },
+        en: { title: obj.en?.title ?? obj.title ?? "" },
+      })),
+      gallery_images: (Array.isArray(item.gallery_images) ? item.gallery_images : []).map((g: any) => ({
+        id: g.id,
+        image_url: g.image_url ?? "",
+      })),
     })),
     research_works: (Array.isArray(value.research_works) ? value.research_works : []).map((item: any) => ({
       az: { title: item.az?.title ?? "", description: item.az?.description ?? "" },
@@ -218,6 +243,7 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
   const [deputyDeanImages, setDeputyDeanImages] = useState<{ [index: number]: File }>({});
   const [councilImages, setCouncilImages] = useState<{ [index: number]: File }>({});
   const [labImages, setLabImages] = useState<{ [index: number]: File }>({});
+  const [labGalleryFiles, setLabGalleryFiles] = useState<{ [index: number]: File[] }>({});
 
   useEffect(() => {
     setPayload(normalizeCafedraPayload(initialValue));
@@ -561,6 +587,111 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
     );
   };
 
+  const updateLabField = (idx: number, field: "room_number" | "email" | "phone_number", value: string) => {
+    setPayload((prev) => {
+      const list = [...prev.laboratories];
+      list[idx] = { ...list[idx], [field]: value };
+      return { ...prev, laboratories: list };
+    });
+  };
+
+  const updateLabTranslatedField = (idx: number, lang: "az" | "en", field: "title" | "html_content", value: string) => {
+    setPayload((prev) => {
+      const list = [...prev.laboratories];
+      list[idx] = { ...list[idx], [lang]: { ...list[idx][lang], [field]: value } };
+      return { ...prev, laboratories: list };
+    });
+  };
+
+  const addLabObjective = (idx: number) => {
+    setPayload((prev) => {
+      const list = [...prev.laboratories];
+      const lab = list[idx];
+      list[idx] = { ...lab, objectives: [...(lab.objectives ?? []), { ...blankLaboratoryObjective, az: { title: "" }, en: { title: "" } }] };
+      return { ...prev, laboratories: list };
+    });
+  };
+
+  const removeLabObjective = (labIdx: number, objIdx: number) => {
+    setPayload((prev) => {
+      const list = [...prev.laboratories];
+      const objectives = [...(list[labIdx].objectives ?? [])];
+      objectives.splice(objIdx, 1);
+      list[labIdx] = { ...list[labIdx], objectives };
+      return { ...prev, laboratories: list };
+    });
+  };
+
+  const updateLabObjective = (labIdx: number, objIdx: number, lang: "az" | "en", value: string) => {
+    setPayload((prev) => {
+      const list = [...prev.laboratories];
+      const objectives = [...(list[labIdx].objectives ?? [])];
+      objectives[objIdx] = { ...objectives[objIdx], [lang]: { title: value } };
+      list[labIdx] = { ...list[labIdx], objectives };
+      return { ...prev, laboratories: list };
+    });
+  };
+
+  const handleLabGallerySelect = async (idx: number, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const fileArr = Array.from(files);
+    const lab = payload.laboratories[idx];
+
+    if (lab.id) {
+      for (const file of fileArr) {
+        const res = await uploadLaboratoryGalleryImage(lab.id, file);
+        if (res.status === "SUCCESS" && res.id && res.image_url) {
+          setPayload((prev) => {
+            const list = [...prev.laboratories];
+            list[idx] = {
+              ...list[idx],
+              gallery_images: [...(list[idx].gallery_images ?? []), { id: res.id as number, image_url: res.image_url as string }],
+            };
+            return { ...prev, laboratories: list };
+          });
+        }
+      }
+      Swal.fire({ icon: "success", title: "Qalereya şəkilləri yükləndi", showConfirmButton: false, timer: 1200 });
+    } else {
+      setLabGalleryFiles((prev) => ({
+        ...prev,
+        [idx]: [...(prev[idx] ?? []), ...fileArr],
+      }));
+    }
+  };
+
+  const removeLabGalleryPending = (labIdx: number, fileIdx: number) => {
+    setLabGalleryFiles((prev) => {
+      const list = [...(prev[labIdx] ?? [])];
+      list.splice(fileIdx, 1);
+      return { ...prev, [labIdx]: list };
+    });
+  };
+
+  const removeLabGalleryExisting = async (labIdx: number, galleryId: number) => {
+    const confirm = await Swal.fire({
+      icon: "warning",
+      title: "Silinsin?",
+      text: "Bu qalereya şəkli silinəcək.",
+      showCancelButton: true,
+      confirmButtonText: "Bəli, sil",
+      cancelButtonText: "İmtina",
+    });
+    if (!confirm.isConfirmed) return;
+
+    const res = await deleteLaboratoryGalleryImage(galleryId);
+    if (res === "SUCCESS") {
+      setPayload((prev) => {
+        const list = [...prev.laboratories];
+        const gallery = (list[labIdx].gallery_images ?? []).filter((g) => g.id !== galleryId);
+        list[labIdx] = { ...list[labIdx], gallery_images: gallery };
+        return { ...prev, laboratories: list };
+      });
+    } else {
+      Swal.fire({ icon: "error", title: "Xəta", text: "Şəkil silinərkən xəta baş verdi." });
+    }
+  };
+
   const renderLaboratorySection = () => {
     const list = payload.laboratories;
     return (
@@ -568,7 +699,7 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
           <div>
             <p className="font-semibold text-gray-800 dark:text-gray-100">Laboratoriyalar</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Hər iki dildə başlıq, şəkil və ətraflı məlumat əlavə edin.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Hər iki dildə başlıq, şəkil, əlaqə məlumatları, məqsədlər və qalereya əlavə edin.</p>
           </div>
           <Button type="button" className="px-3 py-1.5 text-sm" onClick={() => addListItem("laboratories", blankLaboratory)}>
             Yeni əlavə et
@@ -579,43 +710,131 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
           {list.map((item, idx) => (
             <div key={`lab-${idx}`} className="rounded-2xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
               <div className="flex items-center justify-between gap-4">
-                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Laboratoriya #{idx + 1}</p>
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Laboratoriya #{idx + 1}{item.id ? ` (ID: ${item.id})` : ""}</p>
                 <button type="button" className="text-sm text-red-500 hover:underline" onClick={() => removeListItem("laboratories", idx)}>
                   Sil
                 </button>
               </div>
-              <div className="grid gap-4 md:grid-cols-1">
+
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Əsas şəkil</Label>
+                <input type="file" accept="image/*" onChange={(e) => setLabImages(prev => ({ ...prev, [idx]: e.target.files?.[0] as File }))} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                {item.image_url && !labImages[idx] && (
+                  <div className="mt-2">
+                    <img src={item.image_url} alt="Laboratory" className="w-32 h-20 object-cover rounded-lg border border-gray-200" />
+                  </div>
+                )}
+                {labImages[idx] && (
+                  <div className="mt-2">
+                    <img src={URL.createObjectURL(labImages[idx])} alt="Preview" className="w-32 h-20 object-cover rounded-lg border border-gray-200" />
+                    <p className="text-[11px] text-gray-400 mt-1">Yadda saxlayan zaman yüklənəcək</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
                 <div>
-                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Laboratoriya Şəkli</Label>
-                  <input type="file" onChange={(e) => setLabImages(prev => ({ ...prev, [idx]: e.target.files?.[0] as File }))} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-                  {item.image_url && !labImages[idx] && (
-                    <div className="mt-2">
-                      <img src={item.image_url} alt="Laboratory" className="w-32 h-20 object-cover rounded-lg border border-gray-200" />
-                    </div>
-                  )}
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Otaq nömrəsi</Label>
+                  <Input value={item.room_number ?? ""} onChange={(e) => updateLabField(idx, "room_number", e.target.value)} placeholder="1-307" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Email</Label>
+                  <Input value={item.email ?? ""} onChange={(e) => updateLabField(idx, "email", e.target.value)} placeholder="lab@aztu.edu.az" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Telefon</Label>
+                  <Input value={item.phone_number ?? ""} onChange={(e) => updateLabField(idx, "phone_number", e.target.value)} placeholder="+994 12 539 10 91" />
                 </div>
               </div>
+
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="space-y-4">
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">AZ başlıq</Label>
-                    <Input value={item.az.title} onChange={(e) => updateTranslatedListItem("laboratories", idx, "az", "title", e.target.value)} placeholder="Başlıq" />
+                    <Input value={item.az.title} onChange={(e) => updateLabTranslatedField(idx, "az", "title", e.target.value)} placeholder="Başlıq" />
                   </div>
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">AZ ətraflı məlumat (HTML)</Label>
-                    <Editor initialContent={item.az.description} onUpdate={(html) => updateTranslatedListItem("laboratories", idx, "az", "description", html)} />
+                    <Editor initialContent={item.az.html_content} onUpdate={(html) => updateLabTranslatedField(idx, "az", "html_content", html)} />
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">EN title</Label>
-                    <Input value={item.en.title} onChange={(e) => updateTranslatedListItem("laboratories", idx, "en", "title", e.target.value)} placeholder="Title" />
+                    <Input value={item.en.title} onChange={(e) => updateLabTranslatedField(idx, "en", "title", e.target.value)} placeholder="Title" />
                   </div>
                   <div>
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">EN description (HTML)</Label>
-                    <Editor initialContent={item.en.description} onUpdate={(html) => updateTranslatedListItem("laboratories", idx, "en", "description", html)} />
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">EN content (HTML)</Label>
+                    <Editor initialContent={item.en.html_content} onUpdate={(html) => updateLabTranslatedField(idx, "en", "html_content", html)} />
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 dark:border-gray-800 p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Məqsədlər</p>
+                  <Button type="button" className="px-3 py-1 text-xs" onClick={() => addLabObjective(idx)}>
+                    Məqsəd əlavə et
+                  </Button>
+                </div>
+                {(item.objectives ?? []).length === 0 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Məqsəd əlavə edilməyib.</p>
+                )}
+                {(item.objectives ?? []).map((obj, oIdx) => (
+                  <div key={`lab-${idx}-obj-${oIdx}`} className="grid gap-3 md:grid-cols-2 items-end border-b border-dashed border-gray-100 dark:border-gray-800 pb-3 last:border-0 last:pb-0">
+                    <div>
+                      <Label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Məqsəd (AZ)</Label>
+                      <Input value={obj.az.title} onChange={(e) => updateLabObjective(idx, oIdx, "az", e.target.value)} placeholder="Məqsəd başlığı" />
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <Label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Objective (EN)</Label>
+                        <Input value={obj.en.title} onChange={(e) => updateLabObjective(idx, oIdx, "en", e.target.value)} placeholder="Objective title" />
+                      </div>
+                      <button type="button" className="text-sm text-red-500 hover:underline mb-2" onClick={() => removeLabObjective(idx, oIdx)}>
+                        Sil
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-gray-100 dark:border-gray-800 p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Qalereya şəkilləri</p>
+                  <label className="inline-block cursor-pointer px-3 py-1.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100">
+                    Şəkil əlavə et
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleLabGallerySelect(idx, e.target.files); e.target.value = ""; }} />
+                  </label>
+                </div>
+                {item.id ? (
+                  <p className="text-[11px] text-gray-400">Şəkil seçdikdə dərhal yüklənəcək.</p>
+                ) : (
+                  <p className="text-[11px] text-gray-400">Laboratoriya yaradıldıqdan sonra yüklənəcək.</p>
+                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {(item.gallery_images ?? []).map((g) => (
+                    <div key={`gallery-${g.id}`} className="relative group rounded-lg overflow-hidden border border-gray-200">
+                      <img src={g.image_url} alt="Gallery" className="w-full h-24 object-cover" />
+                      <button type="button" onClick={() => removeLabGalleryExisting(idx, g.id)} className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" title="Sil">
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {(labGalleryFiles[idx] ?? []).map((file, fIdx) => (
+                    <div key={`pending-${idx}-${fIdx}`} className="relative group rounded-lg overflow-hidden border border-dashed border-blue-300">
+                      <img src={URL.createObjectURL(file)} alt="Pending" className="w-full h-24 object-cover opacity-80" />
+                      <span className="absolute bottom-1 left-1 right-1 bg-blue-600/80 text-white text-[10px] text-center rounded px-1">Gözləyir</span>
+                      <button type="button" onClick={() => removeLabGalleryPending(idx, fIdx)} className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" title="Ləğv et">
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {(item.gallery_images ?? []).length === 0 && (labGalleryFiles[idx] ?? []).length === 0 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Qalereya boşdur.</p>
+                )}
               </div>
             </div>
           ))}
@@ -678,6 +897,18 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
         const lab = result.cafedra.laboratories[index];
         if (lab && lab.id) {
           await uploadLaboratoryImage(lab.id, labImages[index]);
+        }
+      }
+
+      // Handle Laboratory Gallery Images (pending files from not-yet-created labs)
+      for (const indexStr in labGalleryFiles) {
+        const index = parseInt(indexStr);
+        const lab = result.cafedra.laboratories[index];
+        const files = labGalleryFiles[index] ?? [];
+        if (lab && lab.id && files.length > 0) {
+          for (const file of files) {
+            await uploadLaboratoryGalleryImage(lab.id, file);
+          }
         }
       }
 

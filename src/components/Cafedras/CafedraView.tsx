@@ -107,16 +107,47 @@ export default function CafedraView() {
     return (
       <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-5 space-y-4">
         <p className="font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-100 dark:border-gray-800 pb-2">Laboratoriyalar</p>
-        <div className="grid gap-6 md:grid-cols-1">
+        <div className="space-y-6">
           {list.map((item, idx) => (
-            <div key={idx} className="p-4 rounded-xl border border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 flex flex-col md:flex-row gap-6">
-              {item.image_url && (
-                <img src={item.image_url} alt={item.az?.title} className="w-full md:w-48 h-32 object-cover rounded-xl border border-gray-200" />
-              )}
-              <div className="flex-1">
-                <p className="text-base font-bold text-gray-900 dark:text-white">{item.az?.title || item.en?.title}</p>
-                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: item.az?.description || item.en?.description || "" }} />
+            <div key={idx} className="p-4 rounded-xl border border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 space-y-4">
+              <div className="flex flex-col md:flex-row gap-6">
+                {item.image_url && (
+                  <img src={item.image_url} alt={item.az?.title} className="w-full md:w-48 h-32 object-cover rounded-xl border border-gray-200" />
+                )}
+                <div className="flex-1 space-y-2">
+                  <p className="text-base font-bold text-gray-900 dark:text-white">{item.az?.title || item.en?.title}</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                    {item.room_number && <span><span className="font-semibold">Otaq:</span> {item.room_number}</span>}
+                    {item.email && <span><span className="font-semibold">Email:</span> {item.email}</span>}
+                    {item.phone_number && <span><span className="font-semibold">Tel:</span> {item.phone_number}</span>}
+                  </div>
+                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400 prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: item.az?.html_content || item.en?.html_content || item.az?.description || item.en?.description || "" }} />
+                </div>
               </div>
+
+              {Array.isArray(item.objectives) && item.objectives.length > 0 && (
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Məqsədlər</p>
+                  <ol className="list-decimal pl-5 space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                    {item.objectives.map((obj: any, i: number) => (
+                      <li key={`lab-${idx}-obj-${i}`}>{obj.az?.title || obj.en?.title || obj.title || ""}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {Array.isArray(item.gallery_images) && item.gallery_images.length > 0 && (
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Qalereya</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {item.gallery_images.map((g: any) => (
+                      <a key={`lab-${idx}-gallery-${g.id}`} href={g.image_url} target="_blank" rel="noreferrer" className="block rounded-lg overflow-hidden border border-gray-200 hover:opacity-90">
+                        <img src={g.image_url} alt="Gallery" className="w-full h-24 object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
