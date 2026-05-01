@@ -130,7 +130,7 @@ export interface AdminQuickSectionItem {
 
 export const getMenuHeader = async (lang: string = "az"): Promise<AdminMenuHeader[] | "ERROR"> => {
   try {
-    const res = await apiClient.get("/api/v1/menu_header/", {
+    const res = await apiClient.get("/api/menu/header/", {
       headers: { "Accept-Language": lang },
     });
     if (res.data.status_code === 200) {
@@ -164,7 +164,7 @@ export const createMenuHeader = async (payload: {
     formData.append("has_subitems", payload.has_subitems ? "1" : "0");
     if (payload.direct_url !== undefined) formData.append("direct_url", payload.direct_url);
     if (payload.image) formData.append("image", payload.image);
-    const res = await apiClient.post("/api/v1/menu_header/header/", formData, {
+    const res = await apiClient.post("/api/menu/header/header/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     if (res.data.status_code === 201) return { id: res.data.id };
@@ -195,7 +195,7 @@ export const updateMenuHeader = async (
     if (payload.direct_url !== undefined) formData.append("direct_url", payload.direct_url);
     if (payload.is_active !== undefined) formData.append("is_active", payload.is_active ? "1" : "0");
     if (payload.image) formData.append("image", payload.image);
-    const res = await apiClient.put(`/api/v1/menu_header/header/${id}/`, formData, {
+    const res = await apiClient.put(`/api/menu/header/header/${id}/`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     if (res.data.status_code === 200) return "SUCCESS";
@@ -209,7 +209,7 @@ export const updateMenuHeader = async (
 
 export const deleteMenuHeader = async (id: number): Promise<"SUCCESS" | "NOT FOUND" | "ERROR"> => {
   try {
-    const res = await apiClient.delete(`/api/v1/menu_header/header/${id}/`);
+    const res = await apiClient.delete(`/api/menu/header/header/${id}/`);
     if (res.data.status_code === 200) return "SUCCESS";
     if (res.data.status_code === 404) return "NOT FOUND";
     return "ERROR";
@@ -232,7 +232,7 @@ export const createHeaderItem = async (payload: {
   direct_url?: string | null;
 }): Promise<{ id: number } | "ERROR" | "BAD REQUEST"> => {
   try {
-    const res = await apiClient.post("/api/v1/menu_header/item/", {
+    const res = await apiClient.post("/api/menu/header/item/", {
       ...payload,
       has_subitems: payload.has_subitems ? 1 : 0,
     });
@@ -262,7 +262,7 @@ export const updateHeaderItem = async (
       has_subitems: payload.has_subitems !== undefined ? (payload.has_subitems ? 1 : 0) : undefined,
       is_active: payload.is_active !== undefined ? (payload.is_active ? 1 : 0) : undefined,
     };
-    const res = await apiClient.put(`/api/v1/menu_header/item/${id}/`, body);
+    const res = await apiClient.put(`/api/menu/header/item/${id}/`, body);
     if (res.data.status_code === 200) return "SUCCESS";
     if (res.data.status_code === 404) return "NOT FOUND";
     return "ERROR";
@@ -274,7 +274,7 @@ export const updateHeaderItem = async (
 
 export const deleteHeaderItem = async (id: number): Promise<"SUCCESS" | "NOT FOUND" | "ERROR"> => {
   try {
-    const res = await apiClient.delete(`/api/v1/menu_header/item/${id}/`);
+    const res = await apiClient.delete(`/api/menu/header/item/${id}/`);
     if (res.data.status_code === 200) return "SUCCESS";
     if (res.data.status_code === 404) return "NOT FOUND";
     return "ERROR";
@@ -296,7 +296,7 @@ export const createHeaderSubItem = async (payload: {
   direct_url?: string | null;
 }): Promise<{ id: number } | "ERROR" | "BAD REQUEST"> => {
   try {
-    const res = await apiClient.post("/api/v1/menu_header/subitem/", payload);
+    const res = await apiClient.post("/api/menu/header/subitem/", payload);
     if (res.data.status_code === 201) return { id: res.data.id };
     if (res.data.status_code === 400) return "BAD REQUEST";
     return "ERROR";
@@ -317,7 +317,7 @@ export const updateHeaderSubItem = async (
   }>
 ): Promise<"SUCCESS" | "NOT FOUND" | "ERROR"> => {
   try {
-    const res = await apiClient.put(`/api/v1/menu_header/subitem/${id}/`, payload);
+    const res = await apiClient.put(`/api/menu/header/subitem/${id}/`, payload);
     if (res.data.status_code === 200) return "SUCCESS";
     if (res.data.status_code === 404) return "NOT FOUND";
     return "ERROR";
@@ -329,7 +329,7 @@ export const updateHeaderSubItem = async (
 
 export const deleteHeaderSubItem = async (id: number): Promise<"SUCCESS" | "NOT FOUND" | "ERROR"> => {
   try {
-    const res = await apiClient.delete(`/api/v1/menu_header/subitem/${id}/`);
+    const res = await apiClient.delete(`/api/menu/header/subitem/${id}/`);
     if (res.data.status_code === 200) return "SUCCESS";
     if (res.data.status_code === 404) return "NOT FOUND";
     return "ERROR";

@@ -5,7 +5,7 @@ import { loginSuccess, logout } from "../redux/slices/authSlice";
 // export const API_BASE_URL = 'http://10.3.43.88:8000';
 // export const API_BASE_URL = 'https://api-aztu.karamshukurlu.site';
 // export const API_BASE_URL = 'http://localhost:8000';
-export const API_BASE_URL = 'http://api.aztu.edu.az';
+export const API_BASE_URL = 'https://api.aztu.edu.az';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
