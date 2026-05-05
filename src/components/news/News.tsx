@@ -112,7 +112,7 @@ export default function NewsList() {
 
     const result = await reorderNews({
       news_id: Number(active.id),
-      new_order: newIndex + 1,
+      new_order: start + newIndex + 1,
     });
 
     if (result === "SUCCESS") {
@@ -122,6 +122,7 @@ export default function NewsList() {
         showConfirmButton: false,
         timer: 1500,
       });
+      fetchNews(start, end);
     } else {
       Swal.fire({
         icon: "error",
@@ -129,6 +130,7 @@ export default function NewsList() {
         showConfirmButton: false,
         timer: 1500,
       });
+      fetchNews(start, end);
     }
   };
 
