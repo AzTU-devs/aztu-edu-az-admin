@@ -1,17 +1,17 @@
-import MenuIcon from '@mui/icons-material/Menu';
-import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
+// import MenuIcon from '@mui/icons-material/Menu';
+// import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
 import { Link, useLocation } from "react-router";
 import CampaignIcon from '@mui/icons-material/Campaign';
-import HandshakeIcon from '@mui/icons-material/Handshake';
+// import HandshakeIcon from '@mui/icons-material/Handshake';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
-import EventNoteIcon from '@mui/icons-material/EventNote';
-import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
-import CollectionsIcon from '@mui/icons-material/Collections';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import SchoolIcon from '@mui/icons-material/School';
-import CategoryIcon from '@mui/icons-material/Category';
-import PeopleIcon from '@mui/icons-material/People';
-import ScienceIcon from '@mui/icons-material/Science';
+// import EventNoteIcon from '@mui/icons-material/EventNote';
+// import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
+// import CollectionsIcon from '@mui/icons-material/Collections';
+// import AccountTreeIcon from '@mui/icons-material/AccountTree';
+// import SchoolIcon from '@mui/icons-material/School';
+// import CategoryIcon from '@mui/icons-material/Category';
+// import PeopleIcon from '@mui/icons-material/People';
+// import ScienceIcon from '@mui/icons-material/Science';
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -34,19 +34,19 @@ const navItems: NavItem[] = [
     name: "Əsas səhifə",
     path: "/"
   },
-  {
-    icon: <SmartDisplayIcon />,
-    name: "Hero",
-    path: "/hero",
-  },
-  {
-    icon: <AccountTreeIcon />,
-    name: "Layihələr",
-    subItems: [
-      { name: "Layihələr", path: "/projects" },
-      { name: "Yeni layihə", path: "/projects/new" }
-    ],
-  },
+  // {
+  //   icon: <SmartDisplayIcon />,
+  //   name: "Hero",
+  //   path: "/hero",
+  // },
+  // {
+  //   icon: <AccountTreeIcon />,
+  //   name: "Layihələr",
+  //   subItems: [
+  //     { name: "Layihələr", path: "/projects" },
+  //     { name: "Yeni layihə", path: "/projects/new" }
+  //   ],
+  // },
   {
     icon: <CampaignIcon />,
     name: "Elanlar",
@@ -64,79 +64,79 @@ const navItems: NavItem[] = [
       { name: "Xəbər kateqoriyaları", path: "/news-categories" }
     ],
   },
-  {
-    name: "Menyular",
-    icon: <MenuIcon />,
-    subItems: [
-      { name: "Header", path: "/menu-header" },
-      { name: "Footer", path: "/menu-footer" },
-      { name: "Sürətli Menyu", path: "/menu-quick" },
-      { name: "Paylaşılan", path: "/menu-shared" },
-    ],
-  },
-  {
-    icon: <SchoolIcon />,
-    name: "Fakültələr",
-    subItems: [
-      { name: "Fakültələr", path: "/faculties" },
-      { name: "Yeni fakültə", path: "/faculties/new" },
-    ],
-  },
-  {
-    icon: <ScienceIcon />,
-    name: "Tədqiqat İnstitutları",
-    subItems: [
-      { name: "İnstitutlar", path: "/research-institutes" },
-      { name: "Yeni institut", path: "/research-institutes/new" },
-    ],
-  },
-  {
-    icon: <CategoryIcon />,
-    name: "Kafedralar",
-    subItems: [
-      { name: "Kafedralar", path: "/cafedras" },
-      { name: "Yeni kafedra", path: "/cafedras/new" },
-    ],
-  },
-  {
-    icon: <CategoryIcon />,
-    name: "Departamentlər",
-    subItems: [
-      { name: "Departamentlər", path: "/admin/departments" },
-      { name: "Yeni departament", path: "/admin/departments/create" },
-    ],
-  },
-  {
-    icon: <PeopleIcon />,
-    name: "İşçilər",
-    subItems: [
-      { name: "İşçilər", path: "/employees" },
-      { name: "Yeni işçi", path: "/employees/new" },
-    ],
-  },
-  {
-    name: "Əməkdaşlıqlar",
-    icon: <HandshakeIcon />,
-    subItems: [
-      { name: "Əməkdaşlıqlar", path: "/collaborations" },
-      { name: "Yeni əməkdaşlıq", path: "/collaborations/new" },
-    ],
-  },
-  {
-    name: "Tədbirlər",
-    icon: <EventNoteIcon />,
-    path: "/events"
-  },
-  {
-    name: "Qalereya",
-    icon: <CollectionsIcon />,
-    path: "/galery"
-  },
-  {
-    name: "Konfranslar",
-    icon: <ChatBubbleIcon />,
-    path: "/conferences"
-  },
+  // {
+  //   name: "Menyular",
+  //   icon: <MenuIcon />,
+  //   subItems: [
+  //     { name: "Header", path: "/menu-header" },
+  //     { name: "Footer", path: "/menu-footer" },
+  //     { name: "Sürətli Menyu", path: "/menu-quick" },
+  //     { name: "Paylaşılan", path: "/menu-shared" },
+  //   ],
+  // },
+  // {
+  //   icon: <SchoolIcon />,
+  //   name: "Fakültələr",
+  //   subItems: [
+  //     { name: "Fakültələr", path: "/faculties" },
+  //     { name: "Yeni fakültə", path: "/faculties/new" },
+  //   ],
+  // },
+  // {
+  //   icon: <ScienceIcon />,
+  //   name: "Tədqiqat İnstitutları",
+  //   subItems: [
+  //     { name: "İnstitutlar", path: "/research-institutes" },
+  //     { name: "Yeni institut", path: "/research-institutes/new" },
+  //   ],
+  // },
+  // {
+  //   icon: <CategoryIcon />,
+  //   name: "Kafedralar",
+  //   subItems: [
+  //     { name: "Kafedralar", path: "/cafedras" },
+  //     { name: "Yeni kafedra", path: "/cafedras/new" },
+  //   ],
+  // },
+  // {
+  //   icon: <CategoryIcon />,
+  //   name: "Departamentlər",
+  //   subItems: [
+  //     { name: "Departamentlər", path: "/admin/departments" },
+  //     { name: "Yeni departament", path: "/admin/departments/create" },
+  //   ],
+  // },
+  // {
+  //   icon: <PeopleIcon />,
+  //   name: "İşçilər",
+  //   subItems: [
+  //     { name: "İşçilər", path: "/employees" },
+  //     { name: "Yeni işçi", path: "/employees/new" },
+  //   ],
+  // },
+  // {
+  //   name: "Əməkdaşlıqlar",
+  //   icon: <HandshakeIcon />,
+  //   subItems: [
+  //     { name: "Əməkdaşlıqlar", path: "/collaborations" },
+  //     { name: "Yeni əməkdaşlıq", path: "/collaborations/new" },
+  //   ],
+  // },
+  // {
+  //   name: "Tədbirlər",
+  //   icon: <EventNoteIcon />,
+  //   path: "/events"
+  // },
+  // {
+  //   name: "Qalereya",
+  //   icon: <CollectionsIcon />,
+  //   path: "/galery"
+  // },
+  // {
+  //   name: "Konfranslar",
+  //   icon: <ChatBubbleIcon />,
+  //   path: "/conferences"
+  // },
 ];
 
 const othersItems: NavItem[] = [
