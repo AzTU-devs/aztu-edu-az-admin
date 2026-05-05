@@ -20,7 +20,7 @@ export interface ReOrderAnnouncementPayload {
 }
 
 export interface CreateAnnouncementPayload {
-    image: File;
+    image?: File;
     az: {
         title: string;
         html_content: string;
@@ -88,7 +88,7 @@ export const createAnnouncement = async (payload: CreateAnnouncementPayload) => 
     try {
         const formData = new FormData();
 
-        formData.append("image", payload.image);
+        if (payload.image) formData.append("image", payload.image);
         formData.append("az_title", payload.az.title);
         formData.append("az_html_content", payload.az.html_content);
         formData.append("en_title", payload.en.title);

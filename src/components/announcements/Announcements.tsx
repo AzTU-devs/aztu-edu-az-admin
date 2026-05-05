@@ -108,13 +108,15 @@ export default function Announcements() {
 
     const result = await reorderAnnouncement({
       announcement_id: Number(active.id),
-      new_order: newIndex + 1,
+      new_order: start + newIndex + 1,
     });
 
     if (result === "SUCCESS") {
       Swal.fire({ icon: "success", title: "Sıra uğurla dəyişdirildi", showConfirmButton: false, timer: 1500 });
+      fetchAnnouncements(start, end);
     } else {
       Swal.fire({ icon: "error", title: "Sıra dəyişdirilə bilmədi", showConfirmButton: false, timer: 1500 });
+      fetchAnnouncements(start, end);
     }
   };
 

@@ -22,17 +22,14 @@ export default function NewAnnouncement() {
     const [contentEN, setContentEN] = useState("");
 
     const isFormValid =
-        selectedFile !== null &&
         titleAz.trim() !== "" &&
         titleEn.trim() !== "";
 
     const handleSubmit = async () => {
-        if (!selectedFile) return;
-
         setLoading(true);
 
         const payload: CreateAnnouncementPayload = {
-            image: selectedFile,
+            image: selectedFile ?? undefined,
             az: {
                 title: titleAz,
                 html_content: contentAZ,
