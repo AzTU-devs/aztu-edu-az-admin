@@ -13,6 +13,12 @@ import {
     updateNews,
 } from "../../services/news/newsService";
 
+function resolveImageUrl(path?: string | null): string {
+    if (!path) return "";
+    if (/^https?:\/\//i.test(path)) return path;
+    return `${API_BASE_URL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+}
+
 export default function NewsDetails() {
     const lang = "az";
     const navigate = useNavigate();
@@ -54,7 +60,7 @@ export default function NewsDetails() {
                 setTitleEn(n.en_title ?? "");
                 setContentEn(n.en_html_content ?? "");
                 setGallery(n.gallery_images ?? []);
-                setCoverPreview(n.cover_image ? `${API_BASE_URL}/${n.cover_image}` : null);
+                setCoverPreview(n.cover_image ? resolveImageUrl(n.cover_image) : null);
             }
         }).finally(() => setLoading(false));
     }, [news_id]);
@@ -65,7 +71,7 @@ export default function NewsDetails() {
             const url = URL.createObjectURL(file);
             setCoverPreview(url);
         } else if (news?.cover_image) {
-            setCoverPreview(`${API_BASE_URL}/${news.cover_image}`);
+            setCoverPreview(resolveImageUrl(news.cover_image));
         }
     };
 
@@ -191,7 +197,7 @@ export default function NewsDetails() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                             {gallery.map((g, idx) => (
                                 <div key={g.image_id} className="relative group rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                                    <img src={`${API_BASE_URL}/${g.image}`} alt="" className="w-full h-32 object-cover" />
+                                    <img src={resolveImageUrl(g.image)} alt="" className="w-full h-32 object-cover" />
                                     <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[11px] flex items-center justify-between px-2 py-1">
                                         <span>#{idx + 1}</span>
                                         <div className="flex items-center gap-1">
