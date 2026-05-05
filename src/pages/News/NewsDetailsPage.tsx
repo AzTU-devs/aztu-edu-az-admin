@@ -8,13 +8,13 @@ export default function NewsDetailsPage() {
     return (
         <>
             <PageMeta
-                title="Xəbər detalları | AzTU Admin"
+                title="Xəbəri redaktə et | AzTU Admin"
                 description="aztu.edu.az üçün idarəetmə paneli"
             />
-            <PageBreadcrumb pageTitle="Xəbər detalları" />
+            <PageBreadcrumb pageTitle="Xəbəri redaktə et" />
             <ComponentCard
-                title="Xəbər detalları"
-                desc="Xəbərin tam məzmunu və meta məlumatları"
+                title="Xəbəri redaktə et"
+                desc="Xəbərin bütün sahələrini yeniləyin"
                 actions={
                     <Link
                         to="/news"

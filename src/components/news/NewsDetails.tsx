@@ -1,33 +1,125 @@
+import Swal from "sweetalert2";
 import Label from "../form/Label";
 import Editor from "../editor/Editor";
 import Input from "../form/input/InputField";
+import Button from "../ui/button/Button";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getNewsDetails, NewsDetail } from "../../services/news/newsService";
+import { useNavigate, useParams } from "react-router-dom";
+import { API_BASE_URL } from "../../util/apiClient";
+import {
+    getNewsDetails,
+    NewsDetail,
+    NewsGalleryImage,
+    updateNews,
+} from "../../services/news/newsService";
 
 export default function NewsDetails() {
     const lang = "az";
+    const navigate = useNavigate();
     const { news_id } = useParams<{ news_id: string }>();
+
     const [news, setNews] = useState<NewsDetail | null>(null);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [notFound, setNotFound] = useState(false);
 
+    const [categoryId, setCategoryId] = useState<string>("");
+    const [isActive, setIsActive] = useState<boolean>(true);
+    const [titleAz, setTitleAz] = useState("");
+    const [contentAz, setContentAz] = useState("");
+    const [titleEn, setTitleEn] = useState("");
+    const [contentEn, setContentEn] = useState("");
+
+    const [coverImage, setCoverImage] = useState<File | null>(null);
+    const [coverPreview, setCoverPreview] = useState<string | null>(null);
+
+    const [gallery, setGallery] = useState<NewsGalleryImage[]>([]);
+    const [removedImageIds, setRemovedImageIds] = useState<number[]>([]);
+    const [newGalleryImages, setNewGalleryImages] = useState<File[]>([]);
+
     useEffect(() => {
+        if (!news_id) return;
         setLoading(true);
         setNotFound(false);
-        getNewsDetails(news_id ?? "", lang)
-            .then((res) => {
-                if (typeof res === "object") {
-                    setNews(res as NewsDetail);
-                } else if (res === "NOT FOUND") {
-                    setNotFound(true);
-                    setNews(null);
-                } else {
-                    setNews(null);
-                }
-            })
-            .finally(() => setLoading(false));
+        getNewsDetails(news_id, lang).then((res) => {
+            if (res === "NOT FOUND") {
+                setNotFound(true);
+            } else if (typeof res === "object") {
+                const n = res as NewsDetail;
+                setNews(n);
+                setCategoryId(String(n.category_id ?? ""));
+                setIsActive(Boolean(n.is_active));
+                setTitleAz(n.az_title ?? n.title ?? "");
+                setContentAz(n.az_html_content ?? n.html_content ?? "");
+                setTitleEn(n.en_title ?? "");
+                setContentEn(n.en_html_content ?? "");
+                setGallery(n.gallery_images ?? []);
+                setCoverPreview(n.cover_image ? `${API_BASE_URL}/${n.cover_image}` : null);
+            }
+        }).finally(() => setLoading(false));
     }, [news_id]);
+
+    const handleCoverChange = (file: File | null) => {
+        setCoverImage(file);
+        if (file) {
+            const url = URL.createObjectURL(file);
+            setCoverPreview(url);
+        } else if (news?.cover_image) {
+            setCoverPreview(`${API_BASE_URL}/${news.cover_image}`);
+        }
+    };
+
+    const handleRemoveGalleryImage = (imageId: number) => {
+        setRemovedImageIds((prev) => [...prev, imageId]);
+        setGallery((prev) => prev.filter((g) => g.image_id !== imageId));
+    };
+
+    const handleMoveGallery = (index: number, direction: -1 | 1) => {
+        const next = [...gallery];
+        const target = index + direction;
+        if (target < 0 || target >= next.length) return;
+        [next[index], next[target]] = [next[target], next[index]];
+        setGallery(next.map((g, i) => ({ ...g, display_order: i + 1 })));
+    };
+
+    const handleSave = async () => {
+        if (!news_id) return;
+        setSaving(true);
+
+        const galleryOrder = gallery.map((g, idx) => ({
+            image_id: g.image_id,
+            display_order: idx + 1,
+        }));
+
+        const result = await updateNews(Number(news_id), {
+            az_title: titleAz,
+            en_title: titleEn,
+            az_html_content: contentAz,
+            en_html_content: contentEn,
+            category_id: categoryId ? Number(categoryId) : undefined,
+            is_active: isActive,
+            cover_image: coverImage || undefined,
+            new_gallery_images: newGalleryImages.length > 0 ? newGalleryImages : undefined,
+            removed_image_ids: removedImageIds.length > 0 ? removedImageIds : undefined,
+            gallery_order: galleryOrder.length > 0 ? galleryOrder : undefined,
+        });
+
+        setSaving(false);
+
+        if (result === "SUCCESS") {
+            Swal.fire({
+                icon: "success",
+                title: "Uğurlu",
+                text: "Xəbər uğurla yeniləndi!",
+                timer: 2000,
+                showConfirmButton: false,
+            }).then(() => navigate("/news"));
+        } else if (result === "NOT FOUND") {
+            Swal.fire({ icon: "error", title: "Xəta", text: "Xəbər tapılmadı", timer: 2000, showConfirmButton: false });
+        } else {
+            Swal.fire({ icon: "error", title: "Xəta", text: "Xəbər yenilənərkən xəta baş verdi", timer: 2000, showConfirmButton: false });
+        }
+    };
 
     if (notFound) {
         return (
@@ -46,50 +138,92 @@ export default function NewsDetails() {
             {/* Meta info */}
             <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
                 <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Meta məlumatlar</span>
                 </div>
-                <div className="p-5 flex flex-wrap gap-4">
-                    {loading ? (
-                        [...Array(5)].map((_, i) => (
-                            <div key={i} className="flex flex-col gap-1.5">
-                                <div className="h-3 w-20 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
-                                <div className="h-7 w-24 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
-                            </div>
-                        ))
-                    ) : (
-                        <>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Xəbər ID</span>
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-mono text-sm font-semibold">#{news?.news_id}</span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Kateqoriya</span>
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 font-mono text-sm font-semibold">#{news?.category_id}</span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Sıra</span>
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-semibold">{news?.display_order}</span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Status</span>
-                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${news?.is_active ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"}`}>
-                                    <span className={`h-1.5 w-1.5 rounded-full ${news?.is_active ? "bg-emerald-500" : "bg-red-500"}`} />
-                                    {news?.is_active ? "Aktiv" : "Deaktiv"}
-                                </span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Əlavə tarixi</span>
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm">
-                                    {news?.created_at ? new Date(news.created_at).toLocaleString("az-AZ") : "—"}
-                                </span>
-                            </div>
-                        </>
-                    )}
+                <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Xəbər ID</Label>
+                        <Input value={news?.news_id ? String(news.news_id) : ""} readOnly />
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Kateqoriya ID</Label>
+                        <Input type="number" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={loading} />
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Status</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                            <label className="inline-flex items-center gap-2 text-sm">
+                                <input type="radio" checked={isActive} onChange={() => setIsActive(true)} /> Aktiv
+                            </label>
+                            <label className="inline-flex items-center gap-2 text-sm">
+                                <input type="radio" checked={!isActive} onChange={() => setIsActive(false)} /> Deaktiv
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* AZ content */}
+            {/* Cover image */}
+            <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Kapaq şəkli</span>
+                </div>
+                <div className="p-5 space-y-3">
+                    {coverPreview && (
+                        <img src={coverPreview} alt="cover" className="max-h-56 rounded-lg object-cover border border-gray-200 dark:border-gray-700" />
+                    )}
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleCoverChange(e.target.files?.[0] ?? null)}
+                        className="block w-full text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 dark:file:bg-brand-900/20 dark:file:text-brand-400 hover:file:bg-brand-100 cursor-pointer"
+                    />
+                </div>
+            </div>
+
+            {/* Gallery */}
+            <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Qalereya şəkilləri</span>
+                </div>
+                <div className="p-5 space-y-4">
+                    {gallery.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {gallery.map((g, idx) => (
+                                <div key={g.image_id} className="relative group rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                                    <img src={`${API_BASE_URL}/${g.image}`} alt="" className="w-full h-32 object-cover" />
+                                    <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[11px] flex items-center justify-between px-2 py-1">
+                                        <span>#{idx + 1}</span>
+                                        <div className="flex items-center gap-1">
+                                            <button type="button" onClick={() => handleMoveGallery(idx, -1)} className="px-1.5 py-0.5 bg-white/20 rounded">↑</button>
+                                            <button type="button" onClick={() => handleMoveGallery(idx, 1)} className="px-1.5 py-0.5 bg-white/20 rounded">↓</button>
+                                            <button type="button" onClick={() => handleRemoveGalleryImage(g.image_id)} className="px-1.5 py-0.5 bg-red-500/80 rounded">×</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-xs text-gray-400 italic">Qalereya şəkli yoxdur</p>
+                    )}
+
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Yeni şəkillər əlavə et</Label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => setNewGalleryImages(e.target.files ? Array.from(e.target.files) : [])}
+                            className="block w-full text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-50 file:text-gray-700 dark:file:bg-gray-800 dark:file:text-gray-300 hover:file:bg-gray-100 cursor-pointer"
+                        />
+                        {newGalleryImages.length > 0 && (
+                            <p className="text-[11px] text-gray-500 mt-1">{newGalleryImages.length} fayl seçildi</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* AZ */}
             <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
                 <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold tracking-wide">AZ</span>
@@ -98,33 +232,46 @@ export default function NewsDetails() {
                 <div className="p-5 space-y-4">
                     <div>
                         <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Başlıq</Label>
-                        {loading ? (
-                            <div className="h-10 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
-                        ) : (
-                            <Input placeholder="Başlıq" value={news?.title || ""} readOnly />
-                        )}
+                        <Input placeholder="Başlıq" value={titleAz} onChange={(e) => setTitleAz(e.target.value)} />
                     </div>
-                    {(loading || news?.desc !== undefined) && (
-                        <div>
-                            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Təsvir</Label>
-                            {loading ? (
-                                <div className="h-10 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
-                            ) : (
-                                <Input placeholder="Təsvir" value={news?.desc || ""} readOnly />
-                            )}
-                        </div>
-                    )}
                     <div>
                         <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Məzmun</Label>
-                        {loading ? (
-                            <div className="h-32 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
-                        ) : news?.html_content ? (
-                            <Editor readOnlyContent={news.html_content} />
-                        ) : (
-                            <p className="text-sm text-gray-400 italic">Məzmun yoxdur</p>
+                        {!loading && (
+                            <Editor initialContent={contentAz} onUpdate={(html: string) => setContentAz(html)} />
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* EN */}
+            <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold tracking-wide">EN</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">English</span>
+                </div>
+                <div className="p-5 space-y-4">
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Title</Label>
+                        <Input placeholder="Title" value={titleEn} onChange={(e) => setTitleEn(e.target.value)} />
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Content</Label>
+                        {!loading && (
+                            <Editor initialContent={contentEn} onUpdate={(html: string) => setContentEn(html)} />
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-1">
+                <Button
+                    className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-50"
+                    onClick={handleSave}
+                    disabled={loading || saving}
+                >
+                    {saving ? "Yadda saxlanılır..." : "Yadda saxla"}
+                </Button>
             </div>
         </div>
     );
