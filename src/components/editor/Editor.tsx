@@ -9,10 +9,11 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import CodeBlock from '@tiptap/extension-code-block';
 import Heading from '@tiptap/extension-heading';
-import React, { useState, useEffect } from 'react';
-import { FaBold, FaItalic, FaUnderline, FaListUl, FaListOl, FaLink, FaImage, FaCode, FaTable, FaEye, FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaBold, FaItalic, FaUnderline, FaListUl, FaListOl, FaLink, FaImage, FaCode, FaTable, FaEye, FaTimes, FaPaperclip } from 'react-icons/fa';
+import { uploadAnnouncementFile } from '../../services/announcement/announcementService';
 
-const MenuBar = ({ editor, onPreview, onAddLink, onAddEmail }: { editor: any; onPreview: () => void; onAddLink: () => void; onAddEmail: () => void }) => {
+const MenuBar = ({ editor, onPreview, onAddLink, onAddEmail, onAttachFile, attaching }: { editor: any; onPreview: () => void; onAddLink: () => void; onAddEmail: () => void; onAttachFile: () => void; attaching: boolean }) => {
     if (!editor) return null;
 
     const addImage = () => {
@@ -42,6 +43,14 @@ const MenuBar = ({ editor, onPreview, onAddLink, onAddEmail }: { editor: any; on
             <button onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()} className={buttonClass(editor.isActive('heading', { level: 6 }))}>H6</button>
             <button onClick={onAddLink} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><FaLink /></button>
             <button onClick={onAddEmail} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">📧</button>
+            <button
+                onClick={onAttachFile}
+                disabled={attaching}
+                title="Seçilmiş sözə fayl əlavə et"
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
+            >
+                {attaching ? '…' : <FaPaperclip />}
+            </button>
             <button onClick={addImage} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><FaImage /></button>
             <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><FaCode /></button>
             <button onClick={addTable} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><FaTable /></button>
@@ -65,7 +74,21 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                 heading: false,
             }),
             Underline,
-            Link,
+            Link.extend({
+                addAttributes() {
+                    return {
+                        ...this.parent?.(),
+                        download: {
+                            default: null,
+                            parseHTML: (element: HTMLElement) => element.getAttribute('download'),
+                            renderHTML: (attributes: any) => {
+                                if (attributes.download === null || attributes.download === undefined) return {};
+                                return { download: attributes.download };
+                            },
+                        },
+                    };
+                },
+            }).configure({ openOnClick: false, autolink: true }),
             Image,
             Table.configure({ resizable: true }),
             TableRow,
@@ -92,6 +115,8 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
     const [showLinkModal, setShowLinkModal] = useState(false);
     const [linkValue, setLinkValue] = useState('');
     const [linkType, setLinkType] = useState<'url' | 'email'>('url');
+    const [attaching, setAttaching] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         if (!editor || !onUpdate) return;
@@ -134,9 +159,67 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
         setShowLinkModal(false);
     };
 
+    const handleAttachClick = () => {
+        if (!editor) return;
+        const { from, to, empty } = editor.state.selection;
+        if (empty || from === to) {
+            alert('Əvvəlcə fayl bağlamaq istədiyiniz sözü seçin.');
+            return;
+        }
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        // reset so the same file can be selected again later
+        e.target.value = '';
+        if (!file || !editor) return;
+
+        const { from, to, empty } = editor.state.selection;
+        if (empty || from === to) {
+            alert('Əvvəlcə fayl bağlamaq istədiyiniz sözü seçin.');
+            return;
+        }
+
+        setAttaching(true);
+        const result = await uploadAnnouncementFile(file);
+        setAttaching(false);
+
+        if (result === 'ERROR') {
+            alert('Fayl yüklənərkən xəta baş verdi.');
+            return;
+        }
+
+        editor
+            .chain()
+            .focus()
+            .setTextSelection({ from, to })
+            .extendMarkRange('link')
+            .setLink({ href: result.url, target: '_blank', rel: 'noopener noreferrer' } as any)
+            .run();
+
+        // Add `download` attribute via direct HTML manipulation through TipTap's
+        // updateAttributes on the link mark.
+        editor.chain().focus().updateAttributes('link', { download: result.filename || '' }).run();
+    };
+
     return (
         <div className="w-[100%] p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-md border-1 border-gray-100 flex flex-col text-gray-900 dark:text-gray-100">
-            <MenuBar editor={editor} onPreview={() => setIsPreviewOpen(true)} onAddLink={() => openLinkModal('url')} onAddEmail={() => openLinkModal('email')} />
+            <MenuBar
+                editor={editor}
+                onPreview={() => setIsPreviewOpen(true)}
+                onAddLink={() => openLinkModal('url')}
+                onAddEmail={() => openLinkModal('email')}
+                onAttachFile={handleAttachClick}
+                attaching={attaching}
+            />
+            <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.csv,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                onChange={handleFileChange}
+            />
             <div
                 className="flex-grow min-h-full"
                 onClick={() => editor?.chain().focus().run()}

@@ -1,4 +1,4 @@
-import apiClient from "../../util/apiClient";
+import apiClient, { API_BASE_URL } from "../../util/apiClient";
 
 export interface Announcement {
     announcement_id: number;
@@ -103,6 +103,57 @@ export const createAnnouncement = async (payload: CreateAnnouncementPayload) => 
         } else {
             return "ERROR";
         }
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
+
+export interface UpdateAnnouncementPayload {
+    image?: File;
+    az?: { title?: string; html_content?: string };
+    en?: { title?: string; html_content?: string };
+}
+
+export const updateAnnouncement = async (
+    announcementId: number,
+    payload: UpdateAnnouncementPayload,
+) => {
+    try {
+        const formData = new FormData();
+        if (payload.image) formData.append("image", payload.image);
+        if (payload.az?.title !== undefined) formData.append("az_title", payload.az.title);
+        if (payload.az?.html_content !== undefined) formData.append("az_html_content", payload.az.html_content);
+        if (payload.en?.title !== undefined) formData.append("en_title", payload.en.title);
+        if (payload.en?.html_content !== undefined) formData.append("en_html_content", payload.en.html_content);
+
+        const response = await apiClient.patch(`/api/announcement/${announcementId}`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        if (response.data.status_code === 200) return "SUCCESS";
+        if (response.data.status_code === 404) return "NOT FOUND";
+        return "ERROR";
+    } catch (err: any) {
+        if (err.response && err.response.status === 404) return "NOT FOUND";
+        return "ERROR";
+    }
+};
+
+export const uploadAnnouncementFile = async (file: File): Promise<{ url: string; filename: string } | "ERROR"> => {
+    try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await apiClient.post("/api/announcement/upload-file", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        if (response.data.status_code === 201 && response.data.url) {
+            const raw = response.data.url as string;
+            const url = /^https?:\/\//i.test(raw) ? raw : `${API_BASE_URL.replace(/\/$/, "")}/${raw.replace(/^\/+/, "")}`;
+            return { url, filename: response.data.filename as string };
+        }
+        return "ERROR";
     } catch (err: any) {
         return "ERROR";
     }
