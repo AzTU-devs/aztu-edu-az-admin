@@ -135,6 +135,11 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
         }
     }, [editor, readOnlyContent]);
 
+    useEffect(() => {
+        if (!editor) return;
+        editor.setEditable(readOnlyContent === undefined);
+    }, [editor, readOnlyContent]);
+
     const openLinkModal = (type: 'url' | 'email') => {
         setLinkType(type);
         setLinkValue('');
