@@ -305,6 +305,8 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                 </div>
             )}
             <style>{`
+        .ProseMirror a[download], .prose a[download] { color: #2563eb; text-decoration: underline; }
+        .ProseMirror a[download]:hover, .prose a[download]:hover { color: #1d4ed8; }
         .ProseMirror ul, .prose ul { list-style-type: disc; padding-left: 1.5rem; }
         .ProseMirror ol, .prose ol { list-style-type: decimal; padding-left: 1.5rem; }
         .ProseMirror table, .prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
