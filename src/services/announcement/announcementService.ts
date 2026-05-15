@@ -29,6 +29,7 @@ export interface CreateAnnouncementPayload {
         title: string;
         html_content: string;
     };
+    created_at?: string;
 }
 
 export const getAnnouncements = async (start: number, end: number, lang: string) => {
@@ -93,6 +94,7 @@ export const createAnnouncement = async (payload: CreateAnnouncementPayload) => 
         formData.append("az_html_content", payload.az.html_content);
         formData.append("en_title", payload.en.title);
         formData.append("en_html_content", payload.en.html_content);
+        if (payload.created_at) formData.append("created_at", payload.created_at);
 
         const response = await apiClient.post("/api/announcement/create", formData, {
             headers: { "Content-Type": "multipart/form-data" },

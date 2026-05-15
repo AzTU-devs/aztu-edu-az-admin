@@ -55,6 +55,7 @@ export interface CreateNewsPayload {
     en_html_content: string;
     cover_image: File;
     gallery_images?: File[];
+    created_at?: string;
 }
 
 export const getNews = async (start: number, end: number, lang: string) => {
@@ -122,6 +123,7 @@ export const createNews = async (payload: CreateNewsPayload) => {
         if (payload.gallery_images) {
             payload.gallery_images.forEach((file) => formData.append("gallery_images", file));
         }
+        if (payload.created_at) formData.append("created_at", payload.created_at);
 
         const response = await apiClient.post("/api/news/create", formData, {
             headers: { "Content-Type": "multipart/form-data" },

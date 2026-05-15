@@ -18,6 +18,7 @@ export default function NewNews() {
     const [contentEN, setContentEN] = useState("");
     const [coverImage, setCoverImage] = useState<File | null>(null);
     const [galleryImages, setGalleryImages] = useState<File[]>([]);
+    const [createdAt, setCreatedAt] = useState("");
 
     const isFormValid =
         categoryId.trim() !== "" &&
@@ -37,6 +38,7 @@ export default function NewNews() {
             en_html_content: contentEN,
             cover_image: coverImage,
             gallery_images: galleryImages.length > 0 ? galleryImages : undefined,
+            created_at: createdAt ? createdAt : undefined,
         };
 
         const result = await createNews(payload);
@@ -84,6 +86,15 @@ export default function NewNews() {
                             onChange={(e) => setCoverImage(e.target.files?.[0] ?? null)}
                             className="block w-full text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 dark:file:bg-brand-900/20 dark:file:text-brand-400 hover:file:bg-brand-100 cursor-pointer"
                         />
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Yaranma tarixi</Label>
+                        <Input
+                            type="date"
+                            value={createdAt}
+                            onChange={(e) => setCreatedAt(e.target.value)}
+                        />
+                        <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Boş buraxılarsa, cari tarix istifadə olunacaq.</p>
                     </div>
                     <div>
                         <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Qalereya şəkilləri</Label>

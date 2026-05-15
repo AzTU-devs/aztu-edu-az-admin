@@ -20,6 +20,7 @@ export default function NewAnnouncement() {
     const [contentAZ, setContentAZ] = useState("");
     const [titleEn, setTitleEn] = useState("");
     const [contentEN, setContentEN] = useState("");
+    const [createdAt, setCreatedAt] = useState("");
 
     const isFormValid =
         titleAz.trim() !== "" &&
@@ -38,6 +39,7 @@ export default function NewAnnouncement() {
                 title: titleEn,
                 html_content: contentEN,
             },
+            created_at: createdAt ? createdAt : undefined,
         };
 
         const result = await createAnnouncement(payload);
@@ -72,6 +74,23 @@ export default function NewAnnouncement() {
                 </div>
                 <div className="p-5">
                     <DropzoneComponent onFileSelect={setSelectedFile} />
+                </div>
+            </div>
+
+            {/* Created at (optional) */}
+            <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Yaranma tarixi (istəyə bağlı)</span>
+                </div>
+                <div className="p-5">
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Tarix</Label>
+                    <Input
+                        type="date"
+                        value={createdAt}
+                        onChange={(e) => setCreatedAt(e.target.value)}
+                    />
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Boş buraxılarsa, cari tarix istifadə olunacaq.</p>
                 </div>
             </div>
 
