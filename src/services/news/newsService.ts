@@ -7,6 +7,9 @@ export interface News {
     is_active: boolean;
     title: string;
     created_at: string;
+    sdg_numbers?: number[];
+    faculty_code?: string | null;
+    cafedra_code?: string | null;
 }
 
 export interface NewsGalleryImage {
@@ -27,6 +30,9 @@ export interface NewsDetail extends News {
     cover_image?: string;
     cover_image_id?: number;
     gallery_images?: NewsGalleryImage[];
+    sdg_numbers?: number[];
+    faculty_code?: string | null;
+    cafedra_code?: string | null;
 }
 
 export interface UpdateNewsPayload {
@@ -40,6 +46,11 @@ export interface UpdateNewsPayload {
     new_gallery_images?: File[];
     removed_image_ids?: number[];
     gallery_order?: { image_id: number; display_order: number }[];
+    sdg_numbers?: number[];
+    faculty_code?: string | null;
+    cafedra_code?: string | null;
+    clear_faculty?: boolean;
+    clear_cafedra?: boolean;
 }
 
 export interface ReOrderNewsPayload {
@@ -56,6 +67,9 @@ export interface CreateNewsPayload {
     cover_image: File;
     gallery_images?: File[];
     created_at?: string;
+    sdg_numbers?: number[];
+    faculty_code?: string | null;
+    cafedra_code?: string | null;
 }
 
 export const getNews = async (start: number, end: number, lang: string) => {
@@ -124,6 +138,11 @@ export const createNews = async (payload: CreateNewsPayload) => {
             payload.gallery_images.forEach((file) => formData.append("gallery_images", file));
         }
         if (payload.created_at) formData.append("created_at", payload.created_at);
+        if (payload.sdg_numbers && payload.sdg_numbers.length > 0) {
+            formData.append("sdg_numbers", JSON.stringify(payload.sdg_numbers));
+        }
+        if (payload.faculty_code) formData.append("faculty_code", payload.faculty_code);
+        if (payload.cafedra_code) formData.append("cafedra_code", payload.cafedra_code);
 
         const response = await apiClient.post("/api/news/create", formData, {
             headers: { "Content-Type": "multipart/form-data" },
@@ -158,6 +177,13 @@ export const updateNews = async (newsId: number, payload: UpdateNewsPayload) => 
         if (payload.gallery_order && payload.gallery_order.length > 0) {
             formData.append("gallery_order", JSON.stringify(payload.gallery_order));
         }
+        if (payload.sdg_numbers !== undefined) {
+            formData.append("sdg_numbers", JSON.stringify(payload.sdg_numbers));
+        }
+        if (payload.faculty_code) formData.append("faculty_code", payload.faculty_code);
+        if (payload.cafedra_code) formData.append("cafedra_code", payload.cafedra_code);
+        if (payload.clear_faculty) formData.append("clear_faculty", "true");
+        if (payload.clear_cafedra) formData.append("clear_cafedra", "true");
 
         const response = await apiClient.patch(`/api/news/${newsId}`, formData, {
             headers: { "Content-Type": "multipart/form-data" },

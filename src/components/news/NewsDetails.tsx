@@ -12,6 +12,12 @@ import {
     NewsGalleryImage,
     updateNews,
 } from "../../services/news/newsService";
+import { getNewsCategories, NewsCategory } from "../../services/newsCategory/newsCategoryService";
+import { getFaculties } from "../../services/faculty/facultyService";
+import { getCafedras } from "../../services/cafedra/cafedraService";
+
+const SDG_NUMBERS = Array.from({ length: 17 }, (_, i) => i + 1);
+interface SimpleOpt { code: string; label: string; }
 
 function resolveImageUrl(path?: string | null): string {
     if (!path) return "";
@@ -43,6 +49,39 @@ export default function NewsDetails() {
     const [removedImageIds, setRemovedImageIds] = useState<number[]>([]);
     const [newGalleryImages, setNewGalleryImages] = useState<File[]>([]);
 
+    const [categories, setCategories] = useState<NewsCategory[]>([]);
+    const [faculties, setFaculties] = useState<SimpleOpt[]>([]);
+    const [cafedras, setCafedras] = useState<SimpleOpt[]>([]);
+    const [selectedSdgs, setSelectedSdgs] = useState<number[]>([]);
+    const [facultyCode, setFacultyCode] = useState<string>("");
+    const [cafedraCode, setCafedraCode] = useState<string>("");
+
+    useEffect(() => {
+        getNewsCategories("az").then((res) => Array.isArray(res) && setCategories(res));
+        getFaculties(0, 200).then((res: any) => {
+            if (res && Array.isArray(res.faculties)) {
+                setFaculties(res.faculties.map((f: any) => ({
+                    code: f.faculty_code,
+                    label: f.title || f.faculty_code,
+                })));
+            }
+        });
+        getCafedras(0, 500).then((res: any) => {
+            if (res && Array.isArray(res.cafedras)) {
+                setCafedras(res.cafedras.map((c: any) => ({
+                    code: c.cafedra_code,
+                    label: c.cafedra_name || c.cafedra_code,
+                })));
+            }
+        });
+    }, []);
+
+    const toggleSdg = (n: number) => {
+        setSelectedSdgs((prev) =>
+            prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n].sort((a, b) => a - b)
+        );
+    };
+
     useEffect(() => {
         if (!news_id) return;
         setLoading(true);
@@ -61,6 +100,9 @@ export default function NewsDetails() {
                 setContentEn(n.en_html_content ?? "");
                 setGallery(n.gallery_images ?? []);
                 setCoverPreview(n.cover_image ? resolveImageUrl(n.cover_image) : null);
+                setSelectedSdgs(Array.isArray(n.sdg_numbers) ? n.sdg_numbers : []);
+                setFacultyCode(n.faculty_code ?? "");
+                setCafedraCode(n.cafedra_code ?? "");
             }
         }).finally(() => setLoading(false));
     }, [news_id]);
@@ -97,6 +139,9 @@ export default function NewsDetails() {
             display_order: idx + 1,
         }));
 
+        const originalFaculty = news?.faculty_code ?? "";
+        const originalCafedra = news?.cafedra_code ?? "";
+
         const result = await updateNews(Number(news_id), {
             az_title: titleAz,
             en_title: titleEn,
@@ -108,6 +153,11 @@ export default function NewsDetails() {
             new_gallery_images: newGalleryImages.length > 0 ? newGalleryImages : undefined,
             removed_image_ids: removedImageIds.length > 0 ? removedImageIds : undefined,
             gallery_order: galleryOrder.length > 0 ? galleryOrder : undefined,
+            sdg_numbers: selectedSdgs,
+            faculty_code: facultyCode || undefined,
+            cafedra_code: cafedraCode || undefined,
+            clear_faculty: !facultyCode && !!originalFaculty,
+            clear_cafedra: !cafedraCode && !!originalCafedra,
         });
 
         setSaving(false);
@@ -152,8 +202,71 @@ export default function NewsDetails() {
                         <Input value={news?.news_id ? String(news.news_id) : ""} readOnly />
                     </div>
                     <div>
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Kateqoriya ID</Label>
-                        <Input type="number" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={loading} />
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Kateqoriya</Label>
+                        <select
+                            className="block w-full text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                            value={categoryId}
+                            onChange={(e) => setCategoryId(e.target.value)}
+                            disabled={loading}
+                        >
+                            <option value="">Kateqoriya seçin</option>
+                            {categories.map((c) => (
+                                <option key={c.category_id} value={c.category_id}>
+                                    {c.title}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Fakültə (opsional)</Label>
+                        <select
+                            className="block w-full text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                            value={facultyCode}
+                            onChange={(e) => setFacultyCode(e.target.value)}
+                        >
+                            <option value="">— Seçilməyib —</option>
+                            {faculties.map((f) => (
+                                <option key={f.code} value={f.code}>{f.label} ({f.code})</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Kafedra (opsional)</Label>
+                        <select
+                            className="block w-full text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                            value={cafedraCode}
+                            onChange={(e) => setCafedraCode(e.target.value)}
+                        >
+                            <option value="">— Seçilməyib —</option>
+                            {cafedras.map((c) => (
+                                <option key={c.code} value={c.code}>{c.label} ({c.code})</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="md:col-span-3">
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">SDG nömrələri (opsional)</Label>
+                        <div className="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-17 gap-2">
+                            {SDG_NUMBERS.map((n) => {
+                                const active = selectedSdgs.includes(n);
+                                return (
+                                    <button
+                                        key={n}
+                                        type="button"
+                                        onClick={() => toggleSdg(n)}
+                                        className={`rounded-lg px-2 py-1.5 text-sm font-bold border transition-all ${
+                                            active
+                                                ? "bg-brand-500 text-white border-brand-600 shadow"
+                                                : "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100"
+                                        }`}
+                                    >
+                                        {n}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {selectedSdgs.length > 0 && (
+                            <p className="mt-2 text-xs text-gray-500">Seçilmiş: {selectedSdgs.join(", ")}</p>
+                        )}
                     </div>
                     <div>
                         <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Status</Label>

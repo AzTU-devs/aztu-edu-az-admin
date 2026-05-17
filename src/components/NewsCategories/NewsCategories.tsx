@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   NewsCategory,
   getNewsCategories,
   createNewsCategory,
+  updateNewsCategory,
+  deleteNewsCategory,
+  getNewsCategoryDetails,
 } from "../../services/newsCategory/newsCategoryService";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
@@ -16,9 +21,10 @@ export default function NewsCategories() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [azTitle, setAzTitle] = useState("");
   const [enTitle, setEnTitle] = useState("");
-  const [creating, setCreating] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchCategories = () => {
     setLoading(true);
@@ -41,21 +47,77 @@ export default function NewsCategories() {
     fetchCategories();
   }, []);
 
-  const handleCreate = async () => {
-    if (!azTitle.trim() || !enTitle.trim()) return;
+  const resetForm = () => {
+    setAzTitle("");
+    setEnTitle("");
+    setEditingId(null);
+    setShowForm(false);
+  };
 
-    setCreating(true);
-    const result = await createNewsCategory({ az_title: azTitle, en_title: enTitle });
-    setCreating(false);
+  const handleSubmit = async () => {
+    if (!azTitle.trim() || !enTitle.trim()) return;
+    setSubmitting(true);
+    const result = editingId
+      ? await updateNewsCategory(editingId, { az_title: azTitle, en_title: enTitle })
+      : await createNewsCategory({ az_title: azTitle, en_title: enTitle });
+    setSubmitting(false);
 
     if (result === "SUCCESS") {
-      Swal.fire({ icon: "success", title: "Kateqoriya əlavə edildi", showConfirmButton: false, timer: 1500 });
-      setAzTitle("");
-      setEnTitle("");
-      setShowForm(false);
+      Swal.fire({
+        icon: "success",
+        title: editingId ? "Kateqoriya yeniləndi" : "Kateqoriya əlavə edildi",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+      resetForm();
       fetchCategories();
+    } else if (result === "EXISTS") {
+      Swal.fire({ icon: "warning", title: "Bu kateqoriya artıq mövcuddur", timer: 2000, showConfirmButton: false });
     } else {
-      Swal.fire({ icon: "error", title: "Xəta", text: "Kateqoriya əlavə edilərkən xəta baş verdi", timer: 2000, showConfirmButton: false });
+      Swal.fire({ icon: "error", title: "Xəta", text: "Əməliyyat zamanı xəta baş verdi", timer: 2000, showConfirmButton: false });
+    }
+  };
+
+  const handleEdit = async (categoryId: number) => {
+    const detail = await getNewsCategoryDetails(categoryId);
+    if (detail === "ERROR" || typeof detail === "string") {
+      Swal.fire({ icon: "error", title: "Xəta", text: "Məlumat alına bilmədi", timer: 2000, showConfirmButton: false });
+      return;
+    }
+    setEditingId(categoryId);
+    setAzTitle(detail.az_title || "");
+    setEnTitle(detail.en_title || "");
+    setShowForm(true);
+  };
+
+  const handleDelete = async (cat: NewsCategory) => {
+    if ((cat.news_count ?? 0) > 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Silmək olmaz",
+        text: `Bu kateqoriyada ${cat.news_count} xəbər var. Əvvəlcə xəbərləri silin və ya başqa kateqoriyaya köçürün.`,
+      });
+      return;
+    }
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Əminsiniz?",
+      text: `"${cat.title}" kateqoriyası silinəcək`,
+      showCancelButton: true,
+      confirmButtonText: "Sil",
+      cancelButtonText: "İmtina",
+      confirmButtonColor: "#d33",
+    });
+    if (!result.isConfirmed) return;
+
+    const res = await deleteNewsCategory(cat.category_id);
+    if (res === "SUCCESS") {
+      Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false });
+      fetchCategories();
+    } else if (res === "HAS_NEWS") {
+      Swal.fire({ icon: "warning", title: "Silmək olmaz", text: "Bu kateqoriyada xəbərlər mövcuddur." });
+    } else {
+      Swal.fire({ icon: "error", title: "Xəta", text: "Silmə zamanı xəta baş verdi", timer: 2000, showConfirmButton: false });
     }
   };
 
@@ -66,17 +128,22 @@ export default function NewsCategories() {
         <button
           type="button"
           className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-brand-500 hover:bg-brand-600 text-white transition-colors shadow-sm"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) resetForm();
+            else setShowForm(true);
+          }}
         >
           <AddIcon fontSize="small" />
-          Yeni kateqoriya
+          {editingId ? "Redaktə" : "Yeni kateqoriya"}
         </button>
       </div>
 
       {/* Inline form */}
       {showForm && (
         <div className="overflow-hidden rounded-2xl border border-brand-100 dark:border-brand-900/30 bg-brand-50/50 dark:bg-brand-900/10 p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Yeni xəbər kateqoriyası</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+            {editingId ? "Kateqoriyanı redaktə et" : "Yeni xəbər kateqoriyası"}
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">AZ başlıq</Label>
@@ -90,15 +157,15 @@ export default function NewsCategories() {
           <div className="flex gap-2">
             <Button
               className="px-4 py-2 bg-brand-500 text-white rounded-xl text-sm font-semibold hover:bg-brand-600"
-              onClick={handleCreate}
-              disabled={creating || !azTitle.trim() || !enTitle.trim()}
+              onClick={handleSubmit}
+              disabled={submitting || !azTitle.trim() || !enTitle.trim()}
             >
-              {creating ? "Əlavə edilir..." : "Əlavə et"}
+              {submitting ? "Yadda saxlanılır..." : editingId ? "Yenilə" : "Əlavə et"}
             </Button>
             <button
               type="button"
               className="px-4 py-2 text-sm font-medium rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              onClick={() => { setShowForm(false); setAzTitle(""); setEnTitle(""); }}
+              onClick={resetForm}
             >
               İmtina
             </button>
@@ -110,7 +177,9 @@ export default function NewsCategories() {
       <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="flex items-center px-5 py-3 bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "10%" }}>#ID</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "90%" }}>Kateqoriya adı</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "55%" }}>Kateqoriya adı</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "20%" }}>Xəbər sayı</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-right" style={{ width: "15%" }}>Əməliyyatlar</p>
         </div>
 
         {loading ? (
@@ -124,9 +193,6 @@ export default function NewsCategories() {
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-3">
-              <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </div>
             <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
           </div>
         ) : categories.length > 0 ? (
@@ -137,14 +203,35 @@ export default function NewsCategories() {
                   #{cat.category_id}
                 </span>
               </div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "90%" }}>{cat.title}</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "55%" }}>{cat.title}</p>
+              <div style={{ width: "20%" }}>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-semibold">
+                  {cat.news_count ?? 0}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 justify-end" style={{ width: "15%" }}>
+                <button
+                  type="button"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-brand-600 transition-colors"
+                  onClick={() => handleEdit(cat.category_id)}
+                  title="Redaktə"
+                >
+                  <EditIcon fontSize="small" />
+                </button>
+                <button
+                  type="button"
+                  className={`p-1.5 rounded-lg transition-colors ${(cat.news_count ?? 0) > 0 ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:bg-red-50 hover:text-red-600"}`}
+                  onClick={() => handleDelete(cat)}
+                  disabled={(cat.news_count ?? 0) > 0}
+                  title={(cat.news_count ?? 0) > 0 ? "Xəbərlər var, silinə bilməz" : "Sil"}
+                >
+                  <DeleteIcon fontSize="small" />
+                </button>
+              </div>
             </div>
           ))
         ) : (
           <div className="flex flex-col items-center justify-center py-16">
-            <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-              <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-            </div>
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kateqoriya yoxdur</p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Hələ heç bir kateqoriya əlavə edilməyib</p>
           </div>
