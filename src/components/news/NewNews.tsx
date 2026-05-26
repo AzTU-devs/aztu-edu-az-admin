@@ -51,6 +51,7 @@ export default function NewNews() {
     const [selectedSdgs, setSelectedSdgs] = useState<number[]>([]);
     const [facultyCode, setFacultyCode] = useState("");
     const [cafedraCode, setCafedraCode] = useState("");
+    const [showInAllNews, setShowInAllNews] = useState(true);
 
     useEffect(() => {
         getNewsCategories("az").then((res) => {
@@ -102,6 +103,7 @@ export default function NewNews() {
             sdg_numbers: selectedSdgs.length > 0 ? selectedSdgs : undefined,
             faculty_code: facultyCode || undefined,
             cafedra_code: cafedraCode || undefined,
+            show_in_all_news: showInAllNews,
         };
 
         const result = await createNews(payload);
@@ -196,6 +198,24 @@ export default function NewNews() {
                                 <option key={c.code} value={c.code}>{c.label} ({c.code})</option>
                             ))}
                         </select>
+                    </div>
+                    <div className="md:col-span-3">
+                        <label className="flex items-start gap-3 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={showInAllNews}
+                                onChange={(e) => setShowInAllNews(e.target.checked)}
+                                className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                            />
+                            <span>
+                                <span className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                                    Bütün xəbərlər siyahısında görünsün
+                                </span>
+                                <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Söndürülərsə, xəbər yalnız təyin olunmuş fakültə/kafedra səhifəsində göstəriləcək.
+                                </span>
+                            </span>
+                        </label>
                     </div>
                     <div>
                         <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Qalereya şəkilləri</Label>

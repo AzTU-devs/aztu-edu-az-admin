@@ -10,6 +10,7 @@ export interface News {
     sdg_numbers?: number[];
     faculty_code?: string | null;
     cafedra_code?: string | null;
+    show_in_all_news?: boolean;
 }
 
 export interface NewsGalleryImage {
@@ -51,6 +52,7 @@ export interface UpdateNewsPayload {
     cafedra_code?: string | null;
     clear_faculty?: boolean;
     clear_cafedra?: boolean;
+    show_in_all_news?: boolean;
 }
 
 export interface ReOrderNewsPayload {
@@ -70,6 +72,7 @@ export interface CreateNewsPayload {
     sdg_numbers?: number[];
     faculty_code?: string | null;
     cafedra_code?: string | null;
+    show_in_all_news?: boolean;
 }
 
 export const getNews = async (start: number, end: number, lang: string) => {
@@ -143,6 +146,9 @@ export const createNews = async (payload: CreateNewsPayload) => {
         }
         if (payload.faculty_code) formData.append("faculty_code", payload.faculty_code);
         if (payload.cafedra_code) formData.append("cafedra_code", payload.cafedra_code);
+        if (payload.show_in_all_news !== undefined) {
+            formData.append("show_in_all_news", String(payload.show_in_all_news));
+        }
 
         const response = await apiClient.post("/api/news/create", formData, {
             headers: { "Content-Type": "multipart/form-data" },
@@ -184,6 +190,9 @@ export const updateNews = async (newsId: number, payload: UpdateNewsPayload) => 
         if (payload.cafedra_code) formData.append("cafedra_code", payload.cafedra_code);
         if (payload.clear_faculty) formData.append("clear_faculty", "true");
         if (payload.clear_cafedra) formData.append("clear_cafedra", "true");
+        if (payload.show_in_all_news !== undefined) {
+            formData.append("show_in_all_news", String(payload.show_in_all_news));
+        }
 
         const response = await apiClient.patch(`/api/news/${newsId}`, formData, {
             headers: { "Content-Type": "multipart/form-data" },

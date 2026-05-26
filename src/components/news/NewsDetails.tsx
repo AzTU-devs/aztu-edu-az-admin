@@ -55,6 +55,7 @@ export default function NewsDetails() {
     const [selectedSdgs, setSelectedSdgs] = useState<number[]>([]);
     const [facultyCode, setFacultyCode] = useState<string>("");
     const [cafedraCode, setCafedraCode] = useState<string>("");
+    const [showInAllNews, setShowInAllNews] = useState<boolean>(true);
 
     useEffect(() => {
         getNewsCategories("az").then((res) => Array.isArray(res) && setCategories(res));
@@ -103,6 +104,7 @@ export default function NewsDetails() {
                 setSelectedSdgs(Array.isArray(n.sdg_numbers) ? n.sdg_numbers : []);
                 setFacultyCode(n.faculty_code ?? "");
                 setCafedraCode(n.cafedra_code ?? "");
+                setShowInAllNews(n.show_in_all_news !== false);
             }
         }).finally(() => setLoading(false));
     }, [news_id]);
@@ -158,6 +160,7 @@ export default function NewsDetails() {
             cafedra_code: cafedraCode || undefined,
             clear_faculty: !facultyCode && !!originalFaculty,
             clear_cafedra: !cafedraCode && !!originalCafedra,
+            show_in_all_news: showInAllNews,
         });
 
         setSaving(false);
@@ -278,6 +281,24 @@ export default function NewsDetails() {
                                 <input type="radio" checked={!isActive} onChange={() => setIsActive(false)} /> Deaktiv
                             </label>
                         </div>
+                    </div>
+                    <div className="md:col-span-3">
+                        <label className="flex items-start gap-3 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={showInAllNews}
+                                onChange={(e) => setShowInAllNews(e.target.checked)}
+                                className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                            />
+                            <span>
+                                <span className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                                    Bütün xəbərlər siyahısında görünsün
+                                </span>
+                                <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Söndürülərsə, xəbər yalnız təyin olunmuş fakültə/kafedra səhifəsində göstəriləcək.
+                                </span>
+                            </span>
+                        </label>
                     </div>
                 </div>
             </div>
