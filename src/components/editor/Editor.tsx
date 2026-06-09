@@ -41,6 +41,13 @@ const MenuBar = ({ editor, onPreview, onAddLink, onAddEmail, onAttachFile, attac
             <button onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()} className={buttonClass(editor.isActive('heading', { level: 4 }))}>H4</button>
             <button onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()} className={buttonClass(editor.isActive('heading', { level: 5 }))}>H5</button>
             <button onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()} className={buttonClass(editor.isActive('heading', { level: 6 }))}>H6</button>
+            <button
+                onClick={() => editor.chain().focus().setHardBreak().run()}
+                title="Sətir keçidi — boşluq olmadan yeni sətir (Shift+Enter)"
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all font-bold leading-none"
+            >
+                ↵
+            </button>
             <button onClick={onAddLink} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><FaLink /></button>
             <button onClick={onAddEmail} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">📧</button>
             <button
@@ -305,6 +312,13 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                 </div>
             )}
             <style>{`
+        /* Paragraph spacing — keep the editing surface AND the preview in sync
+           with the public web view (SanitizedHtml) so what you type matches
+           what visitors see. */
+        .ProseMirror p, .prose p { margin-top: 0; margin-bottom: 0.6em; }
+        .ProseMirror p:empty, .prose p:empty { margin: 0; min-height: 1em; }
+        .ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6,
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 { margin-top: 1em; margin-bottom: 0.4em; }
         .ProseMirror a[download], .prose a[download] { color: #2563eb; text-decoration: underline; }
         .ProseMirror a[download]:hover, .prose a[download]:hover { color: #1d4ed8; }
         .ProseMirror ul, .prose ul { list-style-type: disc; padding-left: 1.5rem; }
