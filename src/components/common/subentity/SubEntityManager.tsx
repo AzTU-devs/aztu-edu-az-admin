@@ -3,6 +3,7 @@ import Swal from "sweetalert2";
 import Button from "../../ui/button/Button";
 import PersonFormModal from "./PersonFormModal";
 import { PersonFormValue } from "./PersonForm";
+import { getImageUrl } from "../../../util/imageUrl";
 
 export type CreateResult = { status: "SUCCESS"; id: number } | { status: "ERROR" };
 export type MutateResult = "SUCCESS" | "NOT FOUND" | "ERROR";
@@ -133,7 +134,7 @@ export default function SubEntityManager<T>({
             <div className="flex items-center gap-3">
               {showImage ? (
                 getImage?.(item) ? (
-                  <img src={getImage(item)} alt="" className="h-11 w-11 rounded-full border border-gray-200 object-cover" />
+                  <img src={getImageUrl(getImage(item))} alt="" className="h-11 w-11 rounded-full border border-gray-200 object-cover" />
                 ) : (
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-400 dark:bg-gray-800">—</div>
                 )

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { CircularProgress } from "@mui/material";
 import { getFacultyDetails, FacultyDetail } from "../../services/faculty/facultyService";
+import { getImageUrl } from "../../util/imageUrl";
 import Button from "../ui/button/Button";
 
 export default function FacultyView() {
@@ -77,7 +78,7 @@ export default function FacultyView() {
             <div key={idx} className="flex flex-col gap-3 p-4 rounded-xl border border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
               <div className="flex items-center gap-3">
                 {item.profile_image ? (
-                  <img src={item.profile_image} alt={item.first_name} className="w-12 h-12 rounded-full object-cover border border-gray-200" />
+                  <img src={getImageUrl(item.profile_image)} alt={item.first_name} className="w-12 h-12 rounded-full object-cover border border-gray-200" />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
@@ -142,7 +143,7 @@ export default function FacultyView() {
             <p className="text-sm font-bold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800 pb-2 mb-4">Direktor</p>
             <div className="flex flex-col md:flex-row gap-6">
               {faculty.director.profile_image && (
-                <img src={faculty.director.profile_image} alt="Director" className="w-32 h-32 rounded-2xl object-cover border-2 border-white shadow-sm" />
+                <img src={getImageUrl(faculty.director.profile_image)} alt="Director" className="w-32 h-32 rounded-2xl object-cover border-2 border-white shadow-sm" />
               )}
               <div className="flex-1 grid gap-4 sm:grid-cols-2">
                 <div>

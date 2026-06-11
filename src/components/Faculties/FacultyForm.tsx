@@ -5,6 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import TextArea from "../form/input/TextArea";
 import Button from "../ui/button/Button";
+import { getImageUrl } from "../../util/imageUrl";
 import {
   CreateFacultyPayload,
   DirectorPayload,
@@ -735,7 +736,7 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                 <input type="file" onChange={(e) => setDirectorImage(e.target.files?.[0] || null)} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                 {payload.director?.profile_image && !directorImage && (
                   <div className="mt-2">
-                    <img src={payload.director.profile_image} alt="Director" className="w-20 h-20 object-cover rounded-lg border border-gray-200" />
+                    <img src={getImageUrl(payload.director.profile_image)} alt="Director" className="w-20 h-20 object-cover rounded-lg border border-gray-200" />
                   </div>
                 )}
               </div>
@@ -934,7 +935,7 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                   <input type="file" onChange={(e) => setDeputyDeanImages(prev => ({ ...prev, [idx]: e.target.files?.[0] as File }))} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                   {item.profile_image && !deputyDeanImages[idx] && (
                     <div className="mt-2">
-                      <img src={item.profile_image} alt="Deputy Dean" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                      <img src={getImageUrl(item.profile_image)} alt="Deputy Dean" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
                     </div>
                   )}
                 </div>
@@ -1095,7 +1096,7 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                   <input type="file" onChange={(e) => setWorkerImages(prev => ({ ...prev, [idx]: e.target.files?.[0] as File }))} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                   {item.profile_image && !workerImages[idx] && (
                     <div className="mt-2">
-                      <img src={item.profile_image} alt="Worker" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                      <img src={getImageUrl(item.profile_image)} alt="Worker" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
                     </div>
                   )}
                 </div>

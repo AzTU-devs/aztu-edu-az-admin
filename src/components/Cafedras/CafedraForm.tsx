@@ -6,6 +6,7 @@ import Input from "../form/input/InputField";
 import TextArea from "../form/input/TextArea";
 import Button from "../ui/button/Button";
 import Editor from "../editor/Editor";
+import { getImageUrl } from "../../util/imageUrl";
 import {
   CreateCafedraPayload,
   DirectorPayload,
@@ -461,7 +462,7 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
                   <input type="file" onChange={(e) => setImageMap(prev => ({ ...prev, [idx]: e.target.files?.[0] as File }))} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                   {item.profile_image && !imageMap[idx] && (
                     <div className="mt-2">
-                      <img src={item.profile_image} alt="Profile" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                      <img src={getImageUrl(item.profile_image)} alt="Profile" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
                     </div>
                   )}
                 </div>
@@ -725,7 +726,7 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
                 <input type="file" accept="image/*" onChange={(e) => setLabImages(prev => ({ ...prev, [idx]: e.target.files?.[0] as File }))} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                 {item.image_url && !labImages[idx] && (
                   <div className="mt-2">
-                    <img src={item.image_url} alt="Laboratory" className="w-32 h-20 object-cover rounded-lg border border-gray-200" />
+                    <img src={getImageUrl(item.image_url)} alt="Laboratory" className="w-32 h-20 object-cover rounded-lg border border-gray-200" />
                   </div>
                 )}
                 {labImages[idx] && (
@@ -820,7 +821,7 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {(item.gallery_images ?? []).map((g) => (
                     <div key={`gallery-${g.id}`} className="relative group rounded-lg overflow-hidden border border-gray-200">
-                      <img src={g.image_url} alt="Gallery" className="w-full h-24 object-cover" />
+                      <img src={getImageUrl(g.image_url)} alt="Gallery" className="w-full h-24 object-cover" />
                       <button type="button" onClick={() => removeLabGalleryExisting(idx, g.id)} className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" title="Sil">
                         ×
                       </button>
@@ -1086,7 +1087,7 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
                 <input type="file" onChange={(e) => setDirectorImage(e.target.files?.[0] || null)} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                 {payload.director?.profile_image && !directorImage && (
                   <div className="mt-2">
-                    <img src={payload.director.profile_image} alt="Director" className="w-20 h-20 object-cover rounded-lg border border-gray-200" />
+                    <img src={getImageUrl(payload.director.profile_image)} alt="Director" className="w-20 h-20 object-cover rounded-lg border border-gray-200" />
                   </div>
                 )}
               </div>

@@ -6,6 +6,7 @@ import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Editor from "../editor/Editor";
+import { getImageUrl } from "../../util/imageUrl";
 import {
   Laboratory,
   createLaboratory,
@@ -188,7 +189,7 @@ export default function LaboratoryManager({ cafedraCode, laboratories, onChanged
           >
             <div className="flex items-center gap-3">
               {lab.image_url ? (
-                <img src={lab.image_url} alt="" className="h-12 w-12 rounded-lg border border-gray-200 object-cover" />
+                <img src={getImageUrl(lab.image_url)} alt="" className="h-12 w-12 rounded-lg border border-gray-200 object-cover" />
               ) : (
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400 dark:bg-gray-800">—</div>
               )}
@@ -279,7 +280,7 @@ export default function LaboratoryManager({ cafedraCode, laboratories, onChanged
           <div>
             <Label>Əsas şəkil</Label>
             <div className="flex flex-wrap items-center gap-4">
-              {value.image_url ? <img src={value.image_url} alt="" className="h-14 w-14 rounded-lg border border-gray-200 object-cover" /> : null}
+              {value.image_url ? <img src={getImageUrl(value.image_url)} alt="" className="h-14 w-14 rounded-lg border border-gray-200 object-cover" /> : null}
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"

@@ -1,5 +1,6 @@
 import Input from "../../form/input/InputField";
 import Label from "../../form/Label";
+import { getImageUrl } from "../../../util/imageUrl";
 
 export interface PersonFormValue {
   first_name: string;
@@ -121,7 +122,7 @@ export default function PersonForm({
           <Label>Şəkil</Label>
           <div className="flex flex-wrap items-center gap-4">
             {value.profile_image ? (
-              <img src={value.profile_image} alt="" className="h-14 w-14 rounded-full border border-gray-200 object-cover" />
+              <img src={getImageUrl(value.profile_image)} alt="" className="h-14 w-14 rounded-full border border-gray-200 object-cover" />
             ) : null}
             <input
               type="file"

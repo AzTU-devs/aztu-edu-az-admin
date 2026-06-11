@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { CircularProgress } from "@mui/material";
 import { getCafedraDetails, CafedraDetail } from "../../services/cafedra/cafedraService";
+import { getImageUrl } from "../../util/imageUrl";
 import Button from "../ui/button/Button";
 
 export default function CafedraView() {
@@ -75,7 +76,7 @@ export default function CafedraView() {
             <div key={idx} className="flex flex-col gap-3 p-4 rounded-xl border border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
               <div className="flex items-center gap-3">
                 {item.profile_image ? (
-                  <img src={item.profile_image} alt={item.first_name} className="w-12 h-12 rounded-full object-cover border border-gray-200" />
+                  <img src={getImageUrl(item.profile_image)} alt={item.first_name} className="w-12 h-12 rounded-full object-cover border border-gray-200" />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
@@ -112,7 +113,7 @@ export default function CafedraView() {
             <div key={idx} className="p-4 rounded-xl border border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 space-y-4">
               <div className="flex flex-col md:flex-row gap-6">
                 {item.image_url && (
-                  <img src={item.image_url} alt={item.az?.title} className="w-full md:w-48 h-32 object-cover rounded-xl border border-gray-200" />
+                  <img src={getImageUrl(item.image_url)} alt={item.az?.title} className="w-full md:w-48 h-32 object-cover rounded-xl border border-gray-200" />
                 )}
                 <div className="flex-1 space-y-2">
                   <p className="text-base font-bold text-gray-900 dark:text-white">{item.az?.title || item.en?.title}</p>
@@ -142,7 +143,7 @@ export default function CafedraView() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {item.gallery_images.map((g: any) => (
                       <a key={`lab-${idx}-gallery-${g.id}`} href={g.image_url} target="_blank" rel="noreferrer" className="block rounded-lg overflow-hidden border border-gray-200 hover:opacity-90">
-                        <img src={g.image_url} alt="Gallery" className="w-full h-24 object-cover" />
+                        <img src={getImageUrl(g.image_url)} alt="Gallery" className="w-full h-24 object-cover" />
                       </a>
                     ))}
                   </div>
@@ -187,7 +188,7 @@ export default function CafedraView() {
             <p className="text-sm font-bold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800 pb-2 mb-4">Müdir (Director)</p>
             <div className="flex flex-col md:flex-row gap-6">
               {cafedra.director.profile_image && (
-                <img src={cafedra.director.profile_image} alt="Director" className="w-32 h-32 rounded-2xl object-cover border-2 border-white shadow-sm" />
+                <img src={getImageUrl(cafedra.director.profile_image)} alt="Director" className="w-32 h-32 rounded-2xl object-cover border-2 border-white shadow-sm" />
               )}
               <div className="flex-1 grid gap-4 sm:grid-cols-2">
                 <div>
