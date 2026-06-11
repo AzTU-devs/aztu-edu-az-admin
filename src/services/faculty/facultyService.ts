@@ -56,6 +56,7 @@ export interface DeputyDean {
 }
 
 export interface ScientificCouncilMember {
+    id?: number;
     first_name: string;
     last_name: string;
     father_name: string;
@@ -64,6 +65,20 @@ export interface ScientificCouncilMember {
     az: { duty: string; scientific_name: string; scientific_degree: string };
     en: { duty: string; scientific_name: string; scientific_degree: string };
 }
+
+/** Shared create/update payload for any person sub-entity (worker / deputy dean / council member). */
+export type PersonPayload = {
+    first_name: string;
+    last_name: string;
+    father_name: string;
+    email: string;
+    phone: string;
+    az: { duty: string; scientific_name: string; scientific_degree: string };
+    en: { duty: string; scientific_name: string; scientific_degree: string };
+};
+
+export type CreateResult = { status: "SUCCESS"; id: number } | { status: "ERROR" };
+export type MutateResult = "SUCCESS" | "NOT FOUND" | "ERROR";
 
 export interface Worker {
     id?: number;
@@ -253,3 +268,67 @@ export const uploadWorkerImage = async (workerId: number, imageFile: File) => {
         return "ERROR";
     }
 };
+
+// ============================================================
+// Standalone sub-entity CRUD (incremental management on detail page)
+// ============================================================
+
+const _create = async (url: string, payload: unknown): Promise<CreateResult> => {
+    try {
+        const response = await apiClient.post(url, payload, { headers: { "Content-Type": "application/json" } });
+        if (response.data.status_code === 201) {
+            return { status: "SUCCESS", id: response.data.data?.id as number };
+        }
+        return { status: "ERROR" };
+    } catch {
+        return { status: "ERROR" };
+    }
+};
+
+const _update = async (url: string, payload: unknown): Promise<MutateResult> => {
+    try {
+        const response = await apiClient.put(url, payload, { headers: { "Content-Type": "application/json" } });
+        if (response.data.status_code === 200) return "SUCCESS";
+        if (response.data.status_code === 404) return "NOT FOUND";
+        return "ERROR";
+    } catch (err: any) {
+        if (err.response?.status === 404) return "NOT FOUND";
+        return "ERROR";
+    }
+};
+
+const _delete = async (url: string): Promise<MutateResult> => {
+    try {
+        const response = await apiClient.delete(url);
+        if (response.data.status_code === 200) return "SUCCESS";
+        if (response.data.status_code === 404) return "NOT FOUND";
+        return "ERROR";
+    } catch (err: any) {
+        if (err.response?.status === 404) return "NOT FOUND";
+        return "ERROR";
+    }
+};
+
+// Workers
+export const createFacultyWorker = (facultyCode: string, payload: PersonPayload) =>
+    _create(`${FACULTY_ADMIN_BASE}/${facultyCode}/workers`, payload);
+export const updateFacultyWorker = (workerId: number, payload: PersonPayload) =>
+    _update(`${FACULTY_ADMIN_BASE}/workers/${workerId}`, payload);
+export const deleteFacultyWorker = (workerId: number) =>
+    _delete(`${FACULTY_ADMIN_BASE}/workers/${workerId}`);
+
+// Deputy deans
+export const createDeputyDean = (facultyCode: string, payload: PersonPayload) =>
+    _create(`${FACULTY_ADMIN_BASE}/${facultyCode}/deputy-deans`, payload);
+export const updateDeputyDean = (deputyDeanId: number, payload: PersonPayload) =>
+    _update(`${FACULTY_ADMIN_BASE}/deputy-deans/${deputyDeanId}`, payload);
+export const deleteDeputyDean = (deputyDeanId: number) =>
+    _delete(`${FACULTY_ADMIN_BASE}/deputy-deans/${deputyDeanId}`);
+
+// Scientific council
+export const createScientificCouncilMember = (facultyCode: string, payload: PersonPayload) =>
+    _create(`${FACULTY_ADMIN_BASE}/${facultyCode}/scientific-council`, payload);
+export const updateScientificCouncilMember = (memberId: number, payload: PersonPayload) =>
+    _update(`${FACULTY_ADMIN_BASE}/scientific-council/${memberId}`, payload);
+export const deleteScientificCouncilMember = (memberId: number) =>
+    _delete(`${FACULTY_ADMIN_BASE}/scientific-council/${memberId}`);

@@ -149,21 +149,132 @@ export const getCafedras = async (start: number, end: number, faculty_code?: str
     }
 };
 
-export const getCafedraDetails = async (cafedraCode: string) => {
+// The cafedra detail endpoint returns a single language (flattened) per `?lang=`.
+// To edit bilingually we fetch az + en and merge them into the nested az/en shape
+// the form and the sub-entity managers expect.
+const fetchCafedraRaw = async (cafedraCode: string, lang: string): Promise<any | "NOT FOUND" | "ERROR"> => {
     try {
-        const response = await apiClient.get(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}`);
-
-        if (response.data.status_code === 200) {
-            return response.data.cafedra as CafedraDetail;
-        }
-
+        const response = await apiClient.get(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}?lang=${lang}`);
+        if (response.data.status_code === 200) return response.data.cafedra;
         return "ERROR";
     } catch (err: any) {
-        if (err.response && err.response.status === 404) {
-            return "NOT FOUND";
-        }
+        if (err.response && err.response.status === 404) return "NOT FOUND";
         return "ERROR";
     }
+};
+
+const mergePeople = (azArr: any[] = [], enArr: any[] = []) =>
+    (azArr ?? []).map((a, i) => {
+        const e = enArr?.[i] ?? {};
+        return {
+            id: a.id,
+            first_name: a.first_name ?? "",
+            last_name: a.last_name ?? "",
+            father_name: a.father_name ?? "",
+            email: a.email ?? "",
+            phone: a.phone ?? "",
+            profile_image: a.profile_image,
+            az: { duty: a.duty ?? "", scientific_name: a.scientific_name ?? "", scientific_degree: a.scientific_degree ?? "" },
+            en: { duty: e.duty ?? "", scientific_name: e.scientific_name ?? "", scientific_degree: e.scientific_degree ?? "" },
+        };
+    });
+
+const mergeSections = (azArr: any[] = [], enArr: any[] = []) =>
+    (azArr ?? []).map((a, i) => {
+        const e = enArr?.[i] ?? {};
+        return {
+            az: { title: a.title ?? "", description: a.description ?? "" },
+            en: { title: e.title ?? "", description: e.description ?? "" },
+        };
+    });
+
+const mergeDirector = (a: any, e: any) => {
+    if (!a) return null;
+    e = e ?? {};
+    return {
+        first_name: a.first_name ?? "",
+        last_name: a.last_name ?? "",
+        father_name: a.father_name ?? "",
+        email: a.email ?? "",
+        phone: a.phone ?? "",
+        room_number: a.room_number ?? "",
+        profile_image: a.profile_image,
+        az: {
+            scientific_degree: a.scientific_degree ?? "",
+            scientific_title: a.scientific_title ?? "",
+            bio: a.bio ?? "",
+            scientific_research_fields: a.scientific_research_fields ?? [],
+        },
+        en: {
+            scientific_degree: e.scientific_degree ?? "",
+            scientific_title: e.scientific_title ?? "",
+            bio: e.bio ?? "",
+            scientific_research_fields: e.scientific_research_fields ?? [],
+        },
+        working_hours: (a.working_hours ?? []).map((wh: any, i: number) => ({
+            az: { day: wh.day ?? "" },
+            en: { day: e.working_hours?.[i]?.day ?? "" },
+            time_range: wh.time_range ?? "",
+        })),
+        educations: (a.educations ?? []).map((ed: any, i: number) => ({
+            az: { degree: ed.degree ?? "", university: ed.university ?? "" },
+            en: { degree: e.educations?.[i]?.degree ?? "", university: e.educations?.[i]?.university ?? "" },
+            start_year: ed.start_year ?? "",
+            end_year: ed.end_year ?? "",
+        })),
+    };
+};
+
+const mergeLabs = (azArr: any[] = [], enArr: any[] = []) =>
+    (azArr ?? []).map((a, i) => {
+        const e = enArr?.[i] ?? {};
+        return {
+            id: a.id,
+            cafedra_code: a.cafedra_code,
+            image_url: a.image_url ?? null,
+            room_number: a.room_number ?? "",
+            email: a.email ?? "",
+            phone_number: a.phone_number ?? "",
+            az: { title: a.title ?? "", html_content: a.html_content ?? "" },
+            en: { title: e.title ?? "", html_content: e.html_content ?? "" },
+            objectives: (a.objectives ?? []).map((o: any, j: number) => ({
+                id: o.id,
+                az: { title: o.title ?? "" },
+                en: { title: e.objectives?.[j]?.title ?? "" },
+            })),
+            gallery_images: a.gallery_images ?? [],
+        };
+    });
+
+export const getCafedraDetails = async (cafedraCode: string): Promise<CafedraDetail | "NOT FOUND" | "ERROR"> => {
+    const [az, en] = await Promise.all([fetchCafedraRaw(cafedraCode, "az"), fetchCafedraRaw(cafedraCode, "en")]);
+
+    if (az === "NOT FOUND" || en === "NOT FOUND") return "NOT FOUND";
+    if (az === "ERROR" || en === "ERROR" || !az) return "ERROR";
+
+    const enObj = typeof en === "object" && en ? en : {};
+    const deputies = mergePeople(az.deputy_directors, enObj.deputy_directors);
+
+    const merged = {
+        ...az,
+        az: { title: az.title ?? "", html_content: az.html_content ?? "" },
+        en: { title: enObj.title ?? "", html_content: enObj.html_content ?? "" },
+        director: mergeDirector(az.director, enObj.director),
+        deputy_directors: deputies,
+        // The big form reads `deputy_deans`; expose the same merged list under that key too.
+        deputy_deans: deputies,
+        scientific_council: mergePeople(az.scientific_council, enObj.scientific_council),
+        workers: mergePeople(az.workers, enObj.workers),
+        laboratories: mergeLabs(az.laboratories, enObj.laboratories),
+        research_works: mergeSections(az.research_works, enObj.research_works),
+        partner_companies: mergeSections(az.partner_companies, enObj.partner_companies),
+        objectives: mergeSections(az.objectives, enObj.objectives),
+        duties: mergeSections(az.duties, enObj.duties),
+        projects: mergeSections(az.projects, enObj.projects),
+        directions_of_action: mergeSections(az.directions_of_action, enObj.directions_of_action),
+    };
+
+    return merged as unknown as CafedraDetail;
 };
 
 export const createCafedra = async (payload: CreateCafedraPayload) => {
@@ -250,6 +361,100 @@ export const uploadCafedraWorkerImage = async (workerId: number, imageFile: File
     }
 };
 
+export const uploadCafedraDeputyDirectorImage = async (deputyDirectorId: number, imageFile: File) => {
+    try {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const response = await apiClient.put(`${CAFEDRA_ADMIN_BASE}/deputy-directors/${deputyDirectorId}/image`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        if (response.data.status_code === 200) {
+            return "SUCCESS";
+        }
+        return "ERROR";
+    } catch (err: any) {
+        return "ERROR";
+    }
+};
+
+// ============================================================
+// Standalone sub-entity CRUD (incremental management on detail page)
+// ============================================================
+
+/** Shared create/update payload for any cafedra person (worker / deputy director / council member). */
+export type CafedraPersonPayload = {
+    first_name: string;
+    last_name: string;
+    father_name: string;
+    email: string;
+    phone: string;
+    az: { duty: string; scientific_name: string; scientific_degree: string };
+    en: { duty: string; scientific_name: string; scientific_degree: string };
+};
+
+export type CreateResult = { status: "SUCCESS"; id: number } | { status: "ERROR" };
+export type MutateResult = "SUCCESS" | "NOT FOUND" | "ERROR";
+
+const _create = async (url: string, payload: unknown): Promise<CreateResult> => {
+    try {
+        const response = await apiClient.post(url, payload, { headers: { "Content-Type": "application/json" } });
+        if (response.data.status_code === 201) {
+            return { status: "SUCCESS", id: response.data.data?.id as number };
+        }
+        return { status: "ERROR" };
+    } catch {
+        return { status: "ERROR" };
+    }
+};
+
+const _update = async (url: string, payload: unknown): Promise<MutateResult> => {
+    try {
+        const response = await apiClient.put(url, payload, { headers: { "Content-Type": "application/json" } });
+        if (response.data.status_code === 200) return "SUCCESS";
+        if (response.data.status_code === 404) return "NOT FOUND";
+        return "ERROR";
+    } catch (err: any) {
+        if (err.response?.status === 404) return "NOT FOUND";
+        return "ERROR";
+    }
+};
+
+const _delete = async (url: string): Promise<MutateResult> => {
+    try {
+        const response = await apiClient.delete(url);
+        if (response.data.status_code === 200) return "SUCCESS";
+        if (response.data.status_code === 404) return "NOT FOUND";
+        return "ERROR";
+    } catch (err: any) {
+        if (err.response?.status === 404) return "NOT FOUND";
+        return "ERROR";
+    }
+};
+
+// Workers
+export const createCafedraWorker = (cafedraCode: string, payload: CafedraPersonPayload) =>
+    _create(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/workers`, payload);
+export const updateCafedraWorker = (workerId: number, payload: CafedraPersonPayload) =>
+    _update(`${CAFEDRA_ADMIN_BASE}/workers/${workerId}`, payload);
+export const deleteCafedraWorker = (workerId: number) =>
+    _delete(`${CAFEDRA_ADMIN_BASE}/workers/${workerId}`);
+
+// Deputy directors
+export const createCafedraDeputyDirector = (cafedraCode: string, payload: CafedraPersonPayload) =>
+    _create(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/deputy-directors`, payload);
+export const updateCafedraDeputyDirector = (deputyDirectorId: number, payload: CafedraPersonPayload) =>
+    _update(`${CAFEDRA_ADMIN_BASE}/deputy-directors/${deputyDirectorId}`, payload);
+export const deleteCafedraDeputyDirector = (deputyDirectorId: number) =>
+    _delete(`${CAFEDRA_ADMIN_BASE}/deputy-directors/${deputyDirectorId}`);
+
+// Scientific council
+export const createCafedraScientificCouncilMember = (cafedraCode: string, payload: CafedraPersonPayload) =>
+    _create(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/scientific-council`, payload);
+export const updateCafedraScientificCouncilMember = (memberId: number, payload: CafedraPersonPayload) =>
+    _update(`${CAFEDRA_ADMIN_BASE}/scientific-council/${memberId}`, payload);
+export const deleteCafedraScientificCouncilMember = (memberId: number) =>
+    _delete(`${CAFEDRA_ADMIN_BASE}/scientific-council/${memberId}`);
+
 // ============================================================
 // LABORATORY API
 // ============================================================
@@ -285,13 +490,19 @@ export const createLaboratory = async (cafedraCode: string, payload: Laboratory)
     try {
         const response = await apiClient.post(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/laboratories`, payload);
         if (response.data.status_code === 201) {
-            return { status: "SUCCESS", id: response.data.id as number };
+            return { status: "SUCCESS", id: (response.data.data?.id ?? response.data.id) as number };
         }
         return { status: "ERROR" };
     } catch (err: any) {
         return { status: "ERROR" };
     }
 };
+
+export const updateLaboratory = (laboratoryId: number, payload: Partial<Laboratory>) =>
+    _update(`${CAFEDRA_ADMIN_BASE}/laboratories/${laboratoryId}`, payload);
+
+export const deleteLaboratory = (laboratoryId: number) =>
+    _delete(`${CAFEDRA_ADMIN_BASE}/laboratories/${laboratoryId}`);
 
 export const uploadLaboratoryImage = async (laboratoryId: number, imageFile: File) => {
     try {
@@ -317,7 +528,8 @@ export const uploadLaboratoryGalleryImage = async (laboratoryId: number, imageFi
             headers: { "Content-Type": "multipart/form-data" },
         });
         if (response.data.status_code === 201 || response.data.status_code === 200) {
-            return { status: "SUCCESS", id: response.data.id as number | undefined, image_url: response.data.image_url as string | undefined };
+            const data = response.data.data ?? response.data;
+            return { status: "SUCCESS", id: data.id as number | undefined, image_url: data.image_url as string | undefined };
         }
         return { status: "ERROR" };
     } catch (err: any) {

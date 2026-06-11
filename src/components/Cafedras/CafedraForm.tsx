@@ -27,6 +27,10 @@ interface CafedraFormProps {
   initialValue?: CafedraDetail | null;
   onSubmit: (payload: CreateCafedraPayload) => Promise<{ status: string; cafedra?: CafedraDetail }>;
   submitLabel: string;
+  /** On the edit page the people lists and laboratories are managed incrementally via
+   *  dedicated manager panels, so the big form hides those sections and omits them from
+   *  the payload to avoid the destructive bulk replace. */
+  isEdit?: boolean;
 }
 
 const blankTranslatedItem: TranslatedTextItem = {
@@ -231,7 +235,7 @@ const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
   };
 };
 
-export default function CafedraForm({ initialValue = null, onSubmit, submitLabel }: CafedraFormProps) {
+export default function CafedraForm({ initialValue = null, onSubmit, submitLabel, isEdit = false }: CafedraFormProps) {
   const navigate = useNavigate();
   const [payload, setPayload] = useState<CreateCafedraPayload>(normalizeCafedraPayload(initialValue));
   const [useDirector, setUseDirector] = useState<boolean>(Boolean(initialValue?.director));
@@ -855,61 +859,80 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
 
     setSaving(true);
 
-    const payloadToSend: CreateCafedraPayload = {
+    const payloadToSend: any = {
       ...payload,
       director: useDirector ? payload.director ?? blankDirector : null,
     };
 
+    // On the edit page these lists are managed incrementally via dedicated manager
+    // panels, so never send them through the bulk update (it would delete & recreate
+    // every row, orphaning IDs and uploaded images).
+    if (isEdit) {
+      delete payloadToSend.deputy_deans;
+      delete payloadToSend.scientific_council;
+      delete payloadToSend.workers;
+      delete payloadToSend.laboratories;
+    }
+
     const result = await onSubmit(payloadToSend);
 
-    if (result.status === "SUCCESS" && result.cafedra) {
-      const cafedraCode = result.cafedra.cafedra_code;
+    if (result.status === "SUCCESS") {
+      // The create endpoint returns the full cafedra (with sub-entity ids) so freshly
+      // added rows can get their images uploaded; the update endpoint does not.
+      const savedCafedra = result.cafedra;
 
-      if (directorImage) {
-        await uploadCafedraDirectorImage(cafedraCode, directorImage);
-      }
+      if (savedCafedra) {
+        const cafedraCode = savedCafedra.cafedra_code;
 
-      for (const indexStr in workerImages) {
-        const index = parseInt(indexStr);
-        const worker = result.cafedra.workers[index];
-        if (worker && worker.id) {
-          await uploadCafedraWorkerImage(worker.id, workerImages[index]);
+        if (directorImage) {
+          await uploadCafedraDirectorImage(cafedraCode, directorImage);
         }
-      }
-      for (const indexStr in deputyDeanImages) {
-        const index = parseInt(indexStr);
-        const worker = result.cafedra.deputy_deans[index];
-        if (worker && worker.id) {
-          await uploadCafedraWorkerImage(worker.id, deputyDeanImages[index]);
-        }
-      }
-      for (const indexStr in councilImages) {
-        const index = parseInt(indexStr);
-        const worker = result.cafedra.scientific_council[index];
-        if (worker && worker.id) {
-          await uploadCafedraWorkerImage(worker.id, councilImages[index]);
-        }
-      }
 
-      // Handle Laboratory Images
-      for (const indexStr in labImages) {
-        const index = parseInt(indexStr);
-        const lab = result.cafedra.laboratories[index];
-        if (lab && lab.id) {
-          await uploadLaboratoryImage(lab.id, labImages[index]);
-        }
-      }
-
-      // Handle Laboratory Gallery Images (pending files from not-yet-created labs)
-      for (const indexStr in labGalleryFiles) {
-        const index = parseInt(indexStr);
-        const lab = result.cafedra.laboratories[index];
-        const files = labGalleryFiles[index] ?? [];
-        if (lab && lab.id && files.length > 0) {
-          for (const file of files) {
-            await uploadLaboratoryGalleryImage(lab.id, file);
+        for (const indexStr in workerImages) {
+          const index = parseInt(indexStr);
+          const worker = savedCafedra.workers?.[index];
+          if (worker && worker.id) {
+            await uploadCafedraWorkerImage(worker.id, workerImages[index]);
           }
         }
+        for (const indexStr in deputyDeanImages) {
+          const index = parseInt(indexStr);
+          const worker = savedCafedra.deputy_deans?.[index];
+          if (worker && worker.id) {
+            await uploadCafedraWorkerImage(worker.id, deputyDeanImages[index]);
+          }
+        }
+        for (const indexStr in councilImages) {
+          const index = parseInt(indexStr);
+          const worker = savedCafedra.scientific_council?.[index];
+          if (worker && worker.id) {
+            await uploadCafedraWorkerImage(worker.id, councilImages[index]);
+          }
+        }
+
+        // Handle Laboratory Images
+        for (const indexStr in labImages) {
+          const index = parseInt(indexStr);
+          const lab = savedCafedra.laboratories?.[index];
+          if (lab && lab.id) {
+            await uploadLaboratoryImage(lab.id, labImages[index]);
+          }
+        }
+
+        // Handle Laboratory Gallery Images (pending files from not-yet-created labs)
+        for (const indexStr in labGalleryFiles) {
+          const index = parseInt(indexStr);
+          const lab = savedCafedra.laboratories?.[index];
+          const files = labGalleryFiles[index] ?? [];
+          if (lab && lab.id && files.length > 0) {
+            for (const file of files) {
+              await uploadLaboratoryGalleryImage(lab.id, file);
+            }
+          }
+        }
+      } else if (directorImage && initialValue) {
+        // Edit flow: upload director image straight to the existing cafedra.
+        await uploadCafedraDirectorImage(initialValue.cafedra_code, directorImage);
       }
 
       Swal.fire({
@@ -1220,11 +1243,11 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
 
       {renderTranslatedArraySection("Eyni vaxtında Tədbirləri", "directions_of_action")}
 
-      {renderPersonnelSection("Müavinlər", "Kafedra müdir müavinləri.", "deputy_deans", deputyDeanImages, setDeputyDeanImages)}
-      {renderPersonnelSection("Elmi Şura", "Kafedra elmi şurasının üzvləri.", "scientific_council", councilImages, setCouncilImages)}
-      {renderPersonnelSection("İşçilər", "Kafedra işçiləri məlumatları.", "workers", workerImages, setWorkerImages)}
+      {!isEdit && renderPersonnelSection("Müavinlər", "Kafedra müdir müavinləri.", "deputy_deans", deputyDeanImages, setDeputyDeanImages)}
+      {!isEdit && renderPersonnelSection("Elmi Şura", "Kafedra elmi şurasının üzvləri.", "scientific_council", councilImages, setCouncilImages)}
+      {!isEdit && renderPersonnelSection("İşçilər", "Kafedra işçiləri məlumatları.", "workers", workerImages, setWorkerImages)}
 
-      {renderLaboratorySection()}
+      {!isEdit && renderLaboratorySection()}
       {renderTranslatedArraySection("Elmi-tədqiqat işləri", "research_works")}
       {renderTranslatedArraySection("Tərəfdaş şirkətlər", "partner_companies")}
       {renderTranslatedArraySection("Məqsədlər", "objectives")}

@@ -21,6 +21,10 @@ interface FacultyFormProps {
   initialValue?: FacultyDetail | null;
   onSubmit: (payload: any) => Promise<{ status: string; faculty?: FacultyDetail }>;
   submitLabel: string;
+  /** On the edit page the people lists (deputy deans, scientific council, workers) are
+   *  managed incrementally by SubEntityManager panels, so the big form hides those
+   *  sections and omits them from the payload to avoid the destructive bulk replace. */
+  isEdit?: boolean;
 }
 
 
@@ -234,7 +238,7 @@ const getDirtyFields = (initial: any, current: any): any => {
   return dirtyFields;
 };
 
-export default function FacultyForm({ initialValue = null, onSubmit, submitLabel }: FacultyFormProps) {
+export default function FacultyForm({ initialValue = null, onSubmit, submitLabel, isEdit = false }: FacultyFormProps) {
   const navigate = useNavigate();
   const [payload, setPayload] = useState<CreateFacultyPayload>(normalizeFacultyPayload(initialValue));
   const [useDirector, setUseDirector] = useState<boolean>(Boolean(initialValue?.director));
@@ -542,6 +546,15 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
       director: useDirector ? payload.director ?? blankDirector : null,
     };
 
+    // On the edit page these lists are managed incrementally via the SubEntityManager
+    // panels, so never send them through the bulk update (it would delete & recreate
+    // every row, orphaning IDs and uploaded images).
+    if (isEdit) {
+      delete payloadToSend.deputy_deans;
+      delete payloadToSend.scientific_council;
+      delete payloadToSend.workers;
+    }
+
     if (initialValue) {
       const normalizedInitial = normalizeFacultyPayload(initialValue);
       payloadToSend = getDirtyFields(normalizedInitial, payloadToSend);
@@ -561,27 +574,35 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
 
     const result = await onSubmit(payloadToSend);
 
-    if (result.status === "SUCCESS" && result.faculty) {
-      const facultyCode = result.faculty.faculty_code;
+    if (result.status === "SUCCESS") {
+      // The create endpoint returns the full faculty (with sub-entity ids) so freshly
+      // added people can get their images uploaded; the update endpoint does not.
+      const savedFaculty = result.faculty;
+      const facultyCode = savedFaculty?.faculty_code;
 
-      if (directorImage) {
-        await uploadDirectorImage(facultyCode, directorImage);
-      }
-
-      for (const indexStr in deputyDeanImages) {
-        const index = parseInt(indexStr);
-        const deputyDean = result.faculty.deputy_deans[index];
-        if (deputyDean && deputyDean.id) {
-          await uploadDeputyDeanImage(deputyDean.id, deputyDeanImages[index]);
+      if (savedFaculty && facultyCode) {
+        if (directorImage) {
+          await uploadDirectorImage(facultyCode, directorImage);
         }
-      }
 
-      for (const indexStr in workerImages) {
-        const index = parseInt(indexStr);
-        const worker = result.faculty.workers[index];
-        if (worker && worker.id) {
-          await uploadWorkerImage(worker.id, workerImages[index]);
+        for (const indexStr in deputyDeanImages) {
+          const index = parseInt(indexStr);
+          const deputyDean = savedFaculty.deputy_deans?.[index];
+          if (deputyDean && deputyDean.id) {
+            await uploadDeputyDeanImage(deputyDean.id, deputyDeanImages[index]);
+          }
         }
+
+        for (const indexStr in workerImages) {
+          const index = parseInt(indexStr);
+          const worker = savedFaculty.workers?.[index];
+          if (worker && worker.id) {
+            await uploadWorkerImage(worker.id, workerImages[index]);
+          }
+        }
+      } else if (directorImage && initialValue) {
+        // Edit flow: upload director image straight to the existing faculty.
+        await uploadDirectorImage(initialValue.faculty_code, directorImage);
       }
 
       Swal.fire({
@@ -877,6 +898,8 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
       {renderTranslatedArraySection("Layihələr", "projects")}
       {renderTranslatedArraySection("Eyni vaxtında Tədbirləri", "directions_of_action")}
 
+      {!isEdit && (
+      <>
       <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
           <div>
@@ -1123,6 +1146,8 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
           ))}
         </div>
       </div>
+      </>
+      )}
 
       <div className="flex items-center gap-3 pt-1">
         <Button

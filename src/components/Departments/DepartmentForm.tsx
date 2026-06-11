@@ -21,6 +21,10 @@ interface DepartmentFormProps {
     workerImages: (File | null)[]
   ) => Promise<{ status: string; errors?: ValidationErrors; data?: unknown }>;
   submitLabel: string;
+  /** On the edit page workers are managed incrementally via a SubEntityManager panel,
+   *  so the big form hides the workers section and omits it from the payload to avoid
+   *  the destructive bulk replace. */
+  isEdit?: boolean;
 }
 
 const blankTranslatedSection = {
@@ -167,7 +171,7 @@ const normalizePayload = (value: CreateDepartmentPayload | null | undefined): Cr
   };
 };
 
-export default function DepartmentForm({ initialValue = null, onSubmit, submitLabel }: DepartmentFormProps) {
+export default function DepartmentForm({ initialValue = null, onSubmit, submitLabel, isEdit = false }: DepartmentFormProps) {
   const [payload, setPayload] = useState<CreateDepartmentPayload>(normalizePayload(initialValue));
   const [useDirector, setUseDirector] = useState<boolean>(Boolean(initialValue?.director));
   const [directorImage, setDirectorImage] = useState<File | null>(null);
@@ -417,13 +421,20 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
       return;
     }
 
-    const submitPayload: CreateDepartmentPayload = {
+    const submitPayload: any = {
       ...payload,
       director: useDirector ? payload.director ?? blankDirector : null,
     };
 
+    // On the edit page workers are managed incrementally via the SubEntityManager
+    // panel, so never send them through the bulk update (it would delete & recreate
+    // every worker, orphaning IDs and uploaded images).
+    if (isEdit) {
+      delete submitPayload.workers;
+    }
+
     setSaving(true);
-    const result = await onSubmit(submitPayload, directorImage, workerImages);
+    const result = await onSubmit(submitPayload, directorImage, isEdit ? [] : workerImages);
     setSaving(false);
 
     if (result.status === "SUCCESS") {
@@ -805,6 +816,7 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
         )}
       </div>
 
+      {!isEdit && (
       <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
           <div>
@@ -893,6 +905,7 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
           )}
         </div>
       </div>
+      )}
 
       <div className="flex justify-end pt-2">
         <Button

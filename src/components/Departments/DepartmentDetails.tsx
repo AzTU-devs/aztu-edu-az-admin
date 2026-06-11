@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import Swal from "sweetalert2";
 import { CircularProgress } from "@mui/material";
 import DepartmentForm from "./DepartmentForm";
+import SubEntityManager from "../common/subentity/SubEntityManager";
+import { PersonFormValue } from "../common/subentity/PersonForm";
 import type { DepartmentDetails, CreateDepartmentPayload } from "../../services/department/departmentService";
 import {
   deleteDepartment,
@@ -10,7 +12,29 @@ import {
   uploadDirectorImage,
   uploadWorkerImage,
   updateDepartment,
+  createDepartmentWorker,
+  updateDepartmentWorker,
+  deleteDepartmentWorker,
 } from "../../services/department/departmentService";
+
+const personToForm = (w: any): PersonFormValue => ({
+  first_name: w.first_name ?? "",
+  last_name: w.last_name ?? "",
+  father_name: w.father_name ?? "",
+  email: w.email ?? "",
+  phone: w.phone ?? "",
+  az: {
+    duty: w.az?.duty ?? "",
+    scientific_name: w.az?.scientific_name ?? "",
+    scientific_degree: w.az?.scientific_degree ?? "",
+  },
+  en: {
+    duty: w.en?.duty ?? "",
+    scientific_name: w.en?.scientific_name ?? "",
+    scientific_degree: w.en?.scientific_degree ?? "",
+  },
+  profile_image: w.profile_image ?? "",
+});
 
 export default function DepartmentDetails() {
   const { department_code } = useParams();
@@ -20,29 +44,31 @@ export default function DepartmentDetails() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingDirector, setUploadingDirector] = useState(false);
-  const [workerUploadMap, setWorkerUploadMap] = useState<Record<number, boolean>>({});
-  const workerFileRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
-  useEffect(() => {
+  const loadDepartment = useCallback(async () => {
     if (!department_code) return;
-    setLoading(true);
-    getDepartmentDetails(department_code, "az")
-      .then((res) => {
-        if (res && typeof res === "object" && "department_code" in res) {
-          setDepartment(res as DepartmentDetails);
-        } else if (res === "NOT FOUND") {
-          Swal.fire({ icon: "error", title: "Xəta", text: "Departament tapılmadı" });
-        } else {
-          Swal.fire({ icon: "error", title: "Xəta", text: "Departament yüklənərkən xəta baş verdi" });
-        }
-      })
-      .finally(() => setLoading(false));
+    const res = await getDepartmentDetails(department_code, "az");
+    if (res && typeof res === "object" && "department_code" in res) {
+      setDepartment(res as DepartmentDetails);
+    } else if (res === "NOT FOUND") {
+      Swal.fire({ icon: "error", title: "Xəta", text: "Departament tapılmadı" });
+    } else {
+      Swal.fire({ icon: "error", title: "Xəta", text: "Departament yüklənərkən xəta baş verdi" });
+    }
   }, [department_code]);
 
+  useEffect(() => {
+    setLoading(true);
+    loadDepartment().finally(() => setLoading(false));
+  }, [loadDepartment]);
+
+  // NOTE: previously this saved workers through the bulk update and tried to attach new
+  // worker images by reading result.data.workers — but the update endpoint returns only
+  // { department_code, updated_at }, so those images were silently dropped and every save
+  // recreated all workers. Workers are now managed incrementally below via SubEntityManager.
   const handleSave = async (
     payload: CreateDepartmentPayload,
-    directorImage: File | null,
-    workerImages: (File | null)[]
+    directorImage: File | null
   ) => {
     if (!department_code) return { status: "ERROR" };
 
@@ -50,24 +76,9 @@ export default function DepartmentDetails() {
     const result = await updateDepartment(department_code, payload);
 
     if (result.status === "SUCCESS") {
-      const { workers } = result.data || {};
-
-      // Handle Form-Selected Director Image
       if (directorImage) {
         await uploadDirectorImage(department_code, directorImage);
       }
-
-      // Handle Form-Selected Worker Images
-      if (workers && Array.isArray(workers)) {
-        for (let i = 0; i < workerImages.length; i++) {
-          const file = workerImages[i];
-          const workerId = workers[i]?.worker_id;
-          if (file && workerId) {
-            await uploadWorkerImage(workerId, file);
-          }
-        }
-      }
-
       Swal.fire({
         icon: "success",
         title: "Uğurlu",
@@ -75,12 +86,8 @@ export default function DepartmentDetails() {
         timer: 1600,
         showConfirmButton: false,
       });
-
       setLoading(true);
-      const refreshed = await getDepartmentDetails(department_code, "az");
-      if (refreshed && typeof refreshed === "object" && "department_code" in refreshed) {
-        setDepartment(refreshed as DepartmentDetails);
-      }
+      await loadDepartment();
       setLoading(false);
     }
 
@@ -90,7 +97,6 @@ export default function DepartmentDetails() {
 
   const handleDelete = async () => {
     if (!department_code) return;
-
     const confirmResult = await Swal.fire({
       title: "Departamenti silmək istədiyinizə əminsiniz?",
       text: "Bu əməliyyat geri alına bilməz!",
@@ -102,11 +108,9 @@ export default function DepartmentDetails() {
       cancelButtonText: "İmtina",
       reverseButtons: true,
     });
-
     if (!confirmResult.isConfirmed) return;
 
     const result = await deleteDepartment(department_code);
-
     if (result === "SUCCESS") {
       Swal.fire({ icon: "success", title: "Uğurla silindi", showConfirmButton: false, timer: 1500 });
       navigate("/admin/departments");
@@ -123,38 +127,9 @@ export default function DepartmentDetails() {
     const result = await uploadDirectorImage(department_code, file);
     setUploadingDirector(false);
 
-    if (result.status === "SUCCESS" && result.data?.profile_image && department) {
-      Swal.fire({ icon: "success", title: "Uğurlu", text: "Direktor şəkli yükləndi.", timer: 1500, showConfirmButton: false });
-      setDepartment({ ...department, director: department.director ? { ...department.director, profile_image: result.data.profile_image } : department.director });
-    } else if (result.status === "SUCCESS") {
-      Swal.fire({ icon: "success", title: "Uğurlu", text: "Direktor şəkli yükləndi.", timer: 1500, showConfirmButton: false });
-    } else {
-      const message = (result.status === "ERROR" && result.data?.message) ? result.data.message : "Şəkil yüklənərkən xəta baş verdi.";
-      Swal.fire({ icon: "error", title: "Xəta", text: message });
-    }
-  };
-
-  const triggerWorkerUpload = (workerId: number) => {
-    workerFileRefs.current[workerId]?.click();
-  };
-
-  const handleWorkerImage = async (workerId: number, file: File) => {
-    setWorkerUploadMap((prev) => ({ ...prev, [workerId]: true }));
-    const result = await uploadWorkerImage(workerId, file);
-    setWorkerUploadMap((prev) => ({ ...prev, [workerId]: false }));
-
     if (result.status === "SUCCESS") {
-      Swal.fire({ icon: "success", title: "Uğurlu", text: "İşçi şəkli yükləndi.", timer: 1500, showConfirmButton: false });
-      if (department) {
-        setDepartment({
-          ...department,
-          workers: department.workers.map((worker) =>
-            worker.worker_id === workerId
-              ? { ...worker, profile_image: result.data?.profile_image ?? worker.profile_image }
-              : worker
-          ),
-        });
-      }
+      Swal.fire({ icon: "success", title: "Uğurlu", text: "Direktor şəkli yükləndi.", timer: 1500, showConfirmButton: false });
+      await loadDepartment();
     } else {
       const message = result.status === "ERROR" && result.data?.message ? result.data.message : "Şəkil yüklənərkən xəta baş verdi.";
       Swal.fire({ icon: "error", title: "Xəta", text: message });
@@ -173,6 +148,8 @@ export default function DepartmentDetails() {
     return <div className="text-center text-red-500 py-10">Departament yüklənməyib.</div>;
   }
 
+  const d = department as any;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -182,7 +159,7 @@ export default function DepartmentDetails() {
         </div>
         <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">İşçi sayı</p>
-          <p className="mt-2 font-semibold text-gray-800 dark:text-gray-100">{department.worker_count}</p>
+          <p className="mt-2 font-semibold text-gray-800 dark:text-gray-100">{(d.workers ?? []).length}</p>
         </div>
         <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">Yaradılma tarixi</p>
@@ -197,26 +174,10 @@ export default function DepartmentDetails() {
           objectives: department.objectives,
           core_functions: department.core_functions,
           director: department.director,
-          workers: department.workers.map((worker) => ({
-            first_name: worker.first_name,
-            last_name: worker.last_name,
-            father_name: worker.father_name ?? "",
-            email: worker.email ?? "",
-            phone: worker.phone ?? "",
-            az: {
-              duty: worker.az.duty,
-              scientific_degree: worker.az.scientific_degree ?? "",
-              scientific_name: worker.az.scientific_name ?? "",
-            },
-            en: {
-              duty: worker.en.duty,
-              scientific_degree: worker.en.scientific_degree ?? "",
-              scientific_name: worker.en.scientific_name ?? "",
-            },
-            profile_image: worker.profile_image ?? "",
-          }))
+          workers: [],
         }}
         submitLabel={saving ? "Yenilənir..." : "Yadda saxla"}
+        isEdit
         onSubmit={handleSave}
       />
 
@@ -225,7 +186,7 @@ export default function DepartmentDetails() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-gray-800 dark:text-gray-100">Direktor profil şəkli</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Dizayn üçün direktor üçün ayrıca şəkil yükləyin.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Direktor üçün ayrıca şəkil yükləyin.</p>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -243,62 +204,29 @@ export default function DepartmentDetails() {
               </label>
             </div>
           </div>
-          {department.director.profile_image ? (
-            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Cari şəkil: {department.director.profile_image}</p>
+          {(department.director as any).profile_image ? (
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Cari şəkil: {(department.director as any).profile_image}</p>
           ) : null}
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-5">
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div>
-            <p className="font-semibold text-gray-800 dark:text-gray-100">İşçi şəkilləri</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Hər bir işçiyə ayrıca profil şəkli yükləyin.</p>
-          </div>
-          <button
-            type="button"
-            className="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          >
-            İşçilərə keç
-          </button>
-        </div>
-        <div className="space-y-4">
-          {department.workers.map((worker) => (
-            <div key={worker.worker_id} className="grid gap-4 lg:grid-cols-3 items-center rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
-              <div>
-                <p className="font-semibold text-gray-700 dark:text-gray-200">{worker.first_name} {worker.last_name}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{worker.az.duty} / {worker.en.duty}</p>
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                {worker.profile_image ? `Cari şəkil: ${worker.profile_image}` : "Şəkil yüklənməyib"}
-              </div>
-              <div className="flex items-center gap-2 justify-end">
-                <input
-                  id={`worker-image-upload-${worker.worker_id}`}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="hidden"
-                  ref={(el) => { workerFileRefs.current[worker.worker_id] = el; }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleWorkerImage(worker.worker_id, file);
-                  }}
-                />
-                <button
-                  type="button"
-                  className="px-3 py-2 rounded-xl bg-brand-500 text-white text-sm hover:bg-brand-600 transition"
-                  onClick={() => triggerWorkerUpload(worker.worker_id)}
-                  disabled={workerUploadMap[worker.worker_id]}
-                >
-                  {workerUploadMap[worker.worker_id] ? "Yüklənir..." : "Şəkil yüklə"}
-                </button>
-              </div>
-            </div>
-          ))}
-          {department.workers.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Hələ heç bir işçi yoxdur.</p>}
-        </div>
-      </div>
+      {department_code && (
+        <SubEntityManager
+          title="İşçilər"
+          description="Departament işçilərini ayrıca əlavə edin, redaktə edin və silin."
+          items={(d.workers ?? []) as any[]}
+          getId={(w) => w.id}
+          getName={(w) => `${w.first_name} ${w.last_name}`}
+          getSubtitle={(w) => w.az?.duty ?? ""}
+          getImage={(w) => w.profile_image}
+          toFormValue={personToForm}
+          onCreate={(v) => createDepartmentWorker(department_code, v)}
+          onUpdate={(id, v) => updateDepartmentWorker(id, v)}
+          onDelete={(id) => deleteDepartmentWorker(id)}
+          onUploadImage={(id, file) => uploadWorkerImage(id, file)}
+          onChanged={loadDepartment}
+        />
+      )}
 
       <div className="flex justify-between gap-3">
         <button

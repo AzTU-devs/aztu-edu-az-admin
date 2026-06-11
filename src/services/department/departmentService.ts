@@ -125,24 +125,95 @@ export const getDepartments = async (
   }
 };
 
-export const getDepartmentDetails = async (
-  departmentCode: string,
-  lang = "az"
-): Promise<DepartmentDetails | "NOT FOUND" | "ERROR"> => {
+// The department detail endpoint returns a single language (flattened) per `?lang=`.
+// We fetch az + en and merge them into the nested az/en shape the form and the worker
+// manager expect.
+const fetchDepartmentRaw = async (departmentCode: string, lang: string): Promise<any | "NOT FOUND" | "ERROR"> => {
   try {
     const response = await apiClient.get(`/api/department/${departmentCode}?lang=${lang}`);
-
-    if (response.data.status_code === 200) {
-      return response.data.department as DepartmentDetails;
-    }
-
+    if (response.data.status_code === 200) return response.data.department;
     return "ERROR";
   } catch (err: any) {
-    if (err.response?.status === 404) {
-      return "NOT FOUND";
-    }
+    if (err.response?.status === 404) return "NOT FOUND";
     return "ERROR";
   }
+};
+
+const mergeDeptWorkers = (azArr: any[] = [], enArr: any[] = []) =>
+  (azArr ?? []).map((a, i) => {
+    const e = enArr?.[i] ?? {};
+    return {
+      id: a.id,
+      worker_id: a.id,
+      first_name: a.first_name ?? "",
+      last_name: a.last_name ?? "",
+      father_name: a.father_name ?? "",
+      email: a.email ?? "",
+      phone: a.phone ?? "",
+      profile_image: a.profile_image,
+      az: { duty: a.duty ?? "", scientific_degree: a.scientific_degree ?? "", scientific_name: a.scientific_name ?? "" },
+      en: { duty: e.duty ?? "", scientific_degree: e.scientific_degree ?? "", scientific_name: e.scientific_name ?? "" },
+    };
+  });
+
+const mergeHtmlSection = (azArr: any[] = [], enArr: any[] = []) =>
+  (azArr ?? []).map((a, i) => ({
+    az: { html_content: a.html_content ?? "" },
+    en: { html_content: enArr?.[i]?.html_content ?? "" },
+  }));
+
+const mergeDeptDirector = (a: any, e: any) => {
+  if (!a) return null;
+  e = e ?? {};
+  return {
+    first_name: a.first_name ?? "",
+    last_name: a.last_name ?? "",
+    father_name: a.father_name ?? "",
+    email: a.email ?? "",
+    phone: a.phone ?? "",
+    room_number: a.room_number ?? "",
+    profile_image: a.profile_image,
+    az: { scientific_degree: a.scientific_degree ?? "", scientific_title: a.scientific_title ?? "", bio: a.bio ?? "" },
+    en: { scientific_degree: e.scientific_degree ?? "", scientific_title: e.scientific_title ?? "", bio: e.bio ?? "" },
+    working_hours: (a.working_hours ?? []).map((wh: any, i: number) => ({
+      time_range: wh.time_range ?? "",
+      az: { day: wh.day ?? "" },
+      en: { day: e.working_hours?.[i]?.day ?? "" },
+    })),
+    educations: (a.educations ?? []).map((ed: any, i: number) => ({
+      start_year: ed.start_year ?? "",
+      end_year: ed.end_year ?? "",
+      az: { degree: ed.degree ?? "", university: ed.university ?? "" },
+      en: { degree: e.educations?.[i]?.degree ?? "", university: e.educations?.[i]?.university ?? "" },
+    })),
+  };
+};
+
+export const getDepartmentDetails = async (
+  departmentCode: string,
+  _lang = "az"
+): Promise<DepartmentDetails | "NOT FOUND" | "ERROR"> => {
+  const [az, en] = await Promise.all([
+    fetchDepartmentRaw(departmentCode, "az"),
+    fetchDepartmentRaw(departmentCode, "en"),
+  ]);
+
+  if (az === "NOT FOUND" || en === "NOT FOUND") return "NOT FOUND";
+  if (az === "ERROR" || en === "ERROR" || !az) return "ERROR";
+
+  const enObj = typeof en === "object" && en ? en : {};
+
+  const merged = {
+    ...az,
+    az: { department_name: az.department_name ?? "", about_html: az.about_html ?? "" },
+    en: { department_name: enObj.department_name ?? "", about_html: enObj.about_html ?? "" },
+    objectives: mergeHtmlSection(az.objectives, enObj.objectives),
+    core_functions: mergeHtmlSection(az.core_functions, enObj.core_functions),
+    director: mergeDeptDirector(az.director, enObj.director),
+    workers: mergeDeptWorkers(az.workers, enObj.workers),
+  };
+
+  return merged as unknown as DepartmentDetails;
 };
 
 export const createDepartment = async (
@@ -292,5 +363,69 @@ export const uploadWorkerImage = async (
       return { status: "NOT FOUND" };
     }
     return { status: "ERROR" };
+  }
+};
+
+// ============================================================
+// Standalone worker CRUD (incremental management on detail page)
+// ============================================================
+
+/** Create/update payload for a single department worker. */
+export type DepartmentWorkerPayload = {
+  first_name: string;
+  last_name: string;
+  father_name: string;
+  email: string;
+  phone: string;
+  az: { duty: string; scientific_degree: string; scientific_name: string };
+  en: { duty: string; scientific_degree: string; scientific_name: string };
+};
+
+export type CreateResult = { status: "SUCCESS"; id: number } | { status: "ERROR" };
+export type MutateResult = "SUCCESS" | "NOT FOUND" | "ERROR";
+
+export const createDepartmentWorker = async (
+  departmentCode: string,
+  payload: DepartmentWorkerPayload
+): Promise<CreateResult> => {
+  try {
+    const response = await apiClient.post(`/api/department/${departmentCode}/workers`, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    if (response.data.status_code === 201) {
+      return { status: "SUCCESS", id: response.data.data?.id as number };
+    }
+    return { status: "ERROR" };
+  } catch {
+    return { status: "ERROR" };
+  }
+};
+
+export const updateDepartmentWorker = async (
+  workerId: number,
+  payload: DepartmentWorkerPayload
+): Promise<MutateResult> => {
+  try {
+    const response = await apiClient.put(`/api/department/workers/${workerId}`, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    if (response.data.status_code === 200) return "SUCCESS";
+    if (response.data.status_code === 404) return "NOT FOUND";
+    return "ERROR";
+  } catch (err: any) {
+    if (err.response?.status === 404) return "NOT FOUND";
+    return "ERROR";
+  }
+};
+
+export const deleteDepartmentWorker = async (workerId: number): Promise<MutateResult> => {
+  try {
+    const response = await apiClient.delete(`/api/department/workers/${workerId}`);
+    if (response.data.status_code === 200) return "SUCCESS";
+    if (response.data.status_code === 404) return "NOT FOUND";
+    return "ERROR";
+  } catch (err: any) {
+    if (err.response?.status === 404) return "NOT FOUND";
+    return "ERROR";
   }
 };
