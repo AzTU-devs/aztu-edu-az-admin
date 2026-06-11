@@ -808,6 +808,18 @@ span.flatpickr-weekday,
 .dark .prose td {
   border-color: #374151;
 }
+.prose p,
+.prose li,
+.prose td,
+.prose th,
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  white-space: pre-wrap;
+}
 .prose p {
   margin-top: 0;
   margin-bottom: 0.6em;

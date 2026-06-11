@@ -312,6 +312,10 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                 </div>
             )}
             <style>{`
+        /* Preserve exactly the spaces the author types — multiple spaces,
+           leading spaces and indentation are kept (text still wraps). The
+           public SanitizedHtml view uses the same rule so it matches. */
+        .ProseMirror { white-space: pre-wrap; }
         /* Paragraph spacing — keep the editing surface AND the preview in sync
            with the public web view (SanitizedHtml) so what you type matches
            what visitors see. */
