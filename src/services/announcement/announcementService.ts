@@ -114,6 +114,8 @@ export interface UpdateAnnouncementPayload {
     image?: File;
     az?: { title?: string; html_content?: string };
     en?: { title?: string; html_content?: string };
+    created_at?: string;
+    display_order?: number;
 }
 
 export const updateAnnouncement = async (
@@ -127,6 +129,8 @@ export const updateAnnouncement = async (
         if (payload.az?.html_content !== undefined) formData.append("az_html_content", payload.az.html_content);
         if (payload.en?.title !== undefined) formData.append("en_title", payload.en.title);
         if (payload.en?.html_content !== undefined) formData.append("en_html_content", payload.en.html_content);
+        if (payload.created_at !== undefined) formData.append("created_at", payload.created_at);
+        if (payload.display_order !== undefined) formData.append("display_order", String(payload.display_order));
 
         const response = await apiClient.patch(`/api/announcement/${announcementId}`, formData, {
             headers: { "Content-Type": "multipart/form-data" },

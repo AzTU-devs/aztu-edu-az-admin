@@ -56,6 +56,8 @@ export default function NewsDetails() {
     const [facultyCode, setFacultyCode] = useState<string>("");
     const [cafedraCode, setCafedraCode] = useState<string>("");
     const [showInAllNews, setShowInAllNews] = useState<boolean>(true);
+    const [createdAt, setCreatedAt] = useState<string>("");
+    const [displayOrder, setDisplayOrder] = useState<string>("");
 
     useEffect(() => {
         getNewsCategories("az").then((res) => Array.isArray(res) && setCategories(res));
@@ -105,6 +107,8 @@ export default function NewsDetails() {
                 setFacultyCode(n.faculty_code ?? "");
                 setCafedraCode(n.cafedra_code ?? "");
                 setShowInAllNews(n.show_in_all_news !== false);
+                setCreatedAt(n.created_at ? n.created_at.slice(0, 10) : "");
+                setDisplayOrder(n.display_order != null ? String(n.display_order) : "");
             }
         }).finally(() => setLoading(false));
     }, [news_id]);
@@ -161,6 +165,8 @@ export default function NewsDetails() {
             clear_faculty: !facultyCode && !!originalFaculty,
             clear_cafedra: !cafedraCode && !!originalCafedra,
             show_in_all_news: showInAllNews,
+            created_at: createdAt || undefined,
+            display_order: displayOrder ? Number(displayOrder) : undefined,
         });
 
         setSaving(false);
@@ -245,6 +251,15 @@ export default function NewsDetails() {
                                 <option key={c.code} value={c.code}>{c.label} ({c.code})</option>
                             ))}
                         </select>
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Tarix</Label>
+                        <Input type="date" value={createdAt} onChange={(e) => setCreatedAt(e.target.value)} />
+                    </div>
+                    <div>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Sıra nömrəsi</Label>
+                        <Input type="number" min="1" value={displayOrder} onChange={(e) => setDisplayOrder(e.target.value)} />
+                        <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Siyahıdakı mövqeyi təyin edir.</p>
                     </div>
                     <div className="md:col-span-3">
                         <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">SDG nömrələri (opsional)</Label>

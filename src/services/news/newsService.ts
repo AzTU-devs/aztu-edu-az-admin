@@ -53,6 +53,8 @@ export interface UpdateNewsPayload {
     clear_faculty?: boolean;
     clear_cafedra?: boolean;
     show_in_all_news?: boolean;
+    created_at?: string;
+    display_order?: number;
 }
 
 export interface ReOrderNewsPayload {
@@ -193,6 +195,8 @@ export const updateNews = async (newsId: number, payload: UpdateNewsPayload) => 
         if (payload.show_in_all_news !== undefined) {
             formData.append("show_in_all_news", String(payload.show_in_all_news));
         }
+        if (payload.created_at !== undefined) formData.append("created_at", payload.created_at);
+        if (payload.display_order !== undefined) formData.append("display_order", String(payload.display_order));
 
         const response = await apiClient.patch(`/api/news/${newsId}`, formData, {
             headers: { "Content-Type": "multipart/form-data" },

@@ -28,6 +28,8 @@ export default function AnnouncementDetails() {
     const [titleEn, setTitleEn] = useState("");
     const [contentEn, setContentEn] = useState("");
     const [newImage, setNewImage] = useState<File | null>(null);
+    const [createdAt, setCreatedAt] = useState<string>("");
+    const [displayOrder, setDisplayOrder] = useState<string>("");
 
     const fetchBoth = async (id: string) => {
         const [az, en] = await Promise.all([
@@ -54,6 +56,8 @@ export default function AnnouncementDetails() {
             setAnnouncement(az as AnnouncementDetail);
             setTitleAz(az.title || "");
             setContentAz(az.html_content || "");
+            setCreatedAt(az.created_at ? az.created_at.slice(0, 10) : "");
+            setDisplayOrder(az.display_order != null ? String(az.display_order) : "");
         }
         if (typeof en === "object") {
             setTitleEn(en.title || "");
@@ -73,6 +77,8 @@ export default function AnnouncementDetails() {
             image: newImage ?? undefined,
             az: { title: titleAz, html_content: contentAz },
             en: { title: titleEn, html_content: contentEn },
+            created_at: createdAt || undefined,
+            display_order: displayOrder ? Number(displayOrder) : undefined,
         });
         setSaving(false);
 
@@ -161,6 +167,8 @@ export default function AnnouncementDetails() {
                     <Label className="text-[14px] text-gray-400">Sıra</Label>
                     {loading ? (
                         <div className="h-6 w-16 bg-gray-300 dark:bg-gray-600 animate-pulse rounded mt-1"></div>
+                    ) : editing ? (
+                        <Input type="number" min="1" value={displayOrder} onChange={(e) => setDisplayOrder(e.target.value)} />
                     ) : (
                         <p className="text-gray-700 dark:text-gray-200">{announcement?.display_order}</p>
                     )}
@@ -183,6 +191,8 @@ export default function AnnouncementDetails() {
                     <Label className="text-[14px] text-gray-400">Əlavə tarixi</Label>
                     {loading ? (
                         <div className="h-6 w-32 bg-gray-300 dark:bg-gray-600 animate-pulse rounded mt-1"></div>
+                    ) : editing ? (
+                        <Input type="date" value={createdAt} onChange={(e) => setCreatedAt(e.target.value)} />
                     ) : (
                         <p className="text-gray-700 dark:text-gray-200">
                             {announcement?.created_at
