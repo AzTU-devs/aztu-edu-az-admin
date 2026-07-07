@@ -581,16 +581,21 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
       const savedFaculty = result.faculty;
       const facultyCode = savedFaculty?.faculty_code;
 
+      // Collect the first image-upload failure so a rejected photo (e.g. an
+      // unsupported format) is reported instead of a misleading success.
+      const imageErrors: string[] = [];
+      const track = (res: string) => { if (res !== "SUCCESS") imageErrors.push(res); };
+
       if (savedFaculty && facultyCode) {
         if (directorImage) {
-          await uploadDirectorImage(facultyCode, directorImage);
+          track(await uploadDirectorImage(facultyCode, directorImage));
         }
 
         for (const indexStr in deputyDeanImages) {
           const index = parseInt(indexStr);
           const deputyDean = savedFaculty.deputy_deans?.[index];
           if (deputyDean && deputyDean.id) {
-            await uploadDeputyDeanImage(deputyDean.id, deputyDeanImages[index]);
+            track(await uploadDeputyDeanImage(deputyDean.id, deputyDeanImages[index]));
           }
         }
 
@@ -598,21 +603,29 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
           const index = parseInt(indexStr);
           const worker = savedFaculty.workers?.[index];
           if (worker && worker.id) {
-            await uploadWorkerImage(worker.id, workerImages[index]);
+            track(await uploadWorkerImage(worker.id, workerImages[index]));
           }
         }
       } else if (directorImage && initialValue) {
         // Edit flow: upload director image straight to the existing faculty.
-        await uploadDirectorImage(initialValue.faculty_code, directorImage);
+        track(await uploadDirectorImage(initialValue.faculty_code, directorImage));
       }
 
-      Swal.fire({
-        icon: "success",
-        title: "Uğurlu",
-        text: "Məlumatlar uğurla yadda saxlanıldı!",
-        timer: 2000,
-        showConfirmButton: false,
-      }).then(() => navigate("/faculties"));
+      if (imageErrors.length > 0) {
+        Swal.fire({
+          icon: "warning",
+          title: "Məlumatlar saxlanıldı, lakin şəkil yüklənmədi",
+          text: imageErrors[0],
+        }).then(() => navigate("/faculties"));
+      } else {
+        Swal.fire({
+          icon: "success",
+          title: "Uğurlu",
+          text: "Məlumatlar uğurla yadda saxlanıldı!",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => navigate("/faculties"));
+      }
     } else if (result.status === "NOT FOUND") {
       Swal.fire({ icon: "error", title: "Xəta", text: "Fakültə tapılmadı" });
     } else {

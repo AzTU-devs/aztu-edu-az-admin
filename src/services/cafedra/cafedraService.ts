@@ -329,51 +329,55 @@ export const deleteCafedra = async (cafedraCode: string) => {
     }
 };
 
-export const uploadCafedraDirectorImage = async (cafedraCode: string, imageFile: File) => {
+// Extracts a human-readable reason from a failed image upload so the UI can
+// show the real cause (e.g. "Unsupported file type 'image/avif'") instead of
+// silently reporting success. FastAPI returns { detail } on 4xx (415/413).
+export const uploadImageError = (err: any): string => {
+    const data = err?.response?.data;
+    return (
+        data?.detail ||
+        data?.message ||
+        data?.error ||
+        "Şəkil yüklənə bilmədi. Dəstəklənən formatlar: JPG, PNG, WEBP, AVIF, GIF (maks. 20 MB)."
+    );
+};
+
+export const uploadCafedraDirectorImage = async (cafedraCode: string, imageFile: File): Promise<string> => {
     try {
         const formData = new FormData();
         formData.append("image", imageFile);
-        const response = await apiClient.put(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/director/image`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
-        if (response.data.status_code === 200) {
-            return "SUCCESS";
-        }
-        return "ERROR";
+        const response = await apiClient.put(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/director/image`, formData);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return uploadImageError({ response });
     } catch (err: any) {
-        return "ERROR";
+        console.error("Cafedra director image upload failed:", err?.response?.status, err?.response?.data);
+        return uploadImageError(err);
     }
 };
 
-export const uploadCafedraWorkerImage = async (workerId: number, imageFile: File) => {
+export const uploadCafedraWorkerImage = async (workerId: number, imageFile: File): Promise<string> => {
     try {
         const formData = new FormData();
         formData.append("image", imageFile);
-        const response = await apiClient.put(`${CAFEDRA_ADMIN_BASE}/workers/${workerId}/image`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
-        if (response.data.status_code === 200) {
-            return "SUCCESS";
-        }
-        return "ERROR";
+        const response = await apiClient.put(`${CAFEDRA_ADMIN_BASE}/workers/${workerId}/image`, formData);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return uploadImageError({ response });
     } catch (err: any) {
-        return "ERROR";
+        console.error("Cafedra worker image upload failed:", err?.response?.status, err?.response?.data);
+        return uploadImageError(err);
     }
 };
 
-export const uploadCafedraDeputyDirectorImage = async (deputyDirectorId: number, imageFile: File) => {
+export const uploadCafedraDeputyDirectorImage = async (deputyDirectorId: number, imageFile: File): Promise<string> => {
     try {
         const formData = new FormData();
         formData.append("image", imageFile);
-        const response = await apiClient.put(`${CAFEDRA_ADMIN_BASE}/deputy-directors/${deputyDirectorId}/image`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
-        if (response.data.status_code === 200) {
-            return "SUCCESS";
-        }
-        return "ERROR";
+        const response = await apiClient.put(`${CAFEDRA_ADMIN_BASE}/deputy-directors/${deputyDirectorId}/image`, formData);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return uploadImageError({ response });
     } catch (err: any) {
-        return "ERROR";
+        console.error("Cafedra deputy director image upload failed:", err?.response?.status, err?.response?.data);
+        return uploadImageError(err);
     }
 };
 

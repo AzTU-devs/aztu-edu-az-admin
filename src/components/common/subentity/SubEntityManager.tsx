@@ -59,6 +59,7 @@ export default function SubEntityManager<T>({
   const handleSubmit = async (value: PersonFormValue, imageFile: File | null) => {
     setSubmitting(true);
     try {
+      let targetId: number;
       if (editing) {
         const id = getId(editing);
         const res = await onUpdate(id, value);
@@ -66,23 +67,40 @@ export default function SubEntityManager<T>({
           Swal.fire({ icon: "error", title: "Xəta", text: "Yenilənmə zamanı xəta baş verdi." });
           return;
         }
-        if (imageFile && onUploadImage) {
-          await onUploadImage(id, imageFile);
-        }
+        targetId = id;
       } else {
         const res = await onCreate(value);
         if (res.status !== "SUCCESS") {
           Swal.fire({ icon: "error", title: "Xəta", text: "Əlavə edilərkən xəta baş verdi." });
           return;
         }
-        if (imageFile && onUploadImage) {
-          await onUploadImage(res.id, imageFile);
+        targetId = res.id;
+      }
+
+      // Upload the photo after the person exists. Surface a real failure (e.g.
+      // unsupported format / too large) instead of silently reporting success.
+      // Upload services return either "SUCCESS" (string) or { status: "SUCCESS" }.
+      let imageError: string | null = null;
+      if (imageFile && onUploadImage) {
+        const imgRes = await onUploadImage(targetId, imageFile);
+        const ok =
+          imgRes === "SUCCESS" ||
+          (typeof imgRes === "object" && imgRes !== null && (imgRes as { status?: string }).status === "SUCCESS");
+        if (!ok) {
+          imageError =
+            typeof imgRes === "string"
+              ? imgRes
+              : (imgRes as { data?: { message?: string } })?.data?.message || "Şəkil yüklənə bilmədi.";
         }
       }
 
       setModalOpen(false);
       setEditing(null);
-      Swal.fire({ icon: "success", title: "Uğurlu", showConfirmButton: false, timer: 1400 });
+      if (imageError) {
+        Swal.fire({ icon: "warning", title: "Məlumat saxlanıldı, lakin şəkil yüklənmədi", text: imageError });
+      } else {
+        Swal.fire({ icon: "success", title: "Uğurlu", showConfirmButton: false, timer: 1400 });
+      }
       onChanged();
     } finally {
       setSubmitting(false);

@@ -221,51 +221,55 @@ export const deleteFaculty = async (facultyCode: string) => {
     }
 };
 
-export const uploadDirectorImage = async (facultyCode: string, imageFile: File) => {
+// Extracts a human-readable reason from a failed image upload so the UI can
+// show the real cause (e.g. "Unsupported file type 'image/avif'") instead of
+// silently reporting success. FastAPI returns { detail } on 4xx (415/413).
+export const uploadImageError = (err: any): string => {
+    const data = err?.response?.data;
+    return (
+        data?.detail ||
+        data?.message ||
+        data?.error ||
+        "Şəkil yüklənə bilmədi. Dəstəklənən formatlar: JPG, PNG, WEBP, AVIF, GIF (maks. 20 MB)."
+    );
+};
+
+export const uploadDirectorImage = async (facultyCode: string, imageFile: File): Promise<string> => {
     try {
         const formData = new FormData();
         formData.append("image", imageFile);
-        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/${facultyCode}/director/image`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
-        if (response.data.status_code === 200) {
-            return "SUCCESS";
-        }
-        return "ERROR";
+        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/${facultyCode}/director/image`, formData);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return uploadImageError({ response });
     } catch (err: any) {
-        return "ERROR";
+        console.error("Faculty director image upload failed:", err?.response?.status, err?.response?.data);
+        return uploadImageError(err);
     }
 };
 
-export const uploadDeputyDeanImage = async (deputyDeanId: number, imageFile: File) => {
+export const uploadDeputyDeanImage = async (deputyDeanId: number, imageFile: File): Promise<string> => {
     try {
         const formData = new FormData();
         formData.append("image", imageFile);
-        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/deputy-deans/${deputyDeanId}/image`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
-        if (response.data.status_code === 200) {
-            return "SUCCESS";
-        }
-        return "ERROR";
+        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/deputy-deans/${deputyDeanId}/image`, formData);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return uploadImageError({ response });
     } catch (err: any) {
-        return "ERROR";
+        console.error("Faculty deputy dean image upload failed:", err?.response?.status, err?.response?.data);
+        return uploadImageError(err);
     }
 };
 
-export const uploadWorkerImage = async (workerId: number, imageFile: File) => {
+export const uploadWorkerImage = async (workerId: number, imageFile: File): Promise<string> => {
     try {
         const formData = new FormData();
         formData.append("image", imageFile);
-        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/workers/${workerId}/image`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
-        if (response.data.status_code === 200) {
-            return "SUCCESS";
-        }
-        return "ERROR";
+        const response = await apiClient.put(`${FACULTY_ADMIN_BASE}/workers/${workerId}/image`, formData);
+        if (response.data.status_code === 200) return "SUCCESS";
+        return uploadImageError({ response });
     } catch (err: any) {
-        return "ERROR";
+        console.error("Faculty worker image upload failed:", err?.response?.status, err?.response?.data);
+        return uploadImageError(err);
     }
 };
 

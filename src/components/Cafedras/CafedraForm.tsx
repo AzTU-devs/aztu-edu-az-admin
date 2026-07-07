@@ -882,32 +882,37 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
       // added rows can get their images uploaded; the update endpoint does not.
       const savedCafedra = result.cafedra;
 
+      // Collect the first image-upload failure so a rejected photo (e.g. an
+      // unsupported format) is reported instead of a misleading success.
+      const imageErrors: string[] = [];
+      const track = (res: string) => { if (res !== "SUCCESS") imageErrors.push(res); };
+
       if (savedCafedra) {
         const cafedraCode = savedCafedra.cafedra_code;
 
         if (directorImage) {
-          await uploadCafedraDirectorImage(cafedraCode, directorImage);
+          track(await uploadCafedraDirectorImage(cafedraCode, directorImage));
         }
 
         for (const indexStr in workerImages) {
           const index = parseInt(indexStr);
           const worker = savedCafedra.workers?.[index];
           if (worker && worker.id) {
-            await uploadCafedraWorkerImage(worker.id, workerImages[index]);
+            track(await uploadCafedraWorkerImage(worker.id, workerImages[index]));
           }
         }
         for (const indexStr in deputyDeanImages) {
           const index = parseInt(indexStr);
           const worker = savedCafedra.deputy_deans?.[index];
           if (worker && worker.id) {
-            await uploadCafedraWorkerImage(worker.id, deputyDeanImages[index]);
+            track(await uploadCafedraWorkerImage(worker.id, deputyDeanImages[index]));
           }
         }
         for (const indexStr in councilImages) {
           const index = parseInt(indexStr);
           const worker = savedCafedra.scientific_council?.[index];
           if (worker && worker.id) {
-            await uploadCafedraWorkerImage(worker.id, councilImages[index]);
+            track(await uploadCafedraWorkerImage(worker.id, councilImages[index]));
           }
         }
 
@@ -933,16 +938,24 @@ export default function CafedraForm({ initialValue = null, onSubmit, submitLabel
         }
       } else if (directorImage && initialValue) {
         // Edit flow: upload director image straight to the existing cafedra.
-        await uploadCafedraDirectorImage(initialValue.cafedra_code, directorImage);
+        track(await uploadCafedraDirectorImage(initialValue.cafedra_code, directorImage));
       }
 
-      Swal.fire({
-        icon: "success",
-        title: "Uğurlu",
-        text: "Məlumatlar uğurla yadda saxlanıldı!",
-        timer: 2000,
-        showConfirmButton: false,
-      }).then(() => navigate("/cafedras"));
+      if (imageErrors.length > 0) {
+        Swal.fire({
+          icon: "warning",
+          title: "Məlumatlar saxlanıldı, lakin şəkil yüklənmədi",
+          text: imageErrors[0],
+        }).then(() => navigate("/cafedras"));
+      } else {
+        Swal.fire({
+          icon: "success",
+          title: "Uğurlu",
+          text: "Məlumatlar uğurla yadda saxlanıldı!",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => navigate("/cafedras"));
+      }
     } else if (result.status === "NOT FOUND") {
       Swal.fire({ icon: "error", title: "Xəta", text: "Kafedra tapılmadı" });
     } else {
