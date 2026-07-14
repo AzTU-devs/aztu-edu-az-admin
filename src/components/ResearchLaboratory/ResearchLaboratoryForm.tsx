@@ -209,11 +209,14 @@ export default function ResearchLaboratoryForm({ initialValue, submitLabel }: Re
               disabled={!!editingId}
             >
               <option value="">-- Kafedra seçin --</option>
-              {cafedras.map((c) => (
-                <option key={c.cafedra_code} value={c.cafedra_code}>
-                  {c.cafedra_name} ({c.cafedra_code})
-                </option>
-              ))}
+              {cafedras.map((c) => {
+                const name = c.cafedra_name ?? c.title;
+                return (
+                  <option key={c.cafedra_code} value={c.cafedra_code}>
+                    {name ? `${name} (${c.cafedra_code})` : c.cafedra_code}
+                  </option>
+                );
+              })}
             </select>
             {editingId ? (
               <p className="mt-1 text-xs text-gray-400">Mövcud laboratoriyanın kafedrası dəyişdirilə bilməz.</p>

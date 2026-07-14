@@ -89,7 +89,10 @@ export interface Worker {
 export interface Cafedra {
     cafedra_code: string;
     faculty_code: string;
-    cafedra_name: string;
+    // The `.../all` endpoint returns the localized name under `title`; `cafedra_name`
+    // is kept for legacy callers. Read `cafedra_name ?? title` to be safe.
+    cafedra_name?: string;
+    title?: string;
 }
 
 export interface CafedraDetail extends CreateCafedraPayload {

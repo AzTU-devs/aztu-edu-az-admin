@@ -29,7 +29,10 @@ export default function ResearchLaboratories() {
     getCafedras(0, 500).then((res) => {
       if (res && typeof res === "object" && "cafedras" in res) {
         const map: Record<string, string> = {};
-        (res.cafedras as Cafedra[]).forEach((c) => { map[c.cafedra_code] = c.cafedra_name; });
+        (res.cafedras as Cafedra[]).forEach((c) => {
+          const name = c.cafedra_name ?? c.title;
+          if (name) map[c.cafedra_code] = name;
+        });
         setCafedraNames(map);
       }
     });
