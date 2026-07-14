@@ -36,6 +36,9 @@ import NewsCategoriesPage from "./pages/NewsCategories/NewsCategoriesPage";
 import ResearchInstitutesPage from "./pages/ResearchInstitute/ResearchInstitutesPage";
 import NewResearchInstitutePage from "./pages/ResearchInstitute/NewResearchInstitutePage";
 import ResearchInstituteDetailsPage from "./pages/ResearchInstitute/ResearchInstituteDetailsPage";
+import ResearchLaboratoriesPage from "./pages/ResearchLaboratory/ResearchLaboratoriesPage";
+import NewResearchLaboratoryPage from "./pages/ResearchLaboratory/NewResearchLaboratoryPage";
+import ResearchLaboratoryDetailsPage from "./pages/ResearchLaboratory/ResearchLaboratoryDetailsPage";
 import FacultiesPage from "./pages/Faculties/FacultiesPage";
 import NewFacultyPage from "./pages/Faculties/NewFacultyPage";
 import FacultyDetailsPage from "./pages/Faculties/FacultyDetailsPage";
@@ -126,6 +129,11 @@ export default function App() {
             <Route path="/research-institutes" element={<ResearchInstitutesPage />} />
             <Route path="/research-institutes/new" element={<NewResearchInstitutePage />} />
             <Route path="/research-institutes/:institute_code" element={<ResearchInstituteDetailsPage />} />
+
+            {/* Research Laboratories */}
+            <Route path="/research-laboratories" element={<ResearchLaboratoriesPage />} />
+            <Route path="/research-laboratories/new" element={<NewResearchLaboratoryPage />} />
+            <Route path="/research-laboratories/:laboratory_id" element={<ResearchLaboratoryDetailsPage />} />
 
             {/* Faculties */}
             <Route path="/faculties" element={<FacultiesPage />} />

@@ -32,6 +32,7 @@ export interface Laboratory {
     cafedra_code?: string;
     image_url?: string | null;
     room_number?: string;
+    authorized_person?: string;
     email?: string;
     phone_number?: string;
     az: {
@@ -233,6 +234,7 @@ const mergeLabs = (azArr: any[] = [], enArr: any[] = []) =>
             cafedra_code: a.cafedra_code,
             image_url: a.image_url ?? null,
             room_number: a.room_number ?? "",
+            authorized_person: a.authorized_person ?? "",
             email: a.email ?? "",
             phone_number: a.phone_number ?? "",
             az: { title: a.title ?? "", html_content: a.html_content ?? "" },
@@ -463,12 +465,29 @@ export const deleteCafedraScientificCouncilMember = (memberId: number) =>
 // LABORATORY API
 // ============================================================
 
+// The list/get endpoints return single-language flattened labs under `laboratories`/`laboratory`
+// (title + html_content for the requested `lang`). Good enough for list rows; the edit form uses
+// getLaboratoryDetails below to load both languages.
+export interface LaboratoryListItem {
+    id: number;
+    cafedra_code: string;
+    title: string | null;
+    html_content: string | null;
+    image_url: string | null;
+    room_number: string | null;
+    authorized_person: string | null;
+    email: string | null;
+    phone_number: string | null;
+    objectives: { id: number; title: string | null }[];
+    gallery_images: LaboratoryGalleryImage[];
+}
+
 export const getAllLaboratories = async (start: number, end: number, lang: string = "az") => {
     try {
         const response = await apiClient.get(`${CAFEDRA_ADMIN_BASE}/laboratories/all?start=${start}&end=${end}&lang=${lang}`);
         if (response.data.status_code === 200) {
             return {
-                laboratories: response.data.data as Laboratory[],
+                laboratories: response.data.laboratories as LaboratoryListItem[],
                 total: response.data.total as number,
             };
         }
@@ -482,12 +501,60 @@ export const getCafedraLaboratories = async (cafedraCode: string, lang: string =
     try {
         const response = await apiClient.get(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/laboratories?lang=${lang}`);
         if (response.data.status_code === 200) {
-            return response.data.data as Laboratory[];
+            return response.data.laboratories as LaboratoryListItem[];
         }
         return "ERROR";
     } catch (err: any) {
         return "ERROR";
     }
+};
+
+// Fetch one lab in a single language (raw flattened shape from the backend).
+const fetchLaboratoryRaw = async (
+    laboratoryId: number,
+    lang: string
+): Promise<any | "NOT FOUND" | "ERROR"> => {
+    try {
+        const response = await apiClient.get(`${CAFEDRA_ADMIN_BASE}/laboratories/${laboratoryId}?lang=${lang}`);
+        if (response.data.status_code === 200) return response.data.laboratory;
+        return "ERROR";
+    } catch (err: any) {
+        if (err.response && err.response.status === 404) return "NOT FOUND";
+        return "ERROR";
+    }
+};
+
+// Load a single lab with both languages merged into the nested az/en shape the form expects.
+export const getLaboratoryDetails = async (
+    laboratoryId: number
+): Promise<Laboratory | "NOT FOUND" | "ERROR"> => {
+    const [az, en] = await Promise.all([
+        fetchLaboratoryRaw(laboratoryId, "az"),
+        fetchLaboratoryRaw(laboratoryId, "en"),
+    ]);
+
+    if (az === "NOT FOUND" || en === "NOT FOUND") return "NOT FOUND";
+    if (az === "ERROR" || en === "ERROR" || !az) return "ERROR";
+
+    const enObj = typeof en === "object" && en ? en : {};
+    const merged: Laboratory = {
+        id: az.id,
+        cafedra_code: az.cafedra_code,
+        image_url: az.image_url ?? null,
+        room_number: az.room_number ?? "",
+        authorized_person: az.authorized_person ?? "",
+        email: az.email ?? "",
+        phone_number: az.phone_number ?? "",
+        az: { title: az.title ?? "", html_content: az.html_content ?? "" },
+        en: { title: enObj.title ?? "", html_content: enObj.html_content ?? "" },
+        objectives: (az.objectives ?? []).map((o: any, j: number) => ({
+            id: o.id,
+            az: { title: o.title ?? "" },
+            en: { title: enObj.objectives?.[j]?.title ?? "" },
+        })),
+        gallery_images: az.gallery_images ?? [],
+    };
+    return merged;
 };
 
 export const createLaboratory = async (cafedraCode: string, payload: Laboratory) => {

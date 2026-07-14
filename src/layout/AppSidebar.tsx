@@ -12,7 +12,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import CategoryIcon from '@mui/icons-material/Category';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 // import PeopleIcon from '@mui/icons-material/People';
-// import ScienceIcon from '@mui/icons-material/Science';
+import ScienceIcon from '@mui/icons-material/Science';
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -91,6 +91,14 @@ const navItems: NavItem[] = [
   //     { name: "Yeni institut", path: "/research-institutes/new" },
   //   ],
   // },
+  {
+    icon: <ScienceIcon />,
+    name: "Tədqiqat Laboratoriyaları",
+    subItems: [
+      { name: "Laboratoriyalar", path: "/research-laboratories" },
+      { name: "Yeni laboratoriya", path: "/research-laboratories/new" },
+    ],
+  },
   {
     icon: <CategoryIcon />,
     name: "Kafedralar",
