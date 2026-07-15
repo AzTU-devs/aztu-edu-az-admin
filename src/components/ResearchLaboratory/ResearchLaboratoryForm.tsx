@@ -25,6 +25,12 @@ interface LabObjective {
   en: { title: string };
 }
 
+interface LabEquipment {
+  id?: number;
+  az: { name: string };
+  en: { name: string };
+}
+
 interface LabFormValue {
   cafedra_code: string;
   room_number: string;
@@ -34,6 +40,7 @@ interface LabFormValue {
   az: { title: string; html_content: string };
   en: { title: string; html_content: string };
   objectives: LabObjective[];
+  equipments: LabEquipment[];
   image_url?: string | null;
   gallery_images: LaboratoryGalleryImage[];
 }
@@ -47,6 +54,7 @@ const emptyForm = (): LabFormValue => ({
   az: { title: "", html_content: "" },
   en: { title: "", html_content: "" },
   objectives: [],
+  equipments: [],
   image_url: "",
   gallery_images: [],
 });
@@ -63,6 +71,11 @@ const toFormValue = (lab: Laboratory): LabFormValue => ({
     id: o.id,
     az: { title: o.az?.title ?? "" },
     en: { title: o.en?.title ?? "" },
+  })),
+  equipments: (lab.equipments ?? []).map((e) => ({
+    id: e.id,
+    az: { name: e.az?.name ?? "" },
+    en: { name: e.en?.name ?? "" },
   })),
   image_url: lab.image_url ?? "",
   gallery_images: lab.gallery_images ?? [],
@@ -106,6 +119,17 @@ export default function ResearchLaboratoryForm({ initialValue, submitLabel }: Re
       const list = [...prev.objectives];
       list[idx] = { ...list[idx], [lang]: { title: v } };
       return { ...prev, objectives: list };
+    });
+
+  const addEquipment = () =>
+    setValue((prev) => ({ ...prev, equipments: [...prev.equipments, { az: { name: "" }, en: { name: "" } }] }));
+  const removeEquipment = (idx: number) =>
+    setValue((prev) => ({ ...prev, equipments: prev.equipments.filter((_, i) => i !== idx) }));
+  const setEquipment = (idx: number, lang: "az" | "en", v: string) =>
+    setValue((prev) => {
+      const list = [...prev.equipments];
+      list[idx] = { ...list[idx], [lang]: { name: v } };
+      return { ...prev, equipments: list };
     });
 
   // Gallery: on edit the lab already exists so we upload/delete immediately; on create we queue.
@@ -164,6 +188,7 @@ export default function ResearchLaboratoryForm({ initialValue, submitLabel }: Re
         email: value.email,
         phone_number: value.phone_number,
         objectives: value.objectives,
+        equipments: value.equipments,
         gallery_images: [],
       };
 
@@ -277,6 +302,29 @@ export default function ResearchLaboratoryForm({ initialValue, submitLabel }: Re
               <div className="flex gap-2">
                 <Input value={obj.en.title} onChange={(e) => setObjective(idx, "en", e.target.value)} placeholder="EN objective" />
                 <button type="button" onClick={() => removeObjective(idx)} className="rounded-lg bg-red-500 px-3 text-sm text-white hover:bg-red-600">Sil</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Equipments (optional list of names) */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Avadanlıqlar (Equipments)</p>
+            <p className="text-xs text-gray-400">İstəyə bağlı — laboratoriyadakı avadanlıqların adları.</p>
+          </div>
+          <Button size="sm" variant="outline" onClick={addEquipment}>+ Avadanlıq əlavə et</Button>
+        </div>
+        {value.equipments.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Heç bir avadanlıq yoxdur.</p>}
+        <div className="space-y-3">
+          {value.equipments.map((eq, idx) => (
+            <div key={idx} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Input value={eq.az.name} onChange={(e) => setEquipment(idx, "az", e.target.value)} placeholder="AZ avadanlıq adı" />
+              <div className="flex gap-2">
+                <Input value={eq.en.name} onChange={(e) => setEquipment(idx, "en", e.target.value)} placeholder="EN equipment name" />
+                <button type="button" onClick={() => removeEquipment(idx)} className="rounded-lg bg-red-500 px-3 text-sm text-white hover:bg-red-600">Sil</button>
               </div>
             </div>
           ))}

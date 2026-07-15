@@ -22,6 +22,12 @@ export interface LaboratoryObjective {
     en: { title: string };
 }
 
+export interface LaboratoryEquipment {
+    id?: number;
+    az: { name: string };
+    en: { name: string };
+}
+
 export interface LaboratoryGalleryImage {
     id: number;
     image_url: string;
@@ -44,6 +50,7 @@ export interface Laboratory {
         html_content: string;
     };
     objectives: LaboratoryObjective[];
+    equipments?: LaboratoryEquipment[];
     gallery_images: LaboratoryGalleryImage[];
 }
 
@@ -482,6 +489,7 @@ export interface LaboratoryListItem {
     email: string | null;
     phone_number: string | null;
     objectives: { id: number; title: string | null }[];
+    equipments: { id: number; name: string | null }[];
     gallery_images: LaboratoryGalleryImage[];
 }
 
@@ -554,6 +562,11 @@ export const getLaboratoryDetails = async (
             id: o.id,
             az: { title: o.title ?? "" },
             en: { title: enObj.objectives?.[j]?.title ?? "" },
+        })),
+        equipments: (az.equipments ?? []).map((e: any, j: number) => ({
+            id: e.id,
+            az: { name: e.name ?? "" },
+            en: { name: enObj.equipments?.[j]?.name ?? "" },
         })),
         gallery_images: az.gallery_images ?? [],
     };
