@@ -1,4 +1,4 @@
-import CafedraForm from "./CafedraForm";
+import CafedraFormShell from "./form/CafedraFormShell";
 import { createCafedra, CreateCafedraPayload } from "../../services/cafedra/cafedraService";
 
 export default function NewCafedra() {
@@ -6,5 +6,5 @@ export default function NewCafedra() {
         return await createCafedra(payload);
     };
 
-    return <CafedraForm submitLabel="Yadda saxla" onSubmit={handleSubmit} />;
+    return <CafedraFormShell submitLabel="Yadda saxla" onSubmit={handleSubmit} />;
 }

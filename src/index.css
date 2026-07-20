@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap')
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Outfit:wght@100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap')
 layer(base);
 
 @import "tailwindcss";
@@ -7,7 +7,9 @@ layer(base);
 
 @theme {
   --font-*: initial;
-  --font-outfit: Outfit, sans-serif;
+  /* Noto Sans stays in the stack as the fallback: Outfit has no glyph for every
+     Azerbaijani diacritic, and the whole UI is written in Azerbaijani. */
+  --font-outfit: Outfit, "Noto Sans", sans-serif;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
@@ -163,6 +165,25 @@ layer(base);
   --z-index-9999: 9999;
   --z-index-99999: 99999;
   --z-index-999999: 999999;
+
+  /* Shell elevation: a soft, wide shadow for surfaces that float over the page
+     (the hover-expanded rail, the mobile drawer) — softer than shadow-theme-lg,
+     which is tuned for cards sitting in the flow. */
+  --shadow-elevate: 0px 8px 24px -6px rgba(16, 24, 40, 0.12),
+    0px 2px 8px -2px rgba(16, 24, 40, 0.06);
+
+  --animate-fade-in-up: fade-in-up 0.32s cubic-bezier(0.23, 1, 0.32, 1) both;
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 /*
@@ -174,6 +195,17 @@ layer(base);
   color utility to any element that depends on these defaults.
 */
 @layer base {
+  /*
+    Shell dimensions. These live on :root rather than in @theme because the
+    layout grid and the sidebar width read them from inline styles at runtime —
+    Tailwind never sees those references and would drop an unused theme variable.
+  */
+  :root {
+    --sidebar-w: 280px;
+    --sidebar-w-collapsed: 84px;
+    --header-h: 64px;
+  }
+
   *,
   ::after,
   ::before,
@@ -187,19 +219,46 @@ layer(base);
   }
   body {
     @apply relative font-normal font-outfit z-1 bg-gray-50 dark:bg-gray-950;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
+@utility menu-group-label {
+  @apply mb-2 flex h-5 items-center px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-400 dark:text-gray-600;
+}
+
 @utility menu-item {
-  @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-xl text-theme-sm transition-all duration-200;
+  @apply relative flex items-center w-full gap-3 px-3 py-2.5 font-medium rounded-xl text-theme-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40;
 }
 
 @utility menu-item-active {
-  @apply bg-brand-50 text-brand-600 dark:bg-brand-500/[0.12] dark:text-brand-400;
+  @apply bg-brand-50 text-brand-600 dark:bg-brand-500/[0.14] dark:text-brand-300;
 }
 
 @utility menu-item-inactive {
-  @apply text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 group-hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200;
+  @apply text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 group-hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-gray-200;
+}
+
+/* The 3px accent on the active row. Sits flush against the rail edge. */
+@utility menu-item-rail {
+  @apply absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-500 dark:bg-brand-400;
+}
+
+/* Labels must be able to shrink, otherwise a long entry pushes the chevron out
+   of the rail while it animates between the two widths. */
+@utility menu-item-text {
+  @apply min-w-0 flex-1 truncate text-left;
 }
 
 @utility menu-item-icon {
@@ -232,16 +291,30 @@ layer(base);
   @apply text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300;
 }
 
+/* Children hang off a guide line aligned to the centre of the parent icon
+   (px-3 + half of a 24px icon = 24px), which is what makes the tree readable. */
+@utility menu-dropdown-list {
+  @apply mt-1 ml-6 flex flex-col gap-0.5 border-l border-gray-100 pl-4 dark:border-gray-800;
+}
+
 @utility menu-dropdown-item {
-  @apply relative flex items-center gap-3 rounded-xl px-3 py-2 text-theme-sm font-medium transition-all duration-200;
+  @apply relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-theme-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40;
+}
+
+@utility menu-dropdown-dot {
+  @apply size-1.5 shrink-0 rounded-full bg-current opacity-40 transition-opacity duration-200;
 }
 
 @utility menu-dropdown-item-active {
-  @apply bg-brand-50 text-brand-600 dark:bg-brand-500/[0.12] dark:text-brand-400;
+  @apply bg-brand-50 text-brand-600 dark:bg-brand-500/[0.14] dark:text-brand-300;
+
+  & .menu-dropdown-dot {
+    @apply opacity-100;
+  }
 }
 
 @utility menu-dropdown-item-inactive {
-  @apply text-gray-500 hover:bg-gray-100/80 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200;
+  @apply text-gray-500 hover:bg-gray-100/80 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-gray-200;
 }
 
 @utility menu-dropdown-badge {
@@ -255,6 +328,30 @@ layer(base);
 @utility menu-dropdown-badge-inactive {
   @apply bg-brand-50 group-hover:bg-brand-100 dark:bg-brand-500/15 dark:group-hover:bg-brand-500/20;
 }
+
+@utility sidebar-search {
+  @apply flex w-full items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-400 transition-colors duration-200 focus-within:border-brand-400 focus-within:bg-white dark:border-gray-800 dark:bg-white/[0.03] dark:focus-within:border-brand-500 dark:focus-within:bg-white/[0.06];
+
+  & input {
+    @apply w-full min-w-0 bg-transparent text-theme-sm text-gray-800 outline-none placeholder:text-gray-400 dark:text-gray-200 dark:placeholder:text-gray-500;
+  }
+
+  /* The native clear affordance sits badly inside a bordered pill. */
+  & input::-webkit-search-cancel-button {
+    @apply appearance-none;
+  }
+}
+
+/* The header's square icon buttons — one definition so the toggle, the search
+   trigger and the mobile actions cannot drift apart again. */
+@utility header-icon-btn {
+  @apply flex size-9 shrink-0 items-center justify-center rounded-xl text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-gray-200;
+}
+
+@utility kbd-hint {
+  @apply rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-medium leading-none text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400;
+}
+
 @utility no-scrollbar {
   /* Chrome, Safari and Opera */
   &::-webkit-scrollbar {

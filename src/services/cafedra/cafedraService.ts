@@ -6,6 +6,10 @@ export interface LanguageSection {
 }
 
 export interface TranslatedTextItem {
+    id?: number;
+    url?: string | null;
+    logo_url?: string | null;
+    website_url?: string | null;
     az: {
         title: string;
         description: string;

@@ -1,418 +1,279 @@
-// import MenuIcon from '@mui/icons-material/Menu';
-// import SmartDisplayIcon from '@mui/icons-material/SmartDisplay';
 import { Link, useLocation } from "react-router";
-import CampaignIcon from '@mui/icons-material/Campaign';
-// import HandshakeIcon from '@mui/icons-material/Handshake';
-import NewspaperIcon from '@mui/icons-material/Newspaper';
-// import EventNoteIcon from '@mui/icons-material/EventNote';
-// import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
-// import CollectionsIcon from '@mui/icons-material/Collections';
-// import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import SchoolIcon from '@mui/icons-material/School';
-import CategoryIcon from '@mui/icons-material/Category';
-import ApartmentIcon from '@mui/icons-material/Apartment';
-// import PeopleIcon from '@mui/icons-material/People';
-import ScienceIcon from '@mui/icons-material/Science';
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   ChevronDownIcon,
-  GridIcon,
+  CloseIcon,
   HorizontaLDots,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-
-type NavItem = {
-  name: string;
-  icon: React.ReactNode;
-  path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean; name_az?: string; name_en?: string }[];
-};
-
-const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Əsas səhifə",
-    path: "/"
-  },
-  // {
-  //   icon: <SmartDisplayIcon />,
-  //   name: "Hero",
-  //   path: "/hero",
-  // },
-  // {
-  //   icon: <AccountTreeIcon />,
-  //   name: "Layihələr",
-  //   subItems: [
-  //     { name: "Layihələr", path: "/projects" },
-  //     { name: "Yeni layihə", path: "/projects/new" }
-  //   ],
-  // },
-  {
-    icon: <CampaignIcon />,
-    name: "Elanlar",
-    subItems: [
-      { name: "Elanlar", path: "/announcements" },
-      { name: "Yeni elan", path: "/announcements/new" }
-    ],
-  },
-  {
-    name: "Xəbərlər",
-    icon: <NewspaperIcon />,
-    subItems: [
-      { name: "Xəbərlər", path: "/news" },
-      { name: "Yeni xəbər", path: "/news/new" },
-      { name: "Xəbər kateqoriyaları", path: "/news-categories" }
-    ],
-  },
-  // {
-  //   name: "Menyular",
-  //   icon: <MenuIcon />,
-  //   subItems: [
-  //     { name: "Header", path: "/menu-header" },
-  //     { name: "Footer", path: "/menu-footer" },
-  //     { name: "Sürətli Menyu", path: "/menu-quick" },
-  //     { name: "Paylaşılan", path: "/menu-shared" },
-  //   ],
-  // },
-  {
-    icon: <SchoolIcon />,
-    name: "Fakültələr",
-    subItems: [
-      { name: "Fakültələr", path: "/faculties" },
-      { name: "Yeni fakültə", path: "/faculties/new" },
-    ],
-  },
-  // {
-  //   icon: <ScienceIcon />,
-  //   name: "Tədqiqat İnstitutları",
-  //   subItems: [
-  //     { name: "İnstitutlar", path: "/research-institutes" },
-  //     { name: "Yeni institut", path: "/research-institutes/new" },
-  //   ],
-  // },
-  {
-    icon: <ScienceIcon />,
-    name: "Tədqiqat Laboratoriyaları",
-    subItems: [
-      { name: "Laboratoriyalar", path: "/research-laboratories" },
-      { name: "Yeni laboratoriya", path: "/research-laboratories/new" },
-    ],
-  },
-  {
-    icon: <CategoryIcon />,
-    name: "Kafedralar",
-    subItems: [
-      { name: "Kafedralar", path: "/cafedras" },
-      { name: "Yeni kafedra", path: "/cafedras/new" },
-    ],
-  },
-  {
-    icon: <ApartmentIcon />,
-    name: "Departamentlər",
-    subItems: [
-      { name: "Departamentlər", path: "/admin/departments" },
-      { name: "Yeni departament", path: "/admin/departments/create" },
-    ],
-  },
-  // {
-  //   icon: <PeopleIcon />,
-  //   name: "İşçilər",
-  //   subItems: [
-  //     { name: "İşçilər", path: "/employees" },
-  //     { name: "Yeni işçi", path: "/employees/new" },
-  //   ],
-  // },
-  // {
-  //   name: "Əməkdaşlıqlar",
-  //   icon: <HandshakeIcon />,
-  //   subItems: [
-  //     { name: "Əməkdaşlıqlar", path: "/collaborations" },
-  //     { name: "Yeni əməkdaşlıq", path: "/collaborations/new" },
-  //   ],
-  // },
-  // {
-  //   name: "Tədbirlər",
-  //   icon: <EventNoteIcon />,
-  //   path: "/events"
-  // },
-  // {
-  //   name: "Qalereya",
-  //   icon: <CollectionsIcon />,
-  //   path: "/galery"
-  // },
-  // {
-  //   name: "Konfranslar",
-  //   icon: <ChatBubbleIcon />,
-  //   path: "/conferences"
-  // },
-];
-
-const othersItems: NavItem[] = [
-];
+import {
+  filterNavGroups,
+  findNavMatch,
+  navGroups,
+  navItemKey,
+  type NavGroup,
+  type NavItem,
+} from "./navConfig";
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const {
+    isExpanded,
+    isMobileOpen,
+    isHovered,
+    setIsHovered,
+    closeMobileSidebar,
+  } = useSidebar();
   const location = useLocation();
 
-  const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
-    index: number;
-  } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
-  );
-  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [query, setQuery] = useState("");
+  const [collapsedItems, setCollapsedItems] = useState<string[]>([]);
 
-  // const isActive = (path: string) => location.pathname === path;
-  const isActive = useCallback(
-    (path: string) => location.pathname === path,
-    [location.pathname]
-  );
+  // Labels, the filter box and the submenus are all gated on the same thing:
+  // is the rail showing its full width right now?
+  const isOpen = isExpanded || isHovered || isMobileOpen;
 
-  useEffect(() => {
-    let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "main" | "others",
-                index,
-              });
-              submenuMatched = true;
-            }
-          });
-        }
-      });
-    });
+  const match = useMemo(() => findNavMatch(location.pathname), [location.pathname]);
+  const groups = useMemo(() => filterNavGroups(navGroups, query), [query]);
 
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
-    }
-  }, [location, isActive]);
+  // findNavMatch always walks the unfiltered config, while filtering hands us
+  // cloned items — so identity has to be compared by key, never by reference.
+  const activeItemKey = match ? navItemKey(match.item) : null;
+  const activeSubItemPath = match?.subItem?.path ?? null;
 
-  useEffect(() => {
-    if (openSubmenu !== null) {
-      const key = `${openSubmenu.type}-${openSubmenu.index}`;
-      if (subMenuRefs.current[key]) {
-        setSubMenuHeight((prevHeights) => ({
-          ...prevHeights,
-          [key]: subMenuRefs.current[key]?.scrollHeight || 0,
-        }));
-      }
-    }
-  }, [openSubmenu]);
-
-  const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
-    setOpenSubmenu((prevOpenSubmenu) => {
-      if (
-        prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
-      ) {
-        return null;
-      }
-      return { type: menuType, index };
-    });
+  /**
+   * Submenus follow the route by default — the group owning the current page is
+   * open, everything else is closed. Clicking only records a deviation from
+   * that, keyed by path, so the state survives reordering the nav config.
+   */
+  const isSubmenuOpen = (item: NavItem) => {
+    const key = navItemKey(item);
+    const openByRoute = activeItemKey === key;
+    const isToggled = collapsedItems.includes(key);
+    // A filtered tree shows what it found, expanded.
+    if (query.trim()) return true;
+    return openByRoute ? !isToggled : isToggled;
   };
 
-  const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
+  const handleSubmenuToggle = (item: NavItem) => {
+    const key = navItemKey(item);
+    setCollapsedItems((prev) =>
+      prev.includes(key) ? prev.filter((entry) => entry !== key) : [...prev, key]
+    );
+  };
+
+  const renderMenuItems = (items: NavItem[]) => (
     <ul className="flex flex-col gap-0.5">
-      {items.map((nav, index) => (
-        <li key={nav.name}>
-          {nav.subItems ? (
-            <button
-              onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group ${openSubmenu?.type === menuType && openSubmenu?.index === index
-                ? "menu-item-active"
-                : "menu-item-inactive"
-                } cursor-pointer ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "lg:justify-start"
-                }`}
-            >
-              {openSubmenu?.type === menuType && openSubmenu?.index === index && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-brand-500 rounded-r-full" />
-              )}
-              <span
-                className={`menu-item-icon-size  ${openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "menu-item-icon-active"
-                  : "menu-item-icon-inactive"
-                  }`}
+      {items.map((nav) => {
+        const isItemActive = activeItemKey === navItemKey(nav);
+        const submenuOpen = nav.subItems ? isSubmenuOpen(nav) : false;
+
+        return (
+          <li key={navItemKey(nav)}>
+            {nav.subItems ? (
+              <button
+                onClick={() => handleSubmenuToggle(nav)}
+                aria-expanded={submenuOpen}
+                title={isOpen ? undefined : nav.name}
+                className={`menu-item group ${
+                  isItemActive ? "menu-item-active" : "menu-item-inactive"
+                } ${isOpen ? "lg:justify-start" : "lg:justify-center"}`}
               >
-                {nav.icon}
-              </span>
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
-              )}
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <ChevronDownIcon
-                  className={`ml-auto w-4 h-4 transition-transform duration-200 ${openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
-                    ? "rotate-180 text-brand-500"
-                    : "text-gray-400"
-                    }`}
-                />
-              )}
-            </button>
-          ) : (
-            nav.path && (
-              <Link
-                to={nav.path}
-                className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
-                  }`}
-              >
-                {isActive(nav.path) && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-brand-500 rounded-r-full" />
-                )}
+                {isItemActive && <span className="menu-item-rail" />}
                 <span
-                  className={`menu-item-icon-size ${isActive(nav.path)
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
-                    }`}
+                  className={`menu-item-icon-size ${
+                    isItemActive ? "menu-item-icon-active" : "menu-item-icon-inactive"
+                  }`}
                 >
                   {nav.icon}
                 </span>
-                {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text">{nav.name}</span>
+                {isOpen && (
+                  <>
+                    <span className="menu-item-text">{nav.name}</span>
+                    <ChevronDownIcon
+                      className={`ml-auto w-4 h-4 shrink-0 transition-transform duration-200 ${
+                        submenuOpen
+                          ? "rotate-180 text-brand-500 dark:text-brand-400"
+                          : "text-gray-400 dark:text-gray-600"
+                      }`}
+                    />
+                  </>
                 )}
-              </Link>
-            )
-          )}
-          {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
-            <div
-              ref={(el) => {
-                subMenuRefs.current[`${menuType}-${index}`] = el;
-              }}
-              className="overflow-hidden transition-all duration-300"
-              style={{
-                height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                    : "0px",
-              }}
-            >
-              <ul className="mt-1 space-y-0.5 ml-9">
-                {nav.subItems.map((subItem) => (
-                  <li key={subItem.name}>
-                    <Link
-                      to={subItem.path}
-                      className={`menu-dropdown-item ${isActive(subItem.path)
-                        ? "menu-dropdown-item-active"
-                        : "menu-dropdown-item-inactive"
-                        }`}
-                    >
-                      {subItem.name}
-                      <span className="flex items-center gap-1 ml-auto">
-                        {subItem.pro && (
-                          <span
-                            className={`ml-auto ${isActive(subItem.path)
-                              ? "menu-dropdown-badge-active"
-                              : "menu-dropdown-badge-inactive"
-                              } menu-dropdown-badge`}
+              </button>
+            ) : (
+              nav.path && (
+                <Link
+                  to={nav.path}
+                  title={isOpen ? undefined : nav.name}
+                  className={`menu-item group ${
+                    isItemActive ? "menu-item-active" : "menu-item-inactive"
+                  } ${isOpen ? "lg:justify-start" : "lg:justify-center"}`}
+                >
+                  {isItemActive && <span className="menu-item-rail" />}
+                  <span
+                    className={`menu-item-icon-size ${
+                      isItemActive ? "menu-item-icon-active" : "menu-item-icon-inactive"
+                    }`}
+                  >
+                    {nav.icon}
+                  </span>
+                  {isOpen && <span className="menu-item-text">{nav.name}</span>}
+                </Link>
+              )
+            )}
+
+            {nav.subItems && isOpen && (
+              <div
+                className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
+                style={{
+                  gridTemplateRows: submenuOpen ? "1fr" : "0fr",
+                  opacity: submenuOpen ? 1 : 0,
+                }}
+              >
+                {/* The overflow wrapper is what makes the 0fr → 1fr row animate;
+                    it replaces the old scrollHeight measurement, which went
+                    stale whenever the submenu content changed while open. */}
+                <div className="overflow-hidden">
+                  <ul className="menu-dropdown-list">
+                    {nav.subItems.map((subItem) => {
+                      const isSubActive = activeSubItemPath === subItem.path;
+
+                      return (
+                        <li key={subItem.path}>
+                          <Link
+                            to={subItem.path}
+                            className={`menu-dropdown-item ${
+                              isSubActive
+                                ? "menu-dropdown-item-active"
+                                : "menu-dropdown-item-inactive"
+                            }`}
                           >
-                            pro
-                          </span>
-                        )}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </li>
-      ))}
+                            <span className="menu-dropdown-dot" />
+                            <span className="truncate">{subItem.name}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </li>
+        );
+      })}
     </ul>
+  );
+
+  const renderGroup = (group: NavGroup) => (
+    <div key={group.label}>
+      <h2
+        className={`menu-group-label ${isOpen ? "justify-start" : "lg:justify-center"}`}
+      >
+        {isOpen ? group.label : <HorizontaLDots className="size-4" />}
+      </h2>
+      {renderMenuItems(group.items)}
+    </div>
   );
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-4 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-100 dark:border-gray-800
-        ${isExpanded || isMobileOpen
-          ? "w-[290px]"
-          : isHovered
-            ? "w-[290px]"
-            : "w-[90px]"
-        }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0`}
+      className={`fixed top-0 left-0 z-50 flex h-screen flex-col border-r border-gray-100 bg-white text-gray-900 transition-[width,transform] duration-300 ease-out lg:sticky lg:translate-x-0 dark:border-gray-800 dark:bg-gray-900
+        ${isMobileOpen ? "translate-x-0 shadow-elevate" : "-translate-x-full"}
+        ${!isExpanded && isHovered ? "lg:shadow-elevate" : ""}`}
+      style={{
+        width: isOpen ? "var(--sidebar-w)" : "var(--sidebar-w-collapsed)",
+      }}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Logo Area */}
+      {/* Logo area */}
       <div
-        className={`py-5 flex border-b border-gray-100 dark:border-gray-800 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
-          }`}
+        className={`flex h-(--header-h) shrink-0 items-center border-b border-gray-100 px-4 dark:border-gray-800 ${
+          isOpen ? "justify-between" : "lg:justify-center"
+        }`}
       >
-        <Link to="/" className="flex items-center gap-2.5">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <img
-                className="dark:hidden"
-                src="/images/aztu-logo-dark.png"
-                alt="Logo"
-                width={70}
-                height={36}
-              />
-              <img
-                className="hidden dark:block"
-                src="/images/aztu-logo-light.png"
-                alt="Logo"
-                width={70}
-                height={36}
-              />
-              <div className="flex flex-col">
-                <span className="text-[11px] font-semibold text-gray-900 dark:text-white leading-tight">AzTU Admin</span>
-                <span className="text-[10px] text-gray-400 leading-tight">aztu.edu.az</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <img
-                className="dark:hidden"
-                src="/images/aztu-logo-dark.png"
-                alt="Logo"
-                width={38}
-                height={38}
-              />
-              <img
-                className="hidden dark:block"
-                src="/images/aztu-logo-light.png"
-                alt="Logo"
-                width={38}
-                height={38}
-              />
-            </>
+        <Link to="/" className="flex items-center gap-2.5 overflow-hidden">
+          <img
+            className="shrink-0 dark:hidden"
+            src="/images/aztu-logo-dark.png"
+            alt="AzTU"
+            width={isOpen ? 62 : 34}
+            height={isOpen ? 32 : 34}
+          />
+          <img
+            className="hidden shrink-0 dark:block"
+            src="/images/aztu-logo-light.png"
+            alt="AzTU"
+            width={isOpen ? 62 : 34}
+            height={isOpen ? 32 : 34}
+          />
+          {isOpen && (
+            <span className="flex flex-col leading-tight">
+              <span className="text-theme-sm font-semibold text-gray-900 dark:text-white">
+                AzTU Admin
+              </span>
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                aztu.edu.az
+              </span>
+            </span>
           )}
         </Link>
+
+        {/* Drawer dismiss — the backdrop is not discoverable enough on its own. */}
+        {isMobileOpen && (
+          <button
+            onClick={closeMobileSidebar}
+            aria-label="Menyunu bağla"
+            className="flex size-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-100 lg:hidden dark:text-gray-400 dark:hover:bg-white/5"
+          >
+            <CloseIcon className="size-5" />
+          </button>
+        )}
       </div>
 
+      {/* Nav filter */}
+      {isOpen && (
+        <div className="shrink-0 px-4 pt-4">
+          <label className="sidebar-search">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" className="shrink-0">
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z"
+                fill="currentColor"
+              />
+            </svg>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Menyuda axtar..."
+              aria-label="Menyuda axtar"
+            />
+          </label>
+        </div>
+      )}
+
       {/* Navigation */}
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar pt-4">
-        <nav className="mb-6">
-          <div className="flex flex-col gap-1">
-            <div>
-              <h2
-                className={`mb-3 px-2 text-[10px] font-semibold uppercase tracking-wider flex leading-[20px] text-gray-400 dark:text-gray-600 ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "justify-start"
-                  }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Naviqasiya"
-                ) : (
-                  <HorizontaLDots className="size-4" />
-                )}
-              </h2>
-              {renderMenuItems(navItems, "main")}
-            </div>
-          </div>
-        </nav>
-      </div>
+      <nav className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4">
+        <div className="flex flex-col gap-6">
+          {groups.map(renderGroup)}
+          {groups.length === 0 && isOpen && (
+            <p className="px-3 py-6 text-center text-theme-xs text-gray-400 dark:text-gray-500">
+              Nəticə tapılmadı
+            </p>
+          )}
+        </div>
+      </nav>
+
+      {/* Collapse hint */}
+      {isOpen && (
+        <div className="shrink-0 border-t border-gray-100 px-4 py-3 dark:border-gray-800">
+          <p className="text-[11px] text-gray-400 dark:text-gray-600">
+            Menyunu yığmaq üçün <kbd className="kbd-hint">⌘B</kbd>
+          </p>
+        </div>
+      )}
     </aside>
   );
 };

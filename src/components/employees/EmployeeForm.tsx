@@ -18,6 +18,15 @@ import {
 } from "../../services/employee/employeeService";
 import { getFaculties, Faculty } from "../../services/faculty/facultyService";
 import { getCafedras, Cafedra } from "../../services/cafedra/cafedraService";
+import {
+    addBtnClass,
+    removeBtnClass,
+    sectionCard,
+    sectionHeader,
+    selectClass,
+    selectErrorClass,
+    textareaClass,
+} from "../Cafedras/form/formStyles";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -321,14 +330,6 @@ export default function EmployeeForm({ mode, initialData }: EmployeeFormProps) {
         }
     };
 
-    // ─── Styles ───────────────────────────────────────────────────────────────
-    const sectionCard = "overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm";
-    const sectionHeader = "flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50";
-    const selectClass = "h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 text-sm text-gray-800 dark:text-white/90 px-3 focus:outline-none focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 appearance-none";
-    const selectErrorClass = "h-11 w-full rounded-lg border border-red-400 dark:border-red-500 bg-transparent dark:bg-gray-900 text-sm text-gray-800 dark:text-white/90 px-3 focus:outline-none focus:ring-3 focus:border-red-400 focus:ring-red-500/20 appearance-none";
-    const textareaClass = "w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 text-sm text-gray-800 dark:text-white/90 px-4 py-2.5 focus:outline-none focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 resize-none placeholder:text-gray-400";
-    const addBtnClass = "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors";
-    const removeBtnClass = "p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors";
 
     // ─── Render ───────────────────────────────────────────────────────────────
     return (

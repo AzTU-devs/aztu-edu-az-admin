@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useCallback, useContext, useState, useEffect } from "react";
 
 type SidebarContextType = {
   isExpanded: boolean;
@@ -8,12 +8,19 @@ type SidebarContextType = {
   openSubmenu: string | null;
   toggleSidebar: () => void;
   toggleMobileSidebar: () => void;
+  closeMobileSidebar: () => void;
   setIsHovered: (isHovered: boolean) => void;
   setActiveItem: (item: string | null) => void;
   toggleSubmenu: (item: string) => void;
 };
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
+
+// The desktop shell starts at lg. Below it the sidebar is a drawer, above it a
+// rail — the header toggle and the layout grid branch on the same number.
+export const SIDEBAR_DESKTOP_BREAKPOINT = 1024;
+
+const COLLAPSE_STORAGE_KEY = "aztu-admin-sidebar";
 
 export const useSidebar = () => {
   const context = useContext(SidebarContext);
@@ -26,7 +33,9 @@ export const useSidebar = () => {
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(
+    () => localStorage.getItem(COLLAPSE_STORAGE_KEY) !== "collapsed"
+  );
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -35,7 +44,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 768;
+      const mobile = window.innerWidth < SIDEBAR_DESKTOP_BREAKPOINT;
       setIsMobile(mobile);
       if (!mobile) {
         setIsMobileOpen(false);
@@ -50,17 +59,39 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  const toggleSidebar = () => {
-    setIsExpanded((prev) => !prev);
-  };
+  // The drawer owns the page while it is open — releasing the scroll lock is
+  // part of the same effect so an unmount can never leave the body stuck.
+  useEffect(() => {
+    if (!isMobileOpen) return;
 
-  const toggleMobileSidebar = () => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileOpen]);
+
+  const toggleSidebar = useCallback(() => {
+    setIsExpanded((prev) => {
+      const next = !prev;
+      localStorage.setItem(COLLAPSE_STORAGE_KEY, next ? "expanded" : "collapsed");
+      return next;
+    });
+    setIsHovered(false);
+  }, []);
+
+  const toggleMobileSidebar = useCallback(() => {
     setIsMobileOpen((prev) => !prev);
-  };
+  }, []);
 
-  const toggleSubmenu = (item: string) => {
+  const closeMobileSidebar = useCallback(() => {
+    setIsMobileOpen(false);
+  }, []);
+
+  const toggleSubmenu = useCallback((item: string) => {
     setOpenSubmenu((prev) => (prev === item ? null : item));
-  };
+  }, []);
 
   return (
     <SidebarContext.Provider
@@ -72,6 +103,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
         openSubmenu,
         toggleSidebar,
         toggleMobileSidebar,
+        closeMobileSidebar,
         setIsHovered,
         setActiveItem,
         toggleSubmenu,
