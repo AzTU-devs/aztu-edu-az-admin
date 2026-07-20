@@ -131,6 +131,7 @@ export interface MeData {
   profile_image: string | null;
   is_active: boolean;
   last_login_at: string | null;
+  created_at: string | null;
   role: RoleRef | null;
   is_super_admin: boolean;
   /** Empty when is_super_admin — is_super_admin governs, not this list. */
@@ -265,6 +266,63 @@ export type ActivityListResponse = ApiData<Paginated<ActivityItem>>;
 export type ActivityFiltersResponse = ApiData<ActivityFilters>;
 
 /* ── client-side permission helpers ────────────────────────────────────── */
+
+/**
+ * Mirror of the server's DOMAIN_LABELS. GET /api/permissions carries the same
+ * labels but requires `roles.read`, so a screen every admin must reach (their
+ * own profile) cannot depend on it. An unknown domain falls back to its key.
+ */
+export const PERMISSION_DOMAIN_LABELS_AZ: Record<string, string> = {
+  news: "Xəbərlər",
+  news_categories: "Xəbər kateqoriyaları",
+  announcements: "Elanlar",
+  hero: "Ana səhifə videosu",
+  projects: "Layihələr",
+  collaborations: "Əməkdaşlıqlar",
+  employees: "Əməkdaşlar",
+  faculties: "Fakültələr",
+  cafedras: "Kafedralar",
+  departments: "Şöbələr",
+  research_institutes: "Elmi tədqiqat institutları",
+  menu: "Menyu və altlıq",
+  menu_header: "Başlıq menyusu",
+  chatbot_knowledge: "Çatbot bilik bazası",
+  search: "Axtarış",
+  roles: "Rollar",
+  admin_users: "Admin istifadəçilər",
+  activity: "Fəaliyyət jurnalı",
+};
+
+export interface PermissionKeyGroup {
+  domain: string;
+  label_az: string;
+  keys: string[];
+}
+
+/** Groups raw permission keys by their `domain.action` prefix, matrix order. */
+export function groupPermissionKeys(keys: string[]): PermissionKeyGroup[] {
+  const order = Object.keys(PERMISSION_DOMAIN_LABELS_AZ);
+  const byDomain = new Map<string, string[]>();
+
+  for (const key of [...keys].sort()) {
+    const domain = key.split(".")[0];
+    const bucket = byDomain.get(domain);
+    if (bucket) bucket.push(key);
+    else byDomain.set(domain, [key]);
+  }
+
+  return [...byDomain.entries()]
+    .sort(([a], [b]) => {
+      const ai = order.indexOf(a);
+      const bi = order.indexOf(b);
+      return (ai === -1 ? order.length : ai) - (bi === -1 ? order.length : bi);
+    })
+    .map(([domain, domainKeys]) => ({
+      domain,
+      label_az: PERMISSION_DOMAIN_LABELS_AZ[domain] ?? domain,
+      keys: domainKeys,
+    }));
+}
 
 /** Mirrors the server: super admin short-circuits, never consults the list. */
 export function hasPermission(me: MeData | null, key: string): boolean {
