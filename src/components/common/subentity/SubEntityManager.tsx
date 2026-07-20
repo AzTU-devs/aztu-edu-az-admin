@@ -1,12 +1,7 @@
-import { useState } from "react";
-import Swal from "sweetalert2";
-import Button from "../../ui/button/Button";
-import PersonFormModal from "./PersonFormModal";
-import { PersonFormValue } from "./PersonForm";
-import { getImageUrl } from "../../../util/imageUrl";
+import EntityManager, { CreateResult, MutateResult } from "./EntityManager";
+import PersonForm, { PersonFormValue, emptyPersonValue } from "./PersonForm";
 
-export type CreateResult = { status: "SUCCESS"; id: number } | { status: "ERROR" };
-export type MutateResult = "SUCCESS" | "NOT FOUND" | "ERROR";
+export type { CreateResult, MutateResult };
 
 interface SubEntityManagerProps<T> {
   title: string;
@@ -27,6 +22,7 @@ interface SubEntityManagerProps<T> {
   onChanged: () => void;
 }
 
+/** People-shaped specialisation of `EntityManager`. */
 export default function SubEntityManager<T>({
   title,
   description,
@@ -43,151 +39,35 @@ export default function SubEntityManager<T>({
   onUploadImage,
   onChanged,
 }: SubEntityManagerProps<T>) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<T | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  const openAdd = () => {
-    setEditing(null);
-    setModalOpen(true);
-  };
-  const openEdit = (item: T) => {
-    setEditing(item);
-    setModalOpen(true);
-  };
-
-  const handleSubmit = async (value: PersonFormValue, imageFile: File | null) => {
-    setSubmitting(true);
-    try {
-      let targetId: number;
-      if (editing) {
-        const id = getId(editing);
-        const res = await onUpdate(id, value);
-        if (res !== "SUCCESS") {
-          Swal.fire({ icon: "error", title: "Xəta", text: "Yenilənmə zamanı xəta baş verdi." });
-          return;
-        }
-        targetId = id;
-      } else {
-        const res = await onCreate(value);
-        if (res.status !== "SUCCESS") {
-          Swal.fire({ icon: "error", title: "Xəta", text: "Əlavə edilərkən xəta baş verdi." });
-          return;
-        }
-        targetId = res.id;
-      }
-
-      // Upload the photo after the person exists. Surface a real failure (e.g.
-      // unsupported format / too large) instead of silently reporting success.
-      // Upload services return either "SUCCESS" (string) or { status: "SUCCESS" }.
-      let imageError: string | null = null;
-      if (imageFile && onUploadImage) {
-        const imgRes = await onUploadImage(targetId, imageFile);
-        const ok =
-          imgRes === "SUCCESS" ||
-          (typeof imgRes === "object" && imgRes !== null && (imgRes as { status?: string }).status === "SUCCESS");
-        if (!ok) {
-          imageError =
-            typeof imgRes === "string"
-              ? imgRes
-              : (imgRes as { data?: { message?: string } })?.data?.message || "Şəkil yüklənə bilmədi.";
-        }
-      }
-
-      setModalOpen(false);
-      setEditing(null);
-      if (imageError) {
-        Swal.fire({ icon: "warning", title: "Məlumat saxlanıldı, lakin şəkil yüklənmədi", text: imageError });
-      } else {
-        Swal.fire({ icon: "success", title: "Uğurlu", showConfirmButton: false, timer: 1400 });
-      }
-      onChanged();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async (item: T) => {
-    const confirm = await Swal.fire({
-      title: "Silmək istədiyinizə əminsiniz?",
-      text: "Bu əməliyyat geri alına bilməz!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Bəli, sil",
-      cancelButtonText: "İmtina",
-      reverseButtons: true,
-    });
-    if (!confirm.isConfirmed) return;
-
-    const res = await onDelete(getId(item));
-    if (res === "SUCCESS") {
-      Swal.fire({ icon: "success", title: "Uğurla silindi", showConfirmButton: false, timer: 1400 });
-      onChanged();
-    } else {
-      Swal.fire({ icon: "error", title: "Xəta", text: "Silinərkən xəta baş verdi." });
-    }
-  };
-
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="font-semibold text-gray-800 dark:text-gray-100">{title}</p>
-          {description ? <p className="text-xs text-gray-500 dark:text-gray-400">{description}</p> : null}
-        </div>
-        <Button size="sm" onClick={openAdd}>+ Əlavə et</Button>
-      </div>
-
-      <div className="space-y-3">
-        {items.length === 0 && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">Hələ heç bir qeyd yoxdur.</p>
-        )}
-        {items.map((item) => (
-          <div
-            key={getId(item)}
-            className="flex flex-col gap-3 rounded-2xl border border-gray-200 p-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="flex items-center gap-3">
-              {showImage ? (
-                getImage?.(item) ? (
-                  <img src={getImageUrl(getImage(item))} alt="" className="h-11 w-11 rounded-full border border-gray-200 object-cover" />
-                ) : (
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-400 dark:bg-gray-800">—</div>
-                )
-              ) : null}
-              <div>
-                <p className="font-semibold text-gray-700 dark:text-gray-200">{getName(item)}</p>
-                {getSubtitle ? <p className="text-sm text-gray-500 dark:text-gray-400">{getSubtitle(item)}</p> : null}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => openEdit(item)}>Redaktə et</Button>
-              <button
-                type="button"
-                onClick={() => handleDelete(item)}
-                className="rounded-lg bg-red-500 px-4 py-3 text-sm text-white transition hover:bg-red-600"
-              >
-                Sil
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <PersonFormModal
-        isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditing(null);
-        }}
-        title={`${title} — ${editing ? "Redaktə et" : "Əlavə et"}`}
-        initialValue={editing ? toFormValue(editing) : undefined}
-        showImage={showImage}
-        submitting={submitting}
-        onSubmit={handleSubmit}
-      />
-    </div>
+    <EntityManager<T, PersonFormValue>
+      title={title}
+      description={description}
+      items={items}
+      getId={getId}
+      getPrimary={getName}
+      getSecondary={getSubtitle}
+      getThumb={getImage}
+      showThumb={showImage}
+      toFormValue={toFormValue}
+      emptyValue={emptyPersonValue}
+      validate={(value) =>
+        value.first_name.trim() === "" || value.last_name.trim() === "" ? "Ad və soyad tələb olunur." : null
+      }
+      renderForm={(value, onChange, helpers) => (
+        <PersonForm
+          value={value}
+          onChange={onChange}
+          showImage={showImage}
+          onImageSelect={helpers.setImageFile}
+          selectedImageName={helpers.imageFile?.name}
+        />
+      )}
+      onCreate={onCreate}
+      onUpdate={onUpdate}
+      onDelete={onDelete}
+      onUploadImage={onUploadImage}
+      onChanged={onChanged}
+    />
   );
 }

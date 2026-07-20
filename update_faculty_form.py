@@ -1,3 +1,4 @@
+# DEPRECATED — do not run, it will clobber the hand-maintained forms.
 import re
 
 file_path = "src/components/Faculties/FacultyForm.tsx"

@@ -1,3 +1,6 @@
+# DEPRECATED — do not run, it will clobber src/components/Cafedras/form/
+# The cafedra form is now a hand-maintained tabbed shell under
+# src/components/Cafedras/form/; the file this script targets no longer exists.
 import re
 
 file_path = "src/components/Cafedras/CafedraForm.tsx"
