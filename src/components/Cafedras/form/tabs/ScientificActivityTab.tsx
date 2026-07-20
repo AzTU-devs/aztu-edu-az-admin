@@ -66,6 +66,12 @@ const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR + 1 - 2015 + 1 }, (_, i) 
 
 const uid = () => crypto.randomUUID();
 
+/**
+ * Copying a URL that was displayed wrapped across lines carries the wrap points
+ * in as whitespace, which silently saves a dead link. No valid URL contains any.
+ */
+const cleanUrl = (value: string) => value.replace(/\s+/g, "");
+
 // ─── Collapsible panel ───────────────────────────────────────────────────────
 
 function Panel({
@@ -332,7 +338,7 @@ function PublicationsPanel({
     quartile: value.quartile,
     year: value.year,
     date: value.date,
-    url: value.url,
+    url: cleanUrl(value.url),
     az: value.az,
     en: value.en,
   });
@@ -560,8 +566,8 @@ export default function ScientificActivityTab({ cafedraCode, onGoToLaboratories 
               </div>
             </div>
           )}
-          onCreate={(value) => createProject(cafedraCode, { url: value.url, az: value.az, en: value.en })}
-          onUpdate={(id, value) => updateProject(id, { url: value.url, az: value.az, en: value.en })}
+          onCreate={(value) => createProject(cafedraCode, { url: cleanUrl(value.url), az: value.az, en: value.en })}
+          onUpdate={(id, value) => updateProject(id, { url: cleanUrl(value.url), az: value.az, en: value.en })}
           onDelete={(id) => deleteProject(id)}
           onChanged={load}
         />
@@ -650,8 +656,8 @@ export default function ScientificActivityTab({ cafedraCode, onGoToLaboratories 
               </div>
             </div>
           )}
-          onCreate={(value) => createPartnerCompany(cafedraCode, { website_url: value.website_url, az: value.az, en: value.en })}
-          onUpdate={(id, value) => updatePartnerCompany(id, { website_url: value.website_url, az: value.az, en: value.en })}
+          onCreate={(value) => createPartnerCompany(cafedraCode, { website_url: cleanUrl(value.website_url), az: value.az, en: value.en })}
+          onUpdate={(id, value) => updatePartnerCompany(id, { website_url: cleanUrl(value.website_url), az: value.az, en: value.en })}
           onDelete={(id) => deletePartnerCompany(id)}
           onUploadImage={(id, file) => uploadPartnerCompanyLogo(id, file)}
           onChanged={load}

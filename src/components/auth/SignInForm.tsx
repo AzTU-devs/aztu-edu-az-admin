@@ -6,7 +6,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 import authService from "../../services/auth/authService";
-import { loginSuccess } from "../../redux/slices/authSlice";
+import { loginSuccess, logout, setSession } from "../../redux/slices/authSlice";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +25,19 @@ export default function SignInForm() {
 
     try {
       const data = await authService.login(username, password);
+      // The token has to land in the store first — apiClient reads it from there
+      // to authorise the /auth/me call that follows.
       dispatch(loginSuccess({ token: data.access_token }));
+
+      try {
+        const me = await authService.me();
+        dispatch(setSession(me));
+      } catch {
+        dispatch(logout());
+        setError("Sessiya məlumatları alınmadı. Yenidən cəhd edin.");
+        return;
+      }
+
       navigate("/");
     } catch (err: unknown) {
       const axiosErr = err as { response?: { status?: number; data?: { detail?: string } } };

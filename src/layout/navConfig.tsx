@@ -4,23 +4,34 @@ import CategoryIcon from '@mui/icons-material/Category';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import SchoolIcon from '@mui/icons-material/School';
 import ScienceIcon from '@mui/icons-material/Science';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 import { GridIcon } from "../icons";
+import { permissionForPath } from "../config/routePermissions";
 
+/**
+ * `permission` is optional everywhere. When omitted, the entry inherits the
+ * requirement its `path` carries in `routePermissions` — the same map the route
+ * guard consults, so the sidebar can never advertise a screen that /403s.
+ * A string array means "any of".
+ */
 export type NavSubItem = {
   name: string;
   path: string;
+  permission?: string | string[];
 };
 
 export type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
+  permission?: string | string[];
   subItems?: NavSubItem[];
 };
 
 export type NavGroup = {
   label: string;
+  permission?: string | string[];
   items: NavItem[];
 };
 
@@ -99,6 +110,34 @@ export const navGroups: NavGroup[] = [
       },
     ],
   },
+  {
+    /*
+      The whole group disappears for an account holding none of the three keys,
+      rather than showing a heading over an empty list. Each child still carries
+      its own key so a viewer granted only `activity.read` sees the log alone.
+    */
+    label: "Parametrlər",
+    permission: ["roles.read", "admin_users.read", "activity.read"],
+    items: [
+      {
+        icon: <SettingsIcon />,
+        name: "Parametrlər",
+        subItems: [
+          { name: "Rollar", path: "/settings/roles", permission: "roles.read" },
+          {
+            name: "İstifadəçilər",
+            path: "/settings/admin-users",
+            permission: "admin_users.read",
+          },
+          {
+            name: "Fəaliyyət jurnalı",
+            path: "/settings/activity",
+            permission: "activity.read",
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 /**
@@ -126,12 +165,19 @@ export type NavMatch = {
  * Resolves a pathname to the single deepest nav entry that owns it. The longest
  * matching path wins, so `/news/new` picks "Yeni xəbər" rather than "Xəbərlər".
  * Returns null for routes that are reachable but not in the menu (e.g. /profile).
+ *
+ * Takes the groups to search rather than closing over `navGroups`, so callers
+ * can pass the permission-filtered tree. Header breadcrumbs would otherwise name
+ * sections the sidebar deliberately hides.
  */
-export const findNavMatch = (pathname: string): NavMatch | null => {
+export const findNavMatch = (
+  pathname: string,
+  groups: NavGroup[] = navGroups
+): NavMatch | null => {
   let match: NavMatch | null = null;
   let matchedLength = -1;
 
-  navGroups.forEach((group) => {
+  groups.forEach((group) => {
     group.items.forEach((item) => {
       if (item.path && isPathActive(pathname, item.path) && item.path.length > matchedLength) {
         match = { group, item };
@@ -176,6 +222,49 @@ export const filterNavGroups = (groups: NavGroup[], query: string): NavGroup[] =
         );
         if (subItems?.length) {
           acc.push({ ...item, subItems });
+        }
+        return acc;
+      }, []);
+
+      return { ...group, items };
+    })
+    .filter((group) => group.items.length > 0);
+};
+
+/**
+ * Hides what the current session may not open. An entry's requirement is its own
+ * `permission`, else the one its `path` carries in `routePermissions`. A parent
+ * with subItems is kept when any child survives, so a partially-granted domain
+ * still shows the pages it does allow.
+ *
+ * Clones with `{ ...item, subItems }` exactly as `filterNavGroups` does — clones
+ * keep the same `navItemKey`, which is what active-state highlighting compares.
+ */
+export const filterNavByPermission = (
+  groups: NavGroup[],
+  can: (permission: string | string[] | undefined) => boolean
+): NavGroup[] => {
+  const allows = (
+    explicit: string | string[] | undefined,
+    path: string | undefined
+  ): boolean => can(explicit ?? (path ? permissionForPath(path) : undefined));
+
+  return groups
+    .filter((group) => can(group.permission))
+    .map((group) => {
+      const items = group.items.reduce<NavItem[]>((acc, item) => {
+        if (item.subItems?.length) {
+          const subItems = item.subItems.filter((subItem) =>
+            allows(subItem.permission, subItem.path)
+          );
+          if (subItems.length && allows(item.permission, undefined)) {
+            acc.push({ ...item, subItems });
+          }
+          return acc;
+        }
+
+        if (allows(item.permission, item.path)) {
+          acc.push(item);
         }
         return acc;
       }, []);

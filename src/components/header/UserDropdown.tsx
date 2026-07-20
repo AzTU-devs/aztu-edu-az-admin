@@ -1,20 +1,28 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { RootState } from "../../redux/store";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { logout } from "../../redux/slices/authSlice";
 import { useDispatch, useSelector } from "react-redux";
 import authService from "../../services/auth/authService";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
+import usePermissions from "../../hooks/usePermissions";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { name, surname, email } = useSelector((state: RootState) => state.auth);
-  const displayName = name ? `${name}` : "İstifadəçi";
-  const fullName = [name, surname].filter(Boolean).join(" ") || "İstifadəçi";
+  const { name, surname, email, username } = useSelector((state: RootState) => state.auth);
+  const { canAny, roleName } = usePermissions();
+
+  // Admin accounts only ever carry a username; the name/surname pair is legacy.
+  const displayName = name || username || "İstifadəçi";
+  const fullName = [name, surname].filter(Boolean).join(" ") || username || "İstifadəçi";
+  const initial = displayName.charAt(0).toUpperCase();
+
+  const canOpenSettings = canAny(["roles.read", "admin_users.read", "activity.read"]);
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -43,7 +51,7 @@ export default function UserDropdown() {
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11 bg-brand-100 dark:bg-brand-900 flex items-center justify-center">
           <span className="text-brand-600 dark:text-brand-300 font-semibold text-sm">
-            {name ? name.charAt(0).toUpperCase() : "İ"}
+            {initial}
           </span>
         </span>
 
@@ -82,6 +90,11 @@ export default function UserDropdown() {
               {email}
             </span>
           )}
+          {roleName && (
+            <span className="mt-2 inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-theme-xs font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-300">
+              {roleName}
+            </span>
+          )}
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
@@ -110,6 +123,22 @@ export default function UserDropdown() {
               Profili redaktə et
             </DropdownItem>
           </li>
+          {canOpenSettings && (
+            <li>
+              <DropdownItem
+                onItemClick={closeDropdown}
+                tag="a"
+                to="/settings/roles"
+                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+              >
+                <SettingsOutlinedIcon
+                  className="text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300"
+                  fontSize="small"
+                />
+                Parametrlər
+              </DropdownItem>
+            </li>
+          )}
         </ul>
         <button
           onClick={handleLogout}
