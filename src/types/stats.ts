@@ -65,6 +65,12 @@ export interface DashboardStats {
   admins: DashboardAdmins;
   publishing_trend: PublishingTrend;
   visitors: DashboardVisitors;
+  /**
+   * Panels whose query failed server-side (e.g. "activity" when its table has
+   * not been migrated yet). Those sections must say so rather than render a
+   * zero, which would read as real data.
+   */
+  unavailable?: string[];
 }
 
 export type DashboardStatsResponse = ApiData<DashboardStats>;

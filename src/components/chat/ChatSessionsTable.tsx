@@ -1,3 +1,5 @@
+import DeleteIcon from "@mui/icons-material/Delete";
+import { CircularProgress } from "@mui/material";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../ui/table";
 import Badge from "../ui/badge/Badge";
 import { formatDateTime, formatNumber } from "./chatFormat";
@@ -8,6 +10,9 @@ interface ChatSessionsTableProps {
   loading?: boolean;
   pageSize?: number;
   onSelect: (sessionId: string) => void;
+  /** Omitted when the account lacks chat.delete — the column disappears with it. */
+  onDelete?: (sessionId: string) => void;
+  deletingId?: string | null;
 }
 
 const headerCell =
@@ -18,7 +23,11 @@ export default function ChatSessionsTable({
   loading = false,
   pageSize = 25,
   onSelect,
+  onDelete,
+  deletingId = null,
 }: ChatSessionsTableProps) {
+  const columnCount = onDelete ? 6 : 5;
+
   return (
     <div className="max-w-full overflow-x-auto custom-scrollbar">
       <Table>
@@ -39,6 +48,11 @@ export default function ChatSessionsTable({
             <TableCell isHeader className={headerCell}>
               İlk sual
             </TableCell>
+            {onDelete && (
+              <TableCell isHeader className={`${headerCell} text-right`}>
+                Əməliyyat
+              </TableCell>
+            )}
           </TableRow>
         </TableHeader>
 
@@ -46,7 +60,7 @@ export default function ChatSessionsTable({
           {loading &&
             Array.from({ length: Math.min(pageSize, 8) }).map((_, index) => (
               <TableRow key={`skeleton-${index}`}>
-                <TableCell className="px-5 py-4" colSpan={5}>
+                <TableCell className="px-5 py-4" colSpan={columnCount}>
                   <div className="h-4 w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
                 </TableCell>
               </TableRow>
@@ -56,7 +70,7 @@ export default function ChatSessionsTable({
             <TableRow>
               <TableCell
                 className="px-5 py-12 text-center text-sm text-gray-400 dark:text-gray-500"
-                colSpan={5}
+                colSpan={columnCount}
               >
                 Uyğun söhbət tapılmadı
               </TableCell>
@@ -87,6 +101,28 @@ export default function ChatSessionsTable({
                 <TableCell className="max-w-md px-5 py-4 text-sm text-gray-500 dark:text-gray-400">
                   <span className="line-clamp-2 break-words">{item.preview ?? "—"}</span>
                 </TableCell>
+                {onDelete && (
+                  <TableCell className="px-5 py-4 text-right">
+                    <button
+                      type="button"
+                      title="Söhbəti sil"
+                      aria-label="Söhbəti sil"
+                      disabled={deletingId === item.session_id}
+                      onClick={(event) => {
+                        // The row itself opens the transcript.
+                        event.stopPropagation();
+                        onDelete(item.session_id);
+                      }}
+                      className="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-red-50 disabled:opacity-40 dark:hover:bg-red-900/20"
+                    >
+                      {deletingId === item.session_id ? (
+                        <CircularProgress size={16} sx={{ color: "currentColor" }} />
+                      ) : (
+                        <DeleteIcon sx={{ fontSize: 18 }} />
+                      )}
+                    </button>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
         </TableBody>

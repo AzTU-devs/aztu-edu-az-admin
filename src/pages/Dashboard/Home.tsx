@@ -205,7 +205,11 @@ export default function Home() {
         </div>
 
         {/* Recent admin activity */}
-        <RecentActivityPanel items={stats?.admins.recent_activity} loading={loading} />
+        <RecentActivityPanel
+          items={stats?.admins.recent_activity}
+          loading={loading}
+          unavailable={stats?.unavailable?.includes("activity")}
+        />
       </div>
     </>
   );

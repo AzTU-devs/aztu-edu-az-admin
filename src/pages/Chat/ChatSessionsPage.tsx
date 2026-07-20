@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Pagination, Stack } from "@mui/material";
+import Swal from "sweetalert2";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -13,6 +14,7 @@ import ChatSessionsTable from "../../components/chat/ChatSessionsTable";
 import ChatStatsPanel from "../../components/chat/ChatStatsPanel";
 import { errorMessage } from "../../components/chat/chatFormat";
 import chatAdminService from "../../services/chat/chatAdminService";
+import usePermissions from "../../hooks/usePermissions";
 import type { ChatSessionListItem, ChatStats } from "../../types/chat";
 
 const PAGE_SIZE = 25;
@@ -27,6 +29,8 @@ export default function ChatSessionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<ChatStats | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { can } = usePermissions();
 
   useEffect(() => {
     chatAdminService.getStats().then(setStats).catch(() => setStats(null));
@@ -59,6 +63,39 @@ export default function ChatSessionsPage() {
   const handleReset = () => {
     setPage(1);
     setFilters(EMPTY_CHAT_FILTERS);
+  };
+
+  const handleDelete = async (sessionId: string) => {
+    const confirm = await Swal.fire({
+      title: "Söhbəti silmək istədiyinizə əminsiniz?",
+      text: "Söhbət və bütün mesajları silinəcək. Bu əməliyyat geri alına bilməz!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Bəli, sil",
+      cancelButtonText: "İmtina",
+      reverseButtons: true,
+    });
+    if (!confirm.isConfirmed) return;
+
+    setDeletingId(sessionId);
+    try {
+      await chatAdminService.deleteSession(sessionId);
+      Swal.fire({ icon: "success", title: "Uğurla silindi", showConfirmButton: false, timer: 1400 });
+      // Stepping back a page keeps the view from stranding on an empty last page.
+      if (items.length === 1 && page > 1) setPage((prev) => prev - 1);
+      else load();
+      chatAdminService.getStats().then(setStats).catch(() => undefined);
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Xəta",
+        text: errorMessage(err, "Söhbət silinərkən xəta baş verdi."),
+      });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -111,6 +148,8 @@ export default function ChatSessionsPage() {
                 loading={loading}
                 pageSize={PAGE_SIZE}
                 onSelect={(sessionId) => navigate(`/chat/sessions/${encodeURIComponent(sessionId)}`)}
+                onDelete={can("chat.delete") ? handleDelete : undefined}
+                deletingId={deletingId}
               />
 
               {pageCount > 1 && (

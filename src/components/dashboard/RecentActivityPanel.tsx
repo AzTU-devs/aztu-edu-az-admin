@@ -6,9 +6,11 @@ import type { ActivityItem } from "../../types/rbac";
 interface Props {
   items?: ActivityItem[];
   loading?: boolean;
+  /** The server could not read the activity log at all (e.g. table not migrated). */
+  unavailable?: boolean;
 }
 
-export default function RecentActivityPanel({ items, loading }: Props) {
+export default function RecentActivityPanel({ items, loading, unavailable }: Props) {
   return (
     <ComponentCard
       title="Son admin fəaliyyəti"
@@ -34,6 +36,13 @@ export default function RecentActivityPanel({ items, loading }: Props) {
             </li>
           ))}
         </ul>
+      ) : unavailable ? (
+        <div className="py-8 text-center text-sm text-amber-600 dark:text-amber-400">
+          Fəaliyyət jurnalı hazırda əlçatan deyil
+          <span className="mt-1 block text-xs text-gray-400 dark:text-gray-500">
+            Verilənlər bazası miqrasiyası tamamlanmayıb
+          </span>
+        </div>
       ) : !items?.length ? (
         <div className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
           Hələ heç bir fəaliyyət qeydə alınmayıb

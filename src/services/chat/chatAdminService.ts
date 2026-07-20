@@ -24,8 +24,9 @@ const clean = (query: ChatSessionListQuery): ChatSessionListQuery => {
 };
 
 /**
- * Read-only monitoring endpoints, all gated on `chat.read`. Responses carry
- * visitor IPs, so nothing here is persisted client side beyond component state.
+ * Chat monitoring. The reads are gated on `chat.read` and carry visitor IPs, so
+ * nothing here is persisted client side beyond component state. Deleting is a
+ * separate `chat.delete` grant.
  */
 const chatAdminService = {
   listSessions: async (
@@ -52,6 +53,13 @@ const chatAdminService = {
   getStats: async (): Promise<ChatStats> => {
     const response = await apiClient.get<ChatStatsResponse>("/api/chat/admin/stats");
     return response.data.data;
+  },
+
+  /** Removes the conversation and, by cascade, its messages. Not reversible. */
+  deleteSession: async (sessionId: string): Promise<void> => {
+    await apiClient.delete(
+      `/api/chat/admin/sessions/${encodeURIComponent(sessionId)}`
+    );
   },
 };
 
