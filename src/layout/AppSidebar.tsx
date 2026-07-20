@@ -10,11 +10,11 @@ import { useSidebar } from "../context/SidebarContext";
 import {
   filterNavGroups,
   findNavMatch,
-  navGroups,
   navItemKey,
   type NavGroup,
   type NavItem,
 } from "./navConfig";
+import useNavGroups from "./useNavGroups";
 
 const AppSidebar: React.FC = () => {
   const {
@@ -33,11 +33,16 @@ const AppSidebar: React.FC = () => {
   // is the rail showing its full width right now?
   const isOpen = isExpanded || isHovered || isMobileOpen;
 
-  const match = useMemo(() => findNavMatch(location.pathname), [location.pathname]);
-  const groups = useMemo(() => filterNavGroups(navGroups, query), [query]);
+  const visible = useNavGroups();
 
-  // findNavMatch always walks the unfiltered config, while filtering hands us
-  // cloned items — so identity has to be compared by key, never by reference.
+  const match = useMemo(
+    () => findNavMatch(location.pathname, visible),
+    [location.pathname, visible]
+  );
+  const groups = useMemo(() => filterNavGroups(visible, query), [visible, query]);
+
+  // Both filters hand back cloned items, so identity has to be compared by key,
+  // never by reference.
   const activeItemKey = match ? navItemKey(match.item) : null;
   const activeSubItemPath = match?.subItem?.path ?? null;
 

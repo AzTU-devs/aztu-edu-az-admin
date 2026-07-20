@@ -3,7 +3,8 @@ import Calendar from "./pages/Calendar";
 import Home from "./pages/Dashboard/Home";
 import AppLayout from "./layout/AppLayout";
 import SignIn from "./pages/AuthPages/SignIn";
-import SignUp from "./pages/AuthPages/SignUp";
+import Forbidden from "./pages/Forbidden";
+import RequirePermission from "./components/auth/RequirePermission";
 import { useSelector } from "react-redux";
 import { RootState } from "./redux/store";
 import { Navigate, Outlet } from "react-router";
@@ -61,6 +62,11 @@ import CollaborationDetailsPage from "./pages/Collaborations/CollaborationDetail
 import EmployeesPage from "./pages/Employees/EmployeesPage";
 import NewEmployeePage from "./pages/Employees/NewEmployeePage";
 import EmployeeDetailsPage from "./pages/Employees/EmployeeDetailsPage";
+import RolesPage from "./pages/Settings/RolesPage";
+import RoleEditorPage from "./pages/Settings/RoleEditorPage";
+import AdminUsersPage from "./pages/Settings/AdminUsersPage";
+import AdminUserEditorPage from "./pages/Settings/AdminUserEditorPage";
+import ActivityLogPage from "./pages/Settings/ActivityLogPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
 function ProtectedRoute() {
@@ -77,7 +83,16 @@ export default function App() {
           {/* Dashboard Layout — protected */}
           <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
+            {/*
+              One pathless guard covers every screen. It resolves the requirement
+              for the current pathname from src/config/routePermissions — the same
+              map the sidebar filters on — so a route can never be reachable but
+              hidden, or listed but forbidden. Paths absent from that map (/, /403,
+              /profile) carry no requirement and pass straight through.
+            */}
+            <Route element={<RequirePermission />}>
             <Route index path="/" element={<Home />} />
+            <Route path="/403" element={<Forbidden />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
@@ -171,12 +186,40 @@ export default function App() {
             <Route path="/menu-quick" element={<MenuQuickPage />} />
             <Route path="/menu-shared" element={<MenuSharedPage />} />
 
+            {/*
+              Settings. The outer pathless guard already resolves these from
+              routePermissions; the explicit `perm` here states the requirement
+              at the route itself so the two can be read side by side. Editors
+              open on the domain's read key and gate their own save buttons on
+              the write key — viewing a role without being able to change it is
+              a legitimate state.
+            */}
+            <Route element={<RequirePermission perm="roles.read" />}>
+              <Route path="/settings/roles" element={<RolesPage />} />
+              <Route path="/settings/roles/:role_id" element={<RoleEditorPage />} />
+            </Route>
+            <Route element={<RequirePermission perm="roles.create" />}>
+              <Route path="/settings/roles/new" element={<RoleEditorPage />} />
+            </Route>
+
+            <Route element={<RequirePermission perm="admin_users.read" />}>
+              <Route path="/settings/admin-users" element={<AdminUsersPage />} />
+              <Route path="/settings/admin-users/:user_id" element={<AdminUserEditorPage />} />
+            </Route>
+            <Route element={<RequirePermission perm="admin_users.create" />}>
+              <Route path="/settings/admin-users/new" element={<AdminUserEditorPage />} />
+            </Route>
+
+            <Route element={<RequirePermission perm="activity.read" />}>
+              <Route path="/settings/activity" element={<ActivityLogPage />} />
+            </Route>
+
+            </Route>
           </Route>
           </Route>
 
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />

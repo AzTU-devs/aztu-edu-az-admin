@@ -7,6 +7,7 @@ import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 import GlobalSearch from "../components/header/GlobalSearch";
 import { findNavMatch } from "./navConfig";
+import useNavGroups from "./useNavGroups";
 
 type Crumb = {
   label: string;
@@ -35,14 +36,17 @@ const AppHeader: React.FC = () => {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const visible = useNavGroups();
+
   /**
    * The trail is derived from the same nav config the sidebar renders, so the
    * two can never disagree about where the user is. Routes outside the menu
-   * (e.g. /profile) simply show the root crumb.
+   * (e.g. /profile) simply show the root crumb. It walks the permission-filtered
+   * tree, so the trail never names a section the sidebar hides.
    */
   const crumbs = useMemo<Crumb[]>(() => {
     const trail: Crumb[] = [{ label: "Əsas səhifə", path: "/" }];
-    const match = findNavMatch(location.pathname);
+    const match = findNavMatch(location.pathname, visible);
 
     if (!match || match.item.path === "/") return trail;
 
@@ -53,7 +57,7 @@ const AppHeader: React.FC = () => {
     }
 
     return trail;
-  }, [location.pathname]);
+  }, [location.pathname, visible]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
