@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import NewsMetric from "../../components/metrics/NewsMetric";
 import GaleryMetric from "../../components/metrics/GaleryMetric";
@@ -8,8 +10,12 @@ import FooterMenuMetric from "../../components/metrics/FooterMenuMetric";
 import ConferenceMetric from "../../components/metrics/ConferenceMetric";
 import AnnouncementMetric from "../../components/metrics/AnnouncementMetric";
 import CollaboratorMetric from "../../components/metrics/CollaboratorMetric";
-import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
-import { Link } from "react-router";
+import AcademicStructureCard from "../../components/dashboard/AcademicStructureCard";
+import VisitorsCard from "../../components/dashboard/VisitorsCard";
+import PublishingTrendChart from "../../components/dashboard/PublishingTrendChart";
+import RecentActivityPanel from "../../components/dashboard/RecentActivityPanel";
+import statsService from "../../services/stats/statsService";
+import type { DashboardStats } from "../../types/stats";
 
 const quickActions = [
   {
@@ -63,6 +69,38 @@ const quickActions = [
 ];
 
 export default function Home() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    statsService
+      .getDashboard()
+      .then((data) => {
+        if (!cancelled) {
+          setStats(data);
+          setError(null);
+        }
+      })
+      .catch(() => {
+        // Every tile falls back to a dash on its own; the banner explains why.
+        if (!cancelled) {
+          setError("Statistika yüklənə bilmədi");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const content = stats?.content;
+
   return (
     <>
       <PageMeta
@@ -107,6 +145,12 @@ export default function Home() {
           </div>
         </div>
 
+        {error && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
+            {error}. Göstəricilər tire (—) kimi göstərilir.
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -138,19 +182,30 @@ export default function Home() {
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          <NewsMetric />
-          <AnnouncementMetric />
-          <HeaderMenuMetric />
-          <FooterMenuMetric />
-          <ProjectMetric />
-          <ConferenceMetric />
-          <GaleryMetric />
-          <SliderMetric />
-          <CollaboratorMetric />
+          <NewsMetric value={content?.news} loading={loading} />
+          <AnnouncementMetric value={content?.announcements} loading={loading} />
+          <HeaderMenuMetric value={content?.header_menu_items} loading={loading} />
+          <FooterMenuMetric value={content?.footer_menu_items} loading={loading} />
+          <ProjectMetric value={content?.projects} loading={loading} />
+          <ConferenceMetric value={null} loading={loading} />
+          <GaleryMetric value={content?.gallery_images} loading={loading} />
+          <SliderMetric value={content?.sliders} loading={loading} />
+          <CollaboratorMetric value={content?.collaborators} loading={loading} />
         </div>
 
-        {/* Chart */}
-        <MonthlySalesChart />
+        {/* Visitors */}
+        <VisitorsCard visitors={stats?.visitors} loading={loading} />
+
+        {/* Trend + academic structure */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2">
+            <PublishingTrendChart trend={stats?.publishing_trend} loading={loading} />
+          </div>
+          <AcademicStructureCard academic={stats?.academic} loading={loading} />
+        </div>
+
+        {/* Recent admin activity */}
+        <RecentActivityPanel items={stats?.admins.recent_activity} loading={loading} />
       </div>
     </>
   );

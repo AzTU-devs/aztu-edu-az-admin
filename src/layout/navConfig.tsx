@@ -1,6 +1,7 @@
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CategoryIcon from '@mui/icons-material/Category';
+import ForumIcon from '@mui/icons-material/Forum';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import SchoolIcon from '@mui/icons-material/School';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -106,6 +107,21 @@ export const navGroups: NavGroup[] = [
         subItems: [
           { name: "Laboratoriyalar", path: "/research-laboratories" },
           { name: "Yeni laboratoriya", path: "/research-laboratories/new" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Çatbot",
+    permission: "chat.read",
+    items: [
+      {
+        icon: <ForumIcon />,
+        name: "Çat monitorinqi",
+        permission: "chat.read",
+        subItems: [
+          { name: "Söhbətlər", path: "/chat/sessions", permission: "chat.read" },
+          { name: "Statistika", path: "/chat/stats", permission: "chat.read" },
         ],
       },
     ],

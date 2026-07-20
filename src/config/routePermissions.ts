@@ -82,6 +82,9 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[]> = {
   "/menu-quick": MENU,
   "/menu-shared": MENU,
 
+  "/chat/sessions": "chat.read",
+  "/chat/stats": "chat.read",
+
   "/settings/roles": "roles.read",
   "/settings/roles/new": "roles.create",
   "/settings/admin-users": "admin_users.read",

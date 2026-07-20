@@ -67,6 +67,9 @@ import RoleEditorPage from "./pages/Settings/RoleEditorPage";
 import AdminUsersPage from "./pages/Settings/AdminUsersPage";
 import AdminUserEditorPage from "./pages/Settings/AdminUserEditorPage";
 import ActivityLogPage from "./pages/Settings/ActivityLogPage";
+import ChatSessionsPage from "./pages/Chat/ChatSessionsPage";
+import ChatSessionDetailPage from "./pages/Chat/ChatSessionDetailPage";
+import ChatStatsPage from "./pages/Chat/ChatStatsPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 
 function ProtectedRoute() {
@@ -212,6 +215,17 @@ export default function App() {
 
             <Route element={<RequirePermission perm="activity.read" />}>
               <Route path="/settings/activity" element={<ActivityLogPage />} />
+            </Route>
+
+            {/*
+              Chat monitoring. Transcripts and the session list expose visitor IP
+              addresses, so read access is its own key rather than inherited from
+              the chatbot knowledge domain.
+            */}
+            <Route element={<RequirePermission perm="chat.read" />}>
+              <Route path="/chat/sessions" element={<ChatSessionsPage />} />
+              <Route path="/chat/sessions/:session_id" element={<ChatSessionDetailPage />} />
+              <Route path="/chat/stats" element={<ChatStatsPage />} />
             </Route>
 
             </Route>

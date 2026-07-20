@@ -1,55 +1,27 @@
-import { useEffect, useState } from "react";
-import MenuIcon from '@mui/icons-material/Menu';
-import { Link } from "react-router";
+import MenuIcon from "@mui/icons-material/Menu";
+import MetricCard from "./MetricCard";
 
-export default function HeaderMenuMetric() {
-    const targetNumber = 254;
-    const [count, setCount] = useState(0);
+interface Props {
+  value?: number | null;
+  loading?: boolean;
+}
 
-    useEffect(() => {
-        let current = 0;
-        const duration = 1200;
-        const steps = 60;
-        const increment = targetNumber / steps;
-        const stepTime = duration / steps;
-
-        const interval = setInterval(() => {
-            current += increment;
-            if (current >= targetNumber) {
-                setCount(targetNumber);
-                clearInterval(interval);
-            } else {
-                setCount(Math.floor(current));
-            }
-        }, stepTime);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    return (
-        <Link to="/menu-header" className="group relative overflow-hidden rounded-2xl bg-white border border-gray-100 dark:border-gray-800 dark:bg-gray-900 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 block">
-            {/* Top accent bar */}
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-purple-500 to-purple-400 rounded-t-2xl" />
-
-            {/* Icon */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-900/20">
-                    <MenuIcon style={{ fontSize: 20 }} className="text-purple-600 dark:text-purple-400" />
-                </div>
-                <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full">
-                    Header
-                </span>
-            </div>
-
-            {/* Count */}
-            <h4 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {count.toLocaleString()}
-            </h4>
-
-            {/* Label */}
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-0.5">
-                Menyu sayı (header)
-            </p>
-        </Link>
-    );
+export default function HeaderMenuMetric({ value, loading }: Props) {
+  return (
+    <MetricCard
+      to="/menu-header"
+      label="Menyu sayı (header)"
+      value={value}
+      loading={loading}
+      accentBar="bg-gradient-to-r from-purple-500 to-purple-400"
+      iconWrap="bg-purple-50 dark:bg-purple-900/20"
+      badge="text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20"
+      icon={
+        <MenuIcon
+          style={{ fontSize: 20 }}
+          className="text-purple-600 dark:text-purple-400"
+        />
+      }
+    />
+  );
 }
