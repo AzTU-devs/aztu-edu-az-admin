@@ -147,7 +147,9 @@ export default function Cafedras() {
                   {cafedra.faculty_code}
                 </span>
               </div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "40%" }}>{cafedra.cafedra_name}</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "40%" }}>
+                {cafedra.cafedra_name ?? cafedra.title ?? "—"}
+              </p>
               <div className="flex justify-end items-center gap-1" style={{ width: "25%" }}>
                 <Link to={`/cafedras/${cafedra.cafedra_code}/view`}>
                   <button className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" title="Bax"><RemoveRedEyeIcon sx={{ fontSize: 18 }} /></button>

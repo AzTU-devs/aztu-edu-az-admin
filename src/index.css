@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Outfit:wght@100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap')
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap')
 layer(base);
 
 @import "tailwindcss";
@@ -7,9 +7,9 @@ layer(base);
 
 @theme {
   --font-*: initial;
-  /* Noto Sans stays in the stack as the fallback: Outfit has no glyph for every
-     Azerbaijani diacritic, and the whole UI is written in Azerbaijani. */
-  --font-outfit: Outfit, "Noto Sans", sans-serif;
+  /* Noto Sans covers the full Azerbaijani set (ə ş ğ ç ö ü ı İ) consistently on
+     both macOS and Windows, which is why it leads rather than sits in fallback. */
+  --font-sans: "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
@@ -218,7 +218,7 @@ layer(base);
     cursor: pointer;
   }
   body {
-    @apply relative font-normal font-outfit z-1 bg-gray-50 dark:bg-gray-950;
+    @apply relative font-normal font-sans z-1 bg-gray-50 dark:bg-gray-950;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }

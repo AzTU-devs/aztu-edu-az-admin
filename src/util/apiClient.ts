@@ -21,6 +21,13 @@ apiClient.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
 
+        // The API defaults to English when no language is asked for, so list
+        // endpoints returned null titles for records only authored in Azerbaijani.
+        // This dashboard is Azerbaijani, so ask for it explicitly.
+        if (!config.headers["Accept-Language"]) {
+            config.headers["Accept-Language"] = "az";
+        }
+
         return config;
     },
     (error) => {
