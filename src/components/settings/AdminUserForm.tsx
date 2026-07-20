@@ -2,14 +2,21 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
+import ImageField from "../Cafedras/form/fields/ImageField";
 import type { RoleListItem } from "../../types/rbac";
 import { SUPER_ADMIN_CODE } from "../../types/rbac";
 
 export interface AdminUserFormValues {
   username: string;
   password: string;
+  first_name: string;
+  last_name: string;
   role_id: number | null;
   is_active: boolean;
+  /** Already-saved path from the API — null until an image is uploaded. */
+  profile_image: string | null;
+  /** Picked but not yet uploaded; the editor sends it after the account is saved. */
+  profile_image_files: File[];
 }
 
 interface AdminUserFormProps {
@@ -81,6 +88,32 @@ export default function AdminUserForm({
           />
         </div>
 
+        <div>
+          <Label htmlFor="admin-first-name">Ad</Label>
+          <Input
+            id="admin-first-name"
+            value={values.first_name}
+            disabled={disabled}
+            error={Boolean(errors.first_name)}
+            hint={errors.first_name}
+            placeholder="Nigar"
+            onChange={(event) => set("first_name", event.target.value)}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="admin-last-name">Soyad</Label>
+          <Input
+            id="admin-last-name"
+            value={values.last_name}
+            disabled={disabled}
+            error={Boolean(errors.last_name)}
+            hint={errors.last_name}
+            placeholder="Əliyeva"
+            onChange={(event) => set("last_name", event.target.value)}
+          />
+        </div>
+
         {!isEdit && (
           <div>
             <Label htmlFor="admin-password">
@@ -133,6 +166,18 @@ export default function AdminUserForm({
             checked={values.is_active}
             disabled={activeLocked}
             onChange={(checked) => set("is_active", checked)}
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <ImageField
+            label="Profil şəkli"
+            imageUrl={values.profile_image}
+            files={values.profile_image_files}
+            onSelect={(files) => set("profile_image_files", files.slice(0, 1))}
+            onRemovePending={() => set("profile_image_files", [])}
+            disabled={disabled}
+            hint="PNG, JPG, WEBP — istəyə bağlı"
           />
         </div>
       </div>

@@ -16,6 +16,7 @@ import Badge from "../../components/ui/badge/Badge";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
 import LastLoginCell from "../../components/settings/LastLoginCell";
 import usePermissions from "../../hooks/usePermissions";
+import { getImageUrl } from "../../util/imageUrl";
 import adminUserService from "../../services/adminUsers/adminUserService";
 import rbacService from "../../services/rbac/rbacService";
 import type { RootState } from "../../redux/store";
@@ -25,6 +26,19 @@ const PAGE_SIZE = 25;
 
 const headClass =
   "px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500";
+
+/** Existing accounts predate first_name/last_name — the username is the fallback. */
+const displayNameOf = (user: AdminUserListItem): string =>
+  [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username;
+
+const initialsOf = (name: string): string =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toLocaleUpperCase("az");
 
 const errorMessage = (error: unknown, fallback: string): string => {
   const response = (error as { response?: { data?: { message?: string } } })?.response;
@@ -306,6 +320,8 @@ export default function AdminUsersPage() {
                   {items.map((user) => {
                     const isSelf = user.id === currentUserId;
                     const locked = isProtected(user);
+                    const displayName = displayNameOf(user);
+                    const hasName = displayName !== user.username;
 
                     return (
                       <TableRow
@@ -314,12 +330,20 @@ export default function AdminUsersPage() {
                       >
                         <TableCell className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
-                              {user.username.slice(0, 2).toLocaleUpperCase("az")}
-                            </span>
+                            {user.profile_image ? (
+                              <img
+                                src={getImageUrl(user.profile_image)}
+                                alt=""
+                                className="h-9 w-9 shrink-0 rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
+                                {initialsOf(displayName)}
+                              </span>
+                            )}
                             <div>
                               <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                                {user.username}
+                                {displayName}
                                 {isSelf && (
                                   <span className="ml-2 text-xs font-normal text-gray-400">
                                     (siz)
@@ -327,6 +351,7 @@ export default function AdminUsersPage() {
                                 )}
                               </p>
                               <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                                {hasName ? `${user.username} · ` : ""}
                                 {new Date(user.created_at).toLocaleDateString("az-AZ")} tarixindən
                               </p>
                             </div>

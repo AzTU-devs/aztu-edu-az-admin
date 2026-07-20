@@ -8,18 +8,24 @@ import { useDispatch, useSelector } from "react-redux";
 import authService from "../../services/auth/authService";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import usePermissions from "../../hooks/usePermissions";
+import { getImageUrl } from "../../util/imageUrl";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { name, surname, email, username } = useSelector((state: RootState) => state.auth);
+  const { name, surname, email, username, first_name, last_name, profile_image } = useSelector(
+    (state: RootState) => state.auth
+  );
   const { canAny, roleName } = usePermissions();
 
-  // Admin accounts only ever carry a username; the name/surname pair is legacy.
-  const displayName = name || username || "İstifadəçi";
-  const fullName = [name, surname].filter(Boolean).join(" ") || username || "İstifadəçi";
+  // first_name/last_name come from the admin account itself; the name/surname
+  // pair is legacy and accounts created before them carry only a username.
+  const accountName = [first_name, last_name].filter(Boolean).join(" ");
+  const legacyName = [name, surname].filter(Boolean).join(" ");
+  const displayName = first_name || name || username || "İstifadəçi";
+  const fullName = accountName || legacyName || username || "İstifadəçi";
   const initial = displayName.charAt(0).toUpperCase();
 
   const canOpenSettings = canAny(["roles.read", "admin_users.read", "activity.read"]);
@@ -50,9 +56,13 @@ export default function UserDropdown() {
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11 bg-brand-100 dark:bg-brand-900 flex items-center justify-center">
-          <span className="text-brand-600 dark:text-brand-300 font-semibold text-sm">
-            {initial}
-          </span>
+          {profile_image ? (
+            <img src={getImageUrl(profile_image)} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-brand-600 dark:text-brand-300 font-semibold text-sm">
+              {initial}
+            </span>
+          )}
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">{displayName}</span>

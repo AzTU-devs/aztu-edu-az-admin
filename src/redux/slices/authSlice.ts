@@ -24,6 +24,9 @@ interface AuthState {
   token: string | null;
   user_id: number | null;
   username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  profile_image: string | null;
   role: RoleRef | null;
   permissions: string[];
   is_super_admin: boolean;
@@ -44,6 +47,9 @@ const initialState: AuthState = {
   token: null,
   user_id: null,
   username: null,
+  first_name: null,
+  last_name: null,
+  profile_image: null,
   role: null,
   permissions: [],
   is_super_admin: false,
@@ -93,6 +99,9 @@ const authSlice = createSlice({
       const me = action.payload;
       state.user_id = me.id;
       state.username = me.username;
+      state.first_name = me.first_name ?? null;
+      state.last_name = me.last_name ?? null;
+      state.profile_image = me.profile_image ?? null;
       state.is_active = me.is_active;
       state.last_login_at = me.last_login_at;
       state.role = me.role;

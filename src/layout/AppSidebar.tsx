@@ -197,27 +197,29 @@ const AppSidebar: React.FC = () => {
           isOpen ? "justify-between" : "lg:justify-center"
         }`}
       >
-        <Link to="/" className="flex items-center gap-2.5 overflow-hidden">
+        <Link to="/" className="flex min-w-0 items-center gap-2.5 overflow-hidden">
+          {/*
+            The mark is portrait (roughly 2873x3932). Tailwind's preflight forces
+            `height: auto` on images, so sizing it by width lets the height run to
+            ~85px and spill out of the header — constrain the height and let the
+            width follow the aspect ratio instead.
+          */}
           <img
-            className="shrink-0 dark:hidden"
+            className="h-9 w-auto shrink-0 object-contain dark:hidden"
             src="/images/aztu-logo-dark.png"
             alt="AzTU"
-            width={isOpen ? 62 : 34}
-            height={isOpen ? 32 : 34}
           />
           <img
-            className="hidden shrink-0 dark:block"
+            className="hidden h-9 w-auto shrink-0 object-contain dark:block"
             src="/images/aztu-logo-light.png"
             alt="AzTU"
-            width={isOpen ? 62 : 34}
-            height={isOpen ? 32 : 34}
           />
           {isOpen && (
-            <span className="flex flex-col leading-tight">
-              <span className="text-theme-sm font-semibold text-gray-900 dark:text-white">
+            <span className="flex min-w-0 flex-col leading-tight">
+              <span className="truncate text-theme-sm font-semibold text-gray-900 dark:text-white">
                 AzTU Admin
               </span>
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+              <span className="truncate text-[11px] text-gray-400 dark:text-gray-500">
                 aztu.edu.az
               </span>
             </span>

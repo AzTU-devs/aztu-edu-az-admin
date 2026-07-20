@@ -126,6 +126,9 @@ export type RoleCreateResponse = ApiData<{ id: number }>;
 export interface MeData {
   id: number;
   username: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_image: string | null;
   is_active: boolean;
   last_login_at: string | null;
   role: RoleRef | null;
@@ -149,6 +152,9 @@ export type MeResponse = ApiData<MeData>;
 export interface AdminUserListItem {
   id: number;
   username: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_image: string | null;
   is_active: boolean;
   role: AdminUserRoleRef | null;
   created_at: string;
@@ -166,12 +172,17 @@ export interface AdminUserListQuery {
 export interface AdminUserCreatePayload {
   username: string;
   password: string;
+  first_name: string;
+  last_name: string;
   role_id: number;
   is_active: boolean;
 }
 
+/** profile_image is absent by design — it moves through its own upload endpoint. */
 export interface AdminUserUpdatePayload {
   username: string;
+  first_name: string;
+  last_name: string;
   is_active: boolean;
 }
 

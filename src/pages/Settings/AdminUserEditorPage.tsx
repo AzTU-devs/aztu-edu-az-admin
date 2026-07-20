@@ -18,8 +18,12 @@ import { SUPER_ADMIN_CODE, type AdminUserListItem, type RoleListItem } from "../
 const EMPTY_FORM: AdminUserFormValues = {
   username: "",
   password: "",
+  first_name: "",
+  last_name: "",
   role_id: null,
   is_active: true,
+  profile_image: null,
+  profile_image_files: [],
 };
 
 const errorMessage = (error: unknown, fallback: string): string => {
@@ -56,7 +60,8 @@ export default function AdminUserEditorPage() {
      * edited is picked out of it. That same page also answers "is this the last
      * active super admin" (invariant R4) without a second endpoint.
      */
-    Promise.all([rbacService.getRoles(), adminUserService.list({ page: 1, page_size: 200 })])
+    // 100 is the server's cap; asking for more is a 422, not a clamp.
+    Promise.all([rbacService.getRoles(), adminUserService.list({ page: 1, page_size: 100 })])
       .then(([roleList, page]) => {
         if (cancelled) return;
         setRoles(roleList);
@@ -79,8 +84,12 @@ export default function AdminUserEditorPage() {
           setForm({
             username: found.username,
             password: "",
+            first_name: found.first_name ?? "",
+            last_name: found.last_name ?? "",
             role_id: found.role?.id ?? null,
             is_active: found.is_active,
+            profile_image: found.profile_image,
+            profile_image_files: [],
           });
         }
       })
@@ -113,12 +122,27 @@ export default function AdminUserEditorPage() {
 
     try {
       if (isNew) {
-        await adminUserService.create({
+        const createdId = await adminUserService.create({
           username: form.username.trim(),
           password: form.password,
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim(),
           role_id: form.role_id,
           is_active: form.is_active,
         });
+        // The account already exists at this point, so an image failure must not
+        // send the admin back to a form that would now 409 on the username.
+        if (form.profile_image_files.length > 0) {
+          try {
+            await adminUserService.uploadProfileImage(createdId, form.profile_image_files[0]);
+          } catch (err) {
+            Swal.fire({
+              icon: "warning",
+              title: "Hesab yaradıldı, şəkil yüklənmədi",
+              text: errorMessage(err, "Profil şəklini redaktə səhifəsindən yenidən yükləyin."),
+            });
+          }
+        }
         await Swal.fire({
           icon: "success",
           title: "İstifadəçi yaradıldı",
@@ -133,8 +157,15 @@ export default function AdminUserEditorPage() {
 
       await adminUserService.update(userId, {
         username: form.username.trim(),
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
         is_active: form.is_active,
       });
+
+      if (form.profile_image_files.length > 0) {
+        const path = await adminUserService.uploadProfileImage(userId, form.profile_image_files[0]);
+        setForm((prev) => ({ ...prev, profile_image: path, profile_image_files: [] }));
+      }
 
       if (form.role_id !== initialRoleId && can("admin_users.assign_role")) {
         await adminUserService.assignRole(userId, { role_id: form.role_id });
@@ -193,7 +224,8 @@ export default function AdminUserEditorPage() {
   };
 
   const canEdit = isNew ? can("admin_users.create") : can("admin_users.update");
-  const title = isNew ? "Yeni istifadəçi" : user?.username ?? "İstifadəçi";
+  const fullName = user ? [user.first_name, user.last_name].filter(Boolean).join(" ") : "";
+  const title = isNew ? "Yeni istifadəçi" : fullName || user?.username || "İstifadəçi";
 
   if (loading) {
     return (

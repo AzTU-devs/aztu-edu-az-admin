@@ -30,6 +30,16 @@ const adminUserService = {
     return response.data;
   },
 
+  uploadProfileImage: async (userId: number, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("image", file);
+    const response = await apiClient.put<ApiData<{ profile_image: string }>>(
+      `/api/admin-users/${userId}/profile-image`,
+      formData
+    );
+    return response.data.data.profile_image;
+  },
+
   assignRole: async (
     userId: number,
     payload: AdminUserAssignRolePayload
