@@ -37,6 +37,9 @@ import NewsCategoriesPage from "./pages/NewsCategories/NewsCategoriesPage";
 import ResearchInstitutesPage from "./pages/ResearchInstitute/ResearchInstitutesPage";
 import NewResearchInstitutePage from "./pages/ResearchInstitute/NewResearchInstitutePage";
 import ResearchInstituteDetailsPage from "./pages/ResearchInstitute/ResearchInstituteDetailsPage";
+import ResearchProjectsPage from "./pages/ResearchProject/ResearchProjectsPage";
+import NewResearchProjectPage from "./pages/ResearchProject/NewResearchProjectPage";
+import ResearchProjectDetailsPage from "./pages/ResearchProject/ResearchProjectDetailsPage";
 import ResearchLaboratoriesPage from "./pages/ResearchLaboratory/ResearchLaboratoriesPage";
 import NewResearchLaboratoryPage from "./pages/ResearchLaboratory/NewResearchLaboratoryPage";
 import ResearchLaboratoryDetailsPage from "./pages/ResearchLaboratory/ResearchLaboratoryDetailsPage";
@@ -147,6 +150,11 @@ export default function App() {
             <Route path="/research-institutes" element={<ResearchInstitutesPage />} />
             <Route path="/research-institutes/new" element={<NewResearchInstitutePage />} />
             <Route path="/research-institutes/:institute_code" element={<ResearchInstituteDetailsPage />} />
+
+            {/* Research Projects */}
+            <Route path="/research-projects" element={<ResearchProjectsPage />} />
+            <Route path="/research-projects/new" element={<NewResearchProjectPage />} />
+            <Route path="/research-projects/:project_code" element={<ResearchProjectDetailsPage />} />
 
             {/* Research Laboratories */}
             <Route path="/research-laboratories" element={<ResearchLaboratoriesPage />} />
