@@ -17,6 +17,7 @@ import {
   PublicationIndex,
   PublicationQuartile,
   PublicationRowValue,
+  PatentRowValue,
   RichTextRowValue,
   ScientificIntrosValue,
 } from "../../../../types/scientificActivity";
@@ -25,17 +26,21 @@ import {
   createPartnerCompany,
   createProject,
   createPublication,
+  createPatent,
   createResearchArea,
   deletePartnerCompany,
   deleteProject,
   deletePublication,
+  deletePatent,
   deleteResearchArea,
   emptyScientificIntros,
   getScientificActivityBilingual,
   reorderPublications,
+  reorderPatents,
   updatePartnerCompany,
   updateProject,
   updatePublication,
+  updatePatent,
   updateResearchArea,
   updateScientificIntros,
   uploadPartnerCompanyLogo,
@@ -54,6 +59,7 @@ const INTRO_FIELDS: { key: IntroKey; label: string }[] = [
   { key: "research_areas_intro", label: "Elmi-tədqiqat istiqamətləri" },
   { key: "projects_grants_intro", label: "Layihələr və qrantlar" },
   { key: "publications_intro", label: "Elmi nəşrlər" },
+  { key: "patents_intro", label: "Patentlər" },
   { key: "industry_cooperation_intro", label: "Sənaye ilə əməkdaşlıq" },
   { key: "international_cooperation_intro", label: "Beynəlxalq əməkdaşlıq" },
 ];
@@ -414,6 +420,197 @@ function PublicationsPanel({
   );
 }
 
+// ─── Patents ─────────────────────────────────────────────────────────────────
+
+const emptyPatent = (year: number | ""): PatentRowValue => ({
+  uid: uid(),
+  patent_number: "",
+  year,
+  url: "",
+  az: { title: "", authors: "" },
+  en: { title: "", authors: "" },
+});
+
+function PatentForm({
+  value,
+  onChange,
+  editorKey,
+  no,
+}: {
+  value: PatentRowValue;
+  onChange: (next: PatentRowValue) => void;
+  editorKey: number;
+  no: string;
+}) {
+  const setTr = (lang: "az" | "en", field: "title" | "authors", v: string) =>
+    onChange({ ...value, [lang]: { ...value[lang], [field]: v } });
+
+  return (
+    <div className="space-y-5">
+      <div className="w-32">
+        <Label className={fieldLabel}>№</Label>
+        <Input value={no} disabled readOnly />
+      </div>
+
+      <LangPair
+        az={
+          <>
+            <div>
+              <Label className={fieldLabel}>Patentin adı</Label>
+              <TextArea rows={2} value={value.az.title} placeholder="Alüminium oksidin alınması üsulu" onChange={(v) => setTr("az", "title", v)} />
+            </div>
+            <div>
+              <Label className={fieldLabel}>Müəlliflər</Label>
+              <TextArea rows={3} value={value.az.authors} placeholder="İbrahimov Əli, Namazov Sübhan" onChange={(v) => setTr("az", "authors", v)} />
+            </div>
+          </>
+        }
+        en={
+          <>
+            <div>
+              <Label className={fieldLabel}>Patent title</Label>
+              <TextArea rows={2} value={value.en.title} placeholder="Method for producing aluminium oxide" onChange={(v) => setTr("en", "title", v)} />
+            </div>
+            <div>
+              <Label className={fieldLabel}>Authors</Label>
+              <TextArea rows={3} value={value.en.authors} placeholder="Ibrahimov Ali, Namazov Subhan" onChange={(v) => setTr("en", "authors", v)} />
+            </div>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <Label className={fieldLabel}>Patentin nömrəsi</Label>
+          {/* Free text: real numbers vary ("İ 2024 0058", "№053029"). */}
+          <Input value={value.patent_number} placeholder="İ 2024 0058 və ya №053029" onChange={(e) => onChange({ ...value, patent_number: e.target.value })} />
+        </div>
+        <div>
+          <Label className={fieldLabel}>İl</Label>
+          <select
+            key={`patent-year-${editorKey}`}
+            className={selectClass}
+            value={value.year === "" ? "" : String(value.year)}
+            onChange={(e) => onChange({ ...value, year: e.target.value === "" ? "" : Number(e.target.value) })}
+          >
+            <option value="">—</option>
+            {YEAR_OPTIONS.map((year) => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <Label className={fieldLabel}>Keçid (URL)</Label>
+        <Input value={value.url} placeholder="https://…" onChange={(e) => onChange({ ...value, url: e.target.value })} />
+      </div>
+    </div>
+  );
+}
+
+function PatentsPanel({
+  cafedraCode,
+  patents,
+  onChanged,
+}: {
+  cafedraCode: string;
+  patents: PatentRowValue[];
+  onChanged: () => void;
+}) {
+  const [openYears, setOpenYears] = useState<Record<string, boolean>>({});
+
+  const groups = new Map<number | "", PatentRowValue[]>();
+  for (const row of patents) {
+    const key = row.year === "" || row.year === null ? "" : row.year;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(row);
+  }
+  if (!groups.has(CURRENT_YEAR)) groups.set(CURRENT_YEAR, []);
+
+  const years = [...groups.keys()].sort((a, b) => {
+    if (a === "") return 1;
+    if (b === "") return -1;
+    return b - a;
+  });
+
+  const toPayload = (value: PatentRowValue) => ({
+    patent_number: value.patent_number,
+    year: value.year,
+    url: cleanUrl(value.url),
+    az: value.az,
+    en: value.en,
+  });
+
+  return (
+    <div className="space-y-4">
+      {years.map((year) => {
+        const rows = groups.get(year)!;
+        const label = year === "" ? "Digər" : String(year);
+        const isOpen = openYears[label] ?? year === CURRENT_YEAR;
+        return (
+          <div key={label} className="rounded-2xl border border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => setOpenYears((prev) => ({ ...prev, [label]: !isOpen }))}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            >
+              <span className="flex items-center gap-3">
+                <svg
+                  className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? "rotate-90" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="text-base font-semibold text-gray-800 dark:text-gray-100">{label}</span>
+              </span>
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                {rows.length} patent
+              </span>
+            </button>
+            {isOpen ? (
+              <div className="border-t border-gray-100 px-2 pb-2 dark:border-gray-800">
+                <EntityManager<PatentRowValue, PatentRowValue>
+                  title={`Patentlər — ${label}`}
+                  items={rows}
+                  getId={(item) => item.id as number}
+                  getPrimary={(item) => item.az.title || item.en.title || "Adsız patent"}
+                  getSecondary={(item) => [item.patent_number, item.az.authors].filter(Boolean).join(" · ")}
+                  toFormValue={(item) => ({ ...item })}
+                  emptyValue={() => emptyPatent(year === "" ? "" : year)}
+                  validate={(value) => (value.az.title.trim() === "" ? "AZ patent adı tələb olunur." : null)}
+                  renderForm={(value, onChange, helpers) => (
+                    <PatentForm
+                      value={value}
+                      onChange={onChange}
+                      editorKey={helpers.editorKey}
+                      no={
+                        value.id
+                          ? String(rows.findIndex((r) => r.id === value.id) + 1)
+                          : String(rows.length + 1)
+                      }
+                    />
+                  )}
+                  onCreate={(value) => createPatent(cafedraCode, toPayload(value))}
+                  onUpdate={(id, value) => updatePatent(id, toPayload(value))}
+                  onDelete={(id) => deletePatent(id)}
+                  onReorder={(ids) => reorderPatents(cafedraCode, ids)}
+                  onChanged={onChanged}
+                  emptyText="Bu il üçün patent yoxdur."
+                  modalClassName="max-w-4xl mx-4 my-8 max-h-[90vh] overflow-y-auto p-6 sm:p-8"
+                />
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
 interface ScientificActivityTabProps {
@@ -600,6 +797,10 @@ export default function ScientificActivityTab({ cafedraCode, onGoToLaboratories 
 
       <Panel title="Elmi nəşrlər" count={data?.publications.length ?? 0}>
         <PublicationsPanel cafedraCode={cafedraCode} publications={data?.publications ?? []} onChanged={load} />
+      </Panel>
+
+      <Panel title="Patentlər" count={data?.patents.length ?? 0}>
+        <PatentsPanel cafedraCode={cafedraCode} patents={data?.patents ?? []} onChanged={load} />
       </Panel>
 
       <Panel title="Sənaye ilə əməkdaşlıq" count={data?.industry_cooperation.length ?? 0}>

@@ -9,6 +9,7 @@ import type {
     PublicationIndex,
     PublicationQuartile,
     PublicationRowValue,
+    PatentRowValue,
     PublicationYearBucket,
     RichTextRowValue,
     ScientificIntrosValue,
@@ -49,6 +50,14 @@ export interface PublicationPayload {
     en: { title: string; authors: string; journal: string; country: string };
 }
 
+export interface PatentPayload {
+    patent_number: string;
+    year: number | "" | null;
+    url: string;
+    az: { title: string; authors: string };
+    en: { title: string; authors: string };
+}
+
 export interface ScientificActivityBilingual {
     cafedra_code: string;
     intros: ScientificIntrosValue;
@@ -56,6 +65,8 @@ export interface ScientificActivityBilingual {
     projects_grants: ProjectRowValue[];
     publications: PublicationRowValue[];
     publication_years: PublicationYearBucket[];
+    patents: PatentRowValue[];
+    patent_years: PublicationYearBucket[];
     industry_cooperation: PartnerRowValue[];
     laboratories: LaboratoryRefItem[];
 }
@@ -66,6 +77,7 @@ const INTRO_KEYS: IntroKey[] = [
     "research_areas_intro",
     "projects_grants_intro",
     "publications_intro",
+    "patents_intro",
     "industry_cooperation_intro",
     "international_cooperation_intro",
 ];
@@ -106,6 +118,7 @@ const introsOf = (az: CafedraScientificActivity, en: CafedraScientificActivity):
         research_areas_intro: az.sections.research_areas.intro_html ?? "",
         projects_grants_intro: az.sections.projects_grants.intro_html ?? "",
         publications_intro: az.sections.publications.intro_html ?? "",
+        patents_intro: az.sections.patents?.intro_html ?? "",
         industry_cooperation_intro: az.sections.industry_cooperation.intro_html ?? "",
         international_cooperation_intro: az.sections.international_cooperation.intro_html ?? "",
     },
@@ -113,6 +126,7 @@ const introsOf = (az: CafedraScientificActivity, en: CafedraScientificActivity):
         research_areas_intro: en.sections.research_areas.intro_html ?? "",
         projects_grants_intro: en.sections.projects_grants.intro_html ?? "",
         publications_intro: en.sections.publications.intro_html ?? "",
+        patents_intro: en.sections.patents?.intro_html ?? "",
         industry_cooperation_intro: en.sections.industry_cooperation.intro_html ?? "",
         international_cooperation_intro: en.sections.international_cooperation.intro_html ?? "",
     },
@@ -171,6 +185,20 @@ export const getScientificActivityBilingual = async (
             })
         ),
         publication_years: az.sections.publications.years ?? [],
+        // Optional-chained: a backend that predates the patents section returns
+        // no key at all, and the form must still load rather than crash.
+        patents: mergeById(az.sections.patents?.items ?? [], en.sections.patents?.items ?? []).map(
+            ({ a, e }): PatentRowValue => ({
+                uid: uid(),
+                id: a.id,
+                patent_number: a.patent_number ?? "",
+                year: a.year ?? "",
+                url: a.url ?? "",
+                az: { title: a.title ?? "", authors: a.authors ?? "" },
+                en: { title: e?.title ?? "", authors: e?.authors ?? "" },
+            })
+        ),
+        patent_years: az.sections.patents?.years ?? [],
         industry_cooperation: mergeById(az.sections.industry_cooperation.items, en.sections.industry_cooperation.items).map(
             ({ a, e }): PartnerRowValue => ({
                 uid: uid(),
@@ -277,3 +305,13 @@ export const deletePublication = (itemId: number) =>
 // Reordering operates within a single year group; `ids` is that group in its new order.
 export const reorderPublications = (cafedraCode: string, ids: number[]) =>
     _update(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/publications/reorder`, { ids });
+
+// Patents
+export const createPatent = (cafedraCode: string, payload: PatentPayload) =>
+    _create(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/patents`, payload);
+export const updatePatent = (itemId: number, payload: PatentPayload) =>
+    _update(`${CAFEDRA_ADMIN_BASE}/patents/${itemId}`, payload);
+export const deletePatent = (itemId: number) =>
+    _delete(`${CAFEDRA_ADMIN_BASE}/patents/${itemId}`);
+export const reorderPatents = (cafedraCode: string, ids: number[]) =>
+    _update(`${CAFEDRA_ADMIN_BASE}/${cafedraCode}/patents/reorder`, { ids });
