@@ -1,14 +1,26 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { CircularProgress } from "@mui/material";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import EditIcon from "@mui/icons-material/Edit";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import MenuModal from "./MenuModal";
 import {
   AdminMenuHeader,
@@ -25,6 +37,16 @@ import {
   updateHeaderSubItem,
   deleteHeaderSubItem,
 } from "../../services/menu/menuService";
+
+type MutateResult = "SUCCESS" | "NOT FOUND" | "ERROR";
+
+/** Row identity for dnd-kit: a one-letter level tag plus the row id. */
+type Kind = "h" | "i" | "s";
+const rowKey = (kind: Kind, id: number) => `${kind}${id}`;
+const rowId = (key: string) => Number(key.slice(1));
+
+const toast = (icon: "success" | "error" | "warning", title: string) =>
+  Swal.fire({ icon, title, timer: icon === "success" ? 1400 : 2400, showConfirmButton: false });
 
 // ── slug preview helper ─────────────────────────────────────
 function makeSlug(title: string): string {
@@ -43,23 +65,43 @@ function makeSlug(title: string): string {
     .replace(/^-|-$/g, "");
 }
 
-// ── helpers ────────────────────────────────────────────────
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+const sortByOrder = <T extends { display_order: number }>(rows: T[]) =>
+  [...rows].sort((a, b) => a.display_order - b.display_order);
+
+/** Per-language slug of a row, falling back to whichever translation exists. */
+const slugOf = (
+  row: { slug_az?: string; slug_en?: string; slug?: string | null } | undefined,
+  lang: "az" | "en"
+) => (lang === "az" ? row?.slug_az : row?.slug_en) || row?.slug || "";
+
+const MODAL_TITLES = {
+  header: { create: "Yeni başlıq", edit: "Başlığı redaktə et" },
+  item: { create: "Yeni element", edit: "Elementi redaktə et" },
+  subitem: { create: "Yeni alt-element", edit: "Alt-elementi redaktə et" },
+} as const;
+
+// ── small building blocks ───────────────────────────────────
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
       {children}
+      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
     </div>
   );
 }
 
-function Input({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+function Input({
+  value,
+  onChange,
+  placeholder,
+}: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <input
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
     />
   );
 }
@@ -78,758 +120,906 @@ function SlugPreview({
   if (!slug) return null;
   const prefix = parentPath ? `/${parentPath}` : "";
   return (
-    <p className="text-xs text-gray-400 mt-1 font-mono">
+    <p className="mt-1 font-mono text-xs text-gray-400">
       {lang}: <span className="text-blue-500">/{lang}{prefix}/{slug}</span>
     </p>
   );
 }
 
-// ── types for breadcrumb nav ────────────────────────────────
-type View = "headers" | "items" | "subitems";
+/** Controlled on purpose — the shared `form/switch/Switch` keeps its own state,
+ *  which would drift from the server whenever a save is rejected. */
+function ActiveToggle({
+  checked,
+  disabled,
+  onChange,
+}: { checked: boolean; disabled?: boolean; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={onChange}
+      title={checked ? "Saytda görünür — gizlətmək üçün klikləyin" : "Saytda gizlidir — göstərmək üçün klikləyin"}
+      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
+        checked ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
+          checked ? "left-[1.125rem]" : "left-0.5"
+        }`}
+      />
+    </button>
+  );
+}
+
+function SortableRow({
+  id,
+  disabled,
+  children,
+}: { id: string; disabled: boolean; children: ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled,
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      className="flex items-stretch gap-1.5"
+    >
+      {disabled ? (
+        <span className="w-6 shrink-0" />
+      ) : (
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          title="Sıralamaq üçün sürükləyin"
+          className="flex w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-gray-600 dark:hover:text-gray-400"
+        >
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+            <circle cx="7" cy="4" r="1.4" />
+            <circle cx="13" cy="4" r="1.4" />
+            <circle cx="7" cy="10" r="1.4" />
+            <circle cx="13" cy="10" r="1.4" />
+            <circle cx="7" cy="16" r="1.4" />
+            <circle cx="13" cy="16" r="1.4" />
+          </svg>
+        </button>
+      )}
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
+/** A button on branch rows, a plain box on leaves — so leaves never advertise
+ *  an expansion that does not exist. */
+function Expander({
+  onToggle,
+  expanded,
+  children,
+}: { onToggle?: () => void; expanded?: boolean; children: ReactNode }) {
+  const shared = "flex min-w-0 flex-1 items-center gap-3 text-left";
+  if (!onToggle) return <div className={shared}>{children}</div>;
+  return (
+    <button type="button" onClick={onToggle} aria-expanded={expanded} className={`${shared} rounded-lg`}>
+      {children}
+    </button>
+  );
+}
+
+type RowCardProps = {
+  title: string;
+  translation: string;
+  path: string;
+  imageUrl?: string | null;
+  isActive: boolean;
+  busy: boolean;
+  /** Undefined on leaves — they get no expander and no child count. */
+  childCount?: number;
+  childLabel?: string;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
+  onToggleActive: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+};
+
+function RowCard({
+  title,
+  translation,
+  path,
+  imageUrl,
+  isActive,
+  busy,
+  childCount,
+  childLabel,
+  expanded,
+  onToggleExpand,
+  onToggleActive,
+  onEdit,
+  onDelete,
+}: RowCardProps) {
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+        isActive
+          ? "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+          : "border-dashed border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-900/40"
+      } ${busy ? "opacity-60" : ""}`}
+    >
+      {/* Chevron, thumbnail and label are one control on a parent row — clicking
+          the name to open a branch is what a tree is expected to do, and a lone
+          chevron is a small target next to three other buttons. */}
+      <Expander onToggle={onToggleExpand} expanded={expanded}>
+        {onToggleExpand ? (
+          <span className="shrink-0 text-gray-400">
+            {expanded ? (
+              <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
+            ) : (
+              <KeyboardArrowRightIcon sx={{ fontSize: 20 }} />
+            )}
+          </span>
+        ) : (
+          <span className="w-[26px] shrink-0" />
+        )}
+
+        {imageUrl && <img src={imageUrl} alt="" className="h-9 w-14 shrink-0 rounded object-cover" />}
+
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span
+              className={`truncate text-sm font-semibold ${
+                isActive ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"
+              }`}
+            >
+              {title || "— adsız —"}
+            </span>
+            {translation && (
+              <span className="truncate text-xs text-gray-400 dark:text-gray-500">{translation}</span>
+            )}
+            {childCount !== undefined && (
+              <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                {childCount} {childLabel}
+              </span>
+            )}
+          </span>
+          <span className="mt-0.5 block truncate font-mono text-xs text-gray-400 dark:text-gray-500">
+            {path}
+          </span>
+        </span>
+      </Expander>
+
+      <div className="flex shrink-0 items-center gap-1.5">
+        <ActiveToggle checked={isActive} disabled={busy} onChange={onToggleActive} />
+        <button
+          onClick={onEdit}
+          title="Redaktə et"
+          className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+        >
+          <EditIcon sx={{ fontSize: 17 }} />
+        </button>
+        <button
+          onClick={onDelete}
+          title="Sil"
+          className="rounded-lg p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+        >
+          <DeleteIcon sx={{ fontSize: 17 }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-600 dark:border-gray-600 dark:text-gray-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
+    >
+      <AddIcon sx={{ fontSize: 15 }} /> {label}
+    </button>
+  );
+}
+
+// ── modal state ─────────────────────────────────────────────
+type Modal =
+  | { kind: "header"; mode: "create" }
+  | { kind: "header"; mode: "edit"; row: AdminMenuHeader }
+  | { kind: "item"; mode: "create"; headerId: number }
+  | { kind: "item"; mode: "edit"; row: AdminMenuHeaderItem }
+  | { kind: "subitem"; mode: "create"; itemId: number }
+  | { kind: "subitem"; mode: "edit"; row: AdminMenuHeaderSubItem };
+
+type Form = {
+  titleAz: string;
+  titleEn: string;
+  directUrl: string;
+  hasSubitems: boolean;
+  isActive: boolean;
+  imageFile: File | null;
+  currentImageUrl: string;
+};
+
+const emptyForm = (): Form => ({
+  titleAz: "",
+  titleEn: "",
+  directUrl: "",
+  hasSubitems: true,
+  isActive: true,
+  imageFile: null,
+  currentImageUrl: "",
+});
 
 // ─────────────────────────────────────────────────────────────
 export default function HeaderManager() {
   const [headers, setHeaders] = useState<AdminMenuHeader[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<View>("headers");
-  const [selectedHeader, setSelectedHeader] = useState<AdminMenuHeader | null>(null);
-  const [selectedItem, setSelectedItem] = useState<AdminMenuHeaderItem | null>(null);
-
-  // modal state
-  const [modal, setModal] = useState<{
-    type: "header" | "item" | "subitem";
-    mode: "create" | "edit";
-    target?: AdminMenuHeader | AdminMenuHeaderItem | AdminMenuHeaderSubItem;
-  } | null>(null);
+  const [openHeaders, setOpenHeaders] = useState<number[]>([]);
+  const [openItems, setOpenItems] = useState<number[]>([]);
+  const [busyRows, setBusyRows] = useState<string[]>([]);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [modal, setModal] = useState<Modal | null>(null);
+  const [form, setForm] = useState<Form>(emptyForm);
   const [saving, setSaving] = useState(false);
-
-  // form state — headers
-  const [hTitleAz, setHTitleAz] = useState("");
-  const [hTitleEn, setHTitleEn] = useState("");
-  const [hImageFile, setHImageFile] = useState<File | null>(null);
-  const [hCurrentImageUrl, setHCurrentImageUrl] = useState("");
-  const [hOrder, setHOrder] = useState("1");
-  const [hDirectUrl, setHDirectUrl] = useState("");
-  const [hHasSubitems, setHHasSubitems] = useState(true);
-  const [hIsActive, setHIsActive] = useState(true);
-
-  // form state — items
-  const [iTitleAz, setITitleAz] = useState("");
-  const [iTitleEn, setITitleEn] = useState("");
-  const [iOrder, setIOrder] = useState("1");
-  const [iDirectUrl, setIDirectUrl] = useState("");
-  const [iHasSubitems, setIHasSubitems] = useState(false);
-  const [iIsActive, setIIsActive] = useState(true);
-
-  // form state — sub-items
-  const [siTitleAz, setSiTitleAz] = useState("");
-  const [siTitleEn, setSiTitleEn] = useState("");
-  const [siOrder, setSiOrder] = useState("1");
-  const [siDirectUrl, setSiDirectUrl] = useState("");
-  const [siIsActive, setSiIsActive] = useState(true);
 
   const loadData = async () => {
     setLoading(true);
     const res = await getAdminHeader();
-    if (res !== "ERROR") setHeaders(Array.isArray(res) ? res : []);
-    else Swal.fire({ icon: "error", title: "Məlumatlar yüklənə bilmədi", timer: 2000, showConfirmButton: false });
+    if (res === "ERROR") toast("error", "Məlumatlar yüklənə bilmədi");
+    else setHeaders(res);
     setLoading(false);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  // ── open modal helpers ─────────────────────────────────────
-  const openCreateHeader = () => {
-    setHTitleAz(""); setHTitleEn(""); setHImageFile(null);
-    setHCurrentImageUrl(""); setHOrder(String(headers.length + 1)); setHDirectUrl("");
-    setHHasSubitems(true); setHIsActive(true);
-    setModal({ type: "header", mode: "create" });
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  const allItems = useMemo(() => headers.flatMap((h) => h.items ?? []), [headers]);
+
+  const toggleIn = (list: number[], id: number) =>
+    list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+
+  // ── immutable tree patches ────────────────────────────────
+  const patchHeader = (id: number, patch: Partial<AdminMenuHeader>) =>
+    setHeaders((prev) => prev.map((h) => (h.id === id ? { ...h, ...patch } : h)));
+
+  const patchItem = (id: number, patch: Partial<AdminMenuHeaderItem>) =>
+    setHeaders((prev) =>
+      prev.map((h) => ({
+        ...h,
+        items: (h.items ?? []).map((i) => (i.id === id ? { ...i, ...patch } : i)),
+      }))
+    );
+
+  const patchSubItem = (id: number, patch: Partial<AdminMenuHeaderSubItem>) =>
+    setHeaders((prev) =>
+      prev.map((h) => ({
+        ...h,
+        items: (h.items ?? []).map((i) => ({
+          ...i,
+          sub_items: (i.sub_items ?? []).map((s) => (s.id === id ? { ...s, ...patch } : s)),
+        })),
+      }))
+    );
+
+  // ── drag & drop ───────────────────────────────────────────
+  /**
+   * Every row's sibling group, keyed by row. Rows may only be dropped among
+   * their own siblings — the API has no "move to another parent" call, and a
+   * drag that silently snaps back reads as a bug.
+   */
+  const groupOf = useMemo(() => {
+    const map: Record<string, string> = {};
+    headers.forEach((h) => {
+      map[rowKey("h", h.id)] = "root";
+      (h.items ?? []).forEach((i) => {
+        map[rowKey("i", i.id)] = rowKey("h", h.id);
+        (i.sub_items ?? []).forEach((s) => {
+          map[rowKey("s", s.id)] = rowKey("i", i.id);
+        });
+      });
+    });
+    return map;
+  }, [headers]);
+
+  /** Keeps the drop indicator inside the dragged row's own list. */
+  const restrictToSiblings: CollisionDetection = (args) => {
+    const group = groupOf[String(args.active.id)];
+    return closestCenter({
+      ...args,
+      droppableContainers: args.droppableContainers.filter(
+        (container) => groupOf[String(container.id)] === group
+      ),
+    });
   };
 
-  const openEditHeader = (h: AdminMenuHeader) => {
-    setHTitleAz(h.title_az || h.title); setHTitleEn(h.title_en || h.title);
-    setHImageFile(null); setHCurrentImageUrl(h.image_url || "");
-    setHOrder(String(h.display_order)); setHDirectUrl(h.direct_url || "");
-    setHHasSubitems(h.has_subitems);
-    setHIsActive(h.is_active);
-    setModal({ type: "header", mode: "edit", target: h });
+  /** Moves one sibling and renumbers the list to 1..n, reporting only the rows
+   *  whose `display_order` actually moved — those are the ones worth a PUT. */
+  const reorderSiblings = <T extends { id: number; display_order: number }>(
+    siblings: T[],
+    kind: Kind,
+    from: string,
+    to: string
+  ) => {
+    const sorted = sortByOrder(siblings);
+    const oldIndex = sorted.findIndex((row) => rowKey(kind, row.id) === from);
+    const newIndex = sorted.findIndex((row) => rowKey(kind, row.id) === to);
+    if (oldIndex < 0 || newIndex < 0) return null;
+
+    const moved = arrayMove(sorted, oldIndex, newIndex).map((row, index) => ({
+      ...row,
+      display_order: index + 1,
+    }));
+    const changed = moved.filter(
+      (row) => siblings.find((s) => s.id === row.id)?.display_order !== row.display_order
+    );
+    return { moved, changed };
   };
 
-  const openCreateItem = () => {
-    setITitleAz(""); setITitleEn(""); setIOrder(String(currentItems.length + 1)); setIDirectUrl("");
-    setIHasSubitems(false); setIIsActive(true);
-    setModal({ type: "item", mode: "create" });
+  const saveOrder = async (saves: Promise<MutateResult>[]) => {
+    if (saves.length === 0) return;
+    setSavingOrder(true);
+    const results = await Promise.all(saves);
+    setSavingOrder(false);
+    if (results.some((res) => res !== "SUCCESS")) {
+      toast("error", "Sıralama yadda saxlanmadı");
+      loadData(); // the optimistic tree no longer matches the server
+    }
   };
 
-  const openEditItem = (item: AdminMenuHeaderItem) => {
-    setITitleAz(item.title_az || item.title); setITitleEn(item.title_en || item.title);
-    setIOrder(String(item.display_order)); setIDirectUrl(item.direct_url || "");
-    setIHasSubitems(item.has_subitems);
-    setIIsActive(item.is_active);
-    setModal({ type: "item", mode: "edit", target: item });
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = String(active.id);
+    const to = String(over.id);
+    if (groupOf[from] !== groupOf[to]) return;
+
+    if (from.startsWith("h")) {
+      const result = reorderSiblings(headers, "h", from, to);
+      if (!result) return;
+      setHeaders(result.moved);
+      await saveOrder(
+        result.changed.map((row) => updateMenuHeader(row.id, { display_order: row.display_order }))
+      );
+      return;
+    }
+
+    if (from.startsWith("i")) {
+      const headerId = rowId(groupOf[from]);
+      const result = reorderSiblings(
+        headers.find((h) => h.id === headerId)?.items ?? [],
+        "i",
+        from,
+        to
+      );
+      if (!result) return;
+      setHeaders((prev) => prev.map((h) => (h.id === headerId ? { ...h, items: result.moved } : h)));
+      await saveOrder(
+        result.changed.map((row) => updateHeaderItem(row.id, { display_order: row.display_order }))
+      );
+      return;
+    }
+
+    const itemId = rowId(groupOf[from]);
+    const result = reorderSiblings(
+      allItems.find((i) => i.id === itemId)?.sub_items ?? [],
+      "s",
+      from,
+      to
+    );
+    if (!result) return;
+    setHeaders((prev) =>
+      prev.map((h) => ({
+        ...h,
+        items: (h.items ?? []).map((i) => (i.id === itemId ? { ...i, sub_items: result.moved } : i)),
+      }))
+    );
+    await saveOrder(
+      result.changed.map((row) => updateHeaderSubItem(row.id, { display_order: row.display_order }))
+    );
   };
 
-  const openCreateSubItem = () => {
-    setSiTitleAz(""); setSiTitleEn(""); setSiOrder(String(currentSubItems.length + 1)); setSiDirectUrl("");
-    setSiIsActive(true);
-    setModal({ type: "subitem", mode: "create" });
+  // ── inline visibility toggle ──────────────────────────────
+  const toggleActive = async (kind: Kind, id: number, current: boolean) => {
+    const key = rowKey(kind, id);
+    const next = !current;
+
+    const apply = (value: boolean) => {
+      if (kind === "h") patchHeader(id, { is_active: value });
+      else if (kind === "i") patchItem(id, { is_active: value });
+      else patchSubItem(id, { is_active: value });
+    };
+
+    setBusyRows((prev) => [...prev, key]);
+    apply(next);
+
+    const res =
+      kind === "h"
+        ? await updateMenuHeader(id, { is_active: next })
+        : kind === "i"
+        ? await updateHeaderItem(id, { is_active: next })
+        : await updateHeaderSubItem(id, { is_active: next });
+
+    setBusyRows((prev) => prev.filter((k) => k !== key));
+    if (res !== "SUCCESS") {
+      apply(current);
+      toast("error", "Dəyişiklik yadda saxlanmadı");
+    }
   };
 
-  const openEditSubItem = (si: AdminMenuHeaderSubItem) => {
-    setSiTitleAz(si.title_az || si.title); setSiTitleEn(si.title_en || si.title);
-    setSiOrder(String(si.display_order)); setSiDirectUrl(si.direct_url || "");
-    setSiIsActive(si.is_active);
-    setModal({ type: "subitem", mode: "edit", target: si });
+  // ── delete ────────────────────────────────────────────────
+  const runDelete = async (
+    title: string,
+    text: string | undefined,
+    call: () => Promise<MutateResult>
+  ) => {
+    const confirmed = await Swal.fire({
+      title: `"${title}" silinsin?`,
+      text,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Bəli, sil",
+      cancelButtonText: "İmtina",
+    });
+    if (!confirmed.isConfirmed) return;
+
+    const res = await call();
+    if (res === "SUCCESS") {
+      toast("success", "Silindi");
+      loadData();
+    } else {
+      toast("error", "Silinə bilmədi");
+    }
   };
 
-  // ── submit ─────────────────────────────────────────────────
+  // ── modal ─────────────────────────────────────────────────
+  const openCreate = (next: Modal) => {
+    setForm({ ...emptyForm(), hasSubitems: next.kind !== "subitem" });
+    setModal(next);
+  };
+
+  const openEditHeader = (row: AdminMenuHeader) => {
+    setForm({
+      titleAz: row.title_az || row.title,
+      titleEn: row.title_en || row.title,
+      directUrl: row.direct_url || "",
+      hasSubitems: row.has_subitems,
+      isActive: row.is_active,
+      imageFile: null,
+      currentImageUrl: row.image_url || "",
+    });
+    setModal({ kind: "header", mode: "edit", row });
+  };
+
+  const openEditItem = (row: AdminMenuHeaderItem) => {
+    setForm({
+      titleAz: row.title_az || row.title,
+      titleEn: row.title_en || row.title,
+      directUrl: row.direct_url || "",
+      hasSubitems: row.has_subitems,
+      isActive: row.is_active,
+      imageFile: null,
+      currentImageUrl: "",
+    });
+    setModal({ kind: "item", mode: "edit", row });
+  };
+
+  const openEditSubItem = (row: AdminMenuHeaderSubItem) => {
+    setForm({
+      titleAz: row.title_az || row.title,
+      titleEn: row.title_en || row.title,
+      directUrl: row.direct_url || "",
+      hasSubitems: false,
+      isActive: row.is_active,
+      imageFile: null,
+      currentImageUrl: "",
+    });
+    setModal({ kind: "subitem", mode: "edit", row });
+  };
+
+  /** Ancestor path for the URL preview, walked in the previewed language. */
+  const parentPath = (lang: "az" | "en"): string => {
+    if (!modal || modal.kind === "header") return "";
+    if (modal.kind === "item") {
+      const headerId = modal.mode === "create" ? modal.headerId : modal.row.header_id;
+      return slugOf(headers.find((h) => h.id === headerId), lang);
+    }
+    const itemId = modal.mode === "create" ? modal.itemId : modal.row.item_id;
+    const item = allItems.find((i) => i.id === itemId);
+    return [slugOf(headers.find((h) => h.id === item?.header_id), lang), slugOf(item, lang)]
+      .filter(Boolean)
+      .join("/");
+  };
+
   const handleSubmit = async () => {
     if (!modal) return;
+    if (!form.titleAz.trim() || !form.titleEn.trim()) {
+      toast("warning", "Hər iki dildə başlıq tələb olunur");
+      return;
+    }
+
+    const titles = { title_az: form.titleAz.trim(), title_en: form.titleEn.trim() };
     setSaving(true);
+    let ok = false;
 
-    if (modal.type === "header") {
+    if (modal.kind === "header") {
       if (modal.mode === "create") {
+        // New rows land at the end of their list; from there they are dragged.
         const res = await createMenuHeader({
-          title_az: hTitleAz,
-          title_en: hTitleEn,
-          display_order: parseInt(hOrder) || 0,
-          has_subitems: hHasSubitems,
-          direct_url: hDirectUrl || undefined,
-          image: hImageFile || undefined,
+          ...titles,
+          display_order: headers.length + 1,
+          has_subitems: form.hasSubitems,
+          direct_url: form.hasSubitems ? undefined : form.directUrl,
+          image: form.imageFile || undefined,
         });
-        if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Başlıq yaradıldı", timer: 1500, showConfirmButton: false }); loadData(); }
+        ok = res !== "ERROR";
       } else {
-        const target = modal.target as AdminMenuHeader;
-        const payload: Parameters<typeof updateMenuHeader>[1] = {
-          title_az: hTitleAz,
-          title_en: hTitleEn,
-          display_order: parseInt(hOrder) || 0,
-          has_subitems: hHasSubitems,
-          direct_url: hDirectUrl,
-          is_active: hIsActive,
-        };
-        if (hImageFile) payload.image = hImageFile;
-        const res = await updateMenuHeader(target.id, payload);
-        if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); loadData(); }
+        const res = await updateMenuHeader(modal.row.id, {
+          ...titles,
+          has_subitems: form.hasSubitems,
+          direct_url: form.hasSubitems ? "" : form.directUrl,
+          is_active: form.isActive,
+          ...(form.imageFile ? { image: form.imageFile } : {}),
+        });
+        ok = res === "SUCCESS";
       }
     }
 
-    if (modal.type === "item" && selectedHeader) {
+    if (modal.kind === "item") {
       if (modal.mode === "create") {
+        const siblings = headers.find((h) => h.id === modal.headerId)?.items ?? [];
         const res = await createHeaderItem({
-          header_id: selectedHeader.id,
-          title_az: iTitleAz,
-          title_en: iTitleEn,
-          display_order: parseInt(iOrder) || 0,
-          has_subitems: iHasSubitems,
-          direct_url: iDirectUrl || null,
+          header_id: modal.headerId,
+          ...titles,
+          display_order: siblings.length + 1,
+          has_subitems: form.hasSubitems,
+          direct_url: form.hasSubitems ? null : form.directUrl || null,
         });
-        if (res === "BAD REQUEST") Swal.fire({ icon: "warning", title: "Bu başlığın birbaşa URL-i var, element əlavə edilə bilməz", timer: 3000, showConfirmButton: false });
-        else if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Element yaradıldı", timer: 1500, showConfirmButton: false }); loadData(); }
+        if (res === "BAD REQUEST") {
+          setSaving(false);
+          toast("warning", "Bu başlıq birbaşa keçiddir — element əlavə edilə bilməz");
+          return;
+        }
+        ok = res !== "ERROR";
       } else {
-        const target = modal.target as AdminMenuHeaderItem;
-        const res = await updateHeaderItem(target.id, {
-          title_az: iTitleAz,
-          title_en: iTitleEn,
-          display_order: parseInt(iOrder) || 0,
-          has_subitems: iHasSubitems,
-          direct_url: iDirectUrl,
-          is_active: iIsActive,
+        const res = await updateHeaderItem(modal.row.id, {
+          ...titles,
+          has_subitems: form.hasSubitems,
+          direct_url: form.hasSubitems ? "" : form.directUrl,
+          is_active: form.isActive,
         });
-        if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); loadData(); }
+        ok = res === "SUCCESS";
       }
     }
 
-    if (modal.type === "subitem" && selectedItem) {
+    if (modal.kind === "subitem") {
       if (modal.mode === "create") {
+        const siblings = allItems.find((i) => i.id === modal.itemId)?.sub_items ?? [];
         const res = await createHeaderSubItem({
-          item_id: selectedItem.id,
-          title_az: siTitleAz,
-          title_en: siTitleEn,
-          direct_url: siDirectUrl || null,
-          display_order: parseInt(siOrder) || 0,
+          item_id: modal.itemId,
+          ...titles,
+          display_order: siblings.length + 1,
+          direct_url: form.directUrl || null,
         });
-        if (res === "BAD REQUEST") Swal.fire({ icon: "warning", title: "Bu elementin birbaşa URL-i var, alt-element əlavə edilə bilməz", timer: 3000, showConfirmButton: false });
-        else if (res === "ERROR") Swal.fire({ icon: "error", title: "Xəta baş verdi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Alt-element yaradıldı", timer: 1500, showConfirmButton: false }); loadData(); }
+        if (res === "BAD REQUEST") {
+          setSaving(false);
+          toast("warning", "Bu element birbaşa keçiddir — alt-element əlavə edilə bilməz");
+          return;
+        }
+        ok = res !== "ERROR";
       } else {
-        const target = modal.target as AdminMenuHeaderSubItem;
-        const res = await updateHeaderSubItem(target.id, {
-          title_az: siTitleAz,
-          title_en: siTitleEn,
-          direct_url: siDirectUrl || null,
-          display_order: parseInt(siOrder) || 0,
-          is_active: siIsActive,
+        const res = await updateHeaderSubItem(modal.row.id, {
+          ...titles,
+          // "" tells the API to clear the override; null would mean "leave it
+          // alone", so a cleared field could never be saved.
+          direct_url: form.directUrl,
+          is_active: form.isActive,
         });
-        if (res !== "SUCCESS") Swal.fire({ icon: "error", title: "Yenilənə bilmədi", timer: 2000, showConfirmButton: false });
-        else { Swal.fire({ icon: "success", title: "Yeniləndi", timer: 1500, showConfirmButton: false }); loadData(); }
+        ok = res === "SUCCESS";
       }
     }
 
     setSaving(false);
+    if (!ok) {
+      toast("error", modal.mode === "create" ? "Yaradıla bilmədi" : "Yenilənə bilmədi");
+      return;
+    }
+    toast("success", modal.mode === "create" ? "Əlavə edildi" : "Yeniləndi");
     setModal(null);
+    loadData();
   };
 
-  // ── reorder handlers ───────────────────────────────────────
-  const handleMove = async (type: "header" | "item" | "subitem", id: number, direction: "up" | "down") => {
-    // Read from the lists derived off `headers`, never off `selectedHeader` /
-    // `selectedItem` — those are click-time snapshots, so a second move in a row
-    // would swap orders that the previous reload already changed.
-    let list: { id: number; display_order: number }[] = [];
-    if (type === "header") list = [...headers].sort((a, b) => a.display_order - b.display_order);
-    else if (type === "item") list = [...currentItems].sort((a, b) => a.display_order - b.display_order);
-    else list = [...currentSubItems].sort((a, b) => a.display_order - b.display_order);
+  // ── render ────────────────────────────────────────────────
+  const sortedHeaders = sortByOrder(headers);
+  const showSlugPreview = modal ? modal.kind === "subitem" || !form.hasSubitems : false;
 
-    const idx = list.findIndex(x => x.id === id);
-    if (idx === -1) return;
-    if (direction === "up" && idx === 0) return;
-    if (direction === "down" && idx === list.length - 1) return;
-
-    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
-    const a = list[idx];
-    const b = list[targetIdx];
-
-    // Swap display_orders
-    const tempOrder = a.display_order;
-    a.display_order = b.display_order;
-    b.display_order = tempOrder;
-
-    setLoading(true);
-    let resA: string, resB: string;
-    if (type === "header") {
-      resA = await updateMenuHeader(a.id, { display_order: a.display_order });
-      resB = await updateMenuHeader(b.id, { display_order: b.display_order });
-    } else if (type === "item") {
-      resA = await updateHeaderItem(a.id, { display_order: a.display_order });
-      resB = await updateHeaderItem(b.id, { display_order: b.display_order });
-    } else {
-      resA = await updateHeaderSubItem(a.id, { display_order: a.display_order });
-      resB = await updateHeaderSubItem(b.id, { display_order: b.display_order });
-    }
-
-    if (resA === "SUCCESS" && resB === "SUCCESS") {
-      await loadData();
-    } else {
-      Swal.fire({ icon: "error", title: "Sıralama yenilənə bilmədi", timer: 2000, showConfirmButton: false });
-      setLoading(false);
-    }
+  const renderSubItems = (header: AdminMenuHeader, item: AdminMenuHeaderItem) => {
+    const subs = sortByOrder(item.sub_items ?? []);
+    return (
+      <div className="ml-6 mt-2 space-y-2 border-l-2 border-gray-100 pl-4 dark:border-gray-700">
+        {subs.length === 0 && (
+          <p className="text-xs text-gray-400 dark:text-gray-500">Alt-element yoxdur.</p>
+        )}
+        <SortableContext
+          items={subs.map((s) => rowKey("s", s.id))}
+          strategy={verticalListSortingStrategy}
+        >
+          {subs.map((sub) => (
+            <SortableRow key={sub.id} id={rowKey("s", sub.id)} disabled={subs.length < 2}>
+              <RowCard
+                title={sub.title_az || sub.title}
+                translation={sub.title_en}
+                path={
+                  sub.direct_url ||
+                  `/az/${slugOf(header, "az")}/${slugOf(item, "az")}/${slugOf(sub, "az")}`
+                }
+                isActive={sub.is_active}
+                busy={busyRows.includes(rowKey("s", sub.id))}
+                onToggleActive={() => toggleActive("s", sub.id, sub.is_active)}
+                onEdit={() => openEditSubItem(sub)}
+                onDelete={() =>
+                  runDelete(sub.title_az || sub.title, undefined, () => deleteHeaderSubItem(sub.id))
+                }
+              />
+            </SortableRow>
+          ))}
+        </SortableContext>
+        <AddButton
+          label="Alt-element əlavə et"
+          onClick={() => openCreate({ kind: "subitem", mode: "create", itemId: item.id })}
+        />
+      </div>
+    );
   };
 
-  // ── delete handlers ────────────────────────────────────────
-  const handleDeleteHeader = async (h: AdminMenuHeader) => {
-    const confirm = await Swal.fire({
-      title: `"${h.title}" başlığını silmək istəyirsiniz?`,
-      text: "Bu əməliyyat bütün elementləri və alt-elementləri də siləcək!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Bəli, sil",
-      cancelButtonText: "İmtina",
-    });
-    if (!confirm.isConfirmed) return;
-    const res = await deleteMenuHeader(h.id);
-    if (res === "SUCCESS") { Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false }); loadData(); }
-    else Swal.fire({ icon: "error", title: "Silinə bilmədi", timer: 2000, showConfirmButton: false });
+  const renderItems = (header: AdminMenuHeader) => {
+    const items = sortByOrder(header.items ?? []);
+    return (
+      <div className="ml-6 mt-2 space-y-2 border-l-2 border-gray-100 pl-4 dark:border-gray-700">
+        {items.length === 0 && (
+          <p className="text-xs text-gray-400 dark:text-gray-500">Element yoxdur.</p>
+        )}
+        <SortableContext
+          items={items.map((i) => rowKey("i", i.id))}
+          strategy={verticalListSortingStrategy}
+        >
+          {items.map((item) => {
+            const expanded = openItems.includes(item.id);
+            return (
+              <div key={item.id}>
+                <SortableRow id={rowKey("i", item.id)} disabled={items.length < 2}>
+                  <RowCard
+                    title={item.title_az || item.title}
+                    translation={item.title_en}
+                    path={item.direct_url || `/az/${slugOf(header, "az")}/${slugOf(item, "az")}`}
+                    isActive={item.is_active}
+                    busy={busyRows.includes(rowKey("i", item.id))}
+                    childCount={item.has_subitems ? (item.sub_items ?? []).length : undefined}
+                    childLabel="alt-element"
+                    expanded={expanded}
+                    onToggleExpand={
+                      item.has_subitems
+                        ? () => setOpenItems((prev) => toggleIn(prev, item.id))
+                        : undefined
+                    }
+                    onToggleActive={() => toggleActive("i", item.id, item.is_active)}
+                    onEdit={() => openEditItem(item)}
+                    onDelete={() =>
+                      runDelete(item.title_az || item.title, "Alt-elementlər də silinəcək.", () =>
+                        deleteHeaderItem(item.id)
+                      )
+                    }
+                  />
+                </SortableRow>
+                {item.has_subitems && expanded && renderSubItems(header, item)}
+              </div>
+            );
+          })}
+        </SortableContext>
+        <AddButton
+          label="Element əlavə et"
+          onClick={() => openCreate({ kind: "item", mode: "create", headerId: header.id })}
+        />
+      </div>
+    );
   };
 
-  const handleDeleteItem = async (item: AdminMenuHeaderItem) => {
-    const confirm = await Swal.fire({
-      title: `"${item.title}" elementini silmək istəyirsiniz?`,
-      text: "Alt-elementlər də silinəcək!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Bəli, sil",
-      cancelButtonText: "İmtina",
-    });
-    if (!confirm.isConfirmed) return;
-    const res = await deleteHeaderItem(item.id);
-    if (res === "SUCCESS") { Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false }); loadData(); }
-    else Swal.fire({ icon: "error", title: "Silinə bilmədi", timer: 2000, showConfirmButton: false });
-  };
-
-  const handleDeleteSubItem = async (si: AdminMenuHeaderSubItem) => {
-    const confirm = await Swal.fire({
-      title: `"${si.title}" alt-elementini silmək istəyirsiniz?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Bəli, sil",
-      cancelButtonText: "İmtina",
-    });
-    if (!confirm.isConfirmed) return;
-    const res = await deleteHeaderSubItem(si.id);
-    if (res === "SUCCESS") { Swal.fire({ icon: "success", title: "Silindi", timer: 1500, showConfirmButton: false }); loadData(); }
-    else Swal.fire({ icon: "error", title: "Silinə bilmədi", timer: 2000, showConfirmButton: false });
-  };
-
-  // ── ancestor slugs for the URL previews, per language ──────
-  const headerSlug = (lang: "az" | "en") =>
-    (lang === "az" ? selectedHeader?.slug_az : selectedHeader?.slug_en) || selectedHeader?.slug || "";
-
-  const itemSlug = (lang: "az" | "en") =>
-    [
-      headerSlug(lang),
-      (lang === "az" ? selectedItem?.slug_az : selectedItem?.slug_en) || selectedItem?.slug,
-    ]
-      .filter(Boolean)
-      .join("/");
-
-  // ── get current items/sub-items from headers state ─────────
-  const currentItems: AdminMenuHeaderItem[] = selectedHeader
-    ? (headers.find(h => h.id === selectedHeader.id)?.items || [])
-    : [];
-
-  const currentSubItems: AdminMenuHeaderSubItem[] = selectedItem
-    ? (currentItems.find(i => i.id === selectedItem.id)?.sub_items || [])
-    : [];
-
-  // ── render ─────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-        <button
-          onClick={() => setView("headers")}
-          className={view === "headers" ? "text-blue-600 font-medium" : "hover:text-gray-700 dark:hover:text-gray-200"}
-        >
-          Başlıqlar
-        </button>
-        {view !== "headers" && selectedHeader && (
-          <>
-            <ChevronRightIcon sx={{ fontSize: 16 }} />
-            <button
-              onClick={() => setView("items")}
-              className={view === "items" ? "text-blue-600 font-medium" : "hover:text-gray-700 dark:hover:text-gray-200"}
-            >
-              {selectedHeader.title}
-            </button>
-          </>
-        )}
-        {view === "subitems" && selectedItem && (
-          <>
-            <ChevronRightIcon sx={{ fontSize: 16 }} />
-            <span className="text-blue-600 font-medium">{selectedItem.title}</span>
-          </>
-        )}
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Sıranı dəyişmək üçün sətirləri sürükləyin — dəyişiklik dərhal yadda saxlanılır.
+        </p>
+        <div className="flex items-center gap-3">
+          {savingOrder && (
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <CircularProgress size={12} /> Sıra yadda saxlanılır…
+            </span>
+          )}
+          <button
+            onClick={() => openCreate({ kind: "header", mode: "create" })}
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+          >
+            <AddIcon sx={{ fontSize: 18 }} /> Yeni başlıq
+          </button>
+        </div>
       </div>
 
-      {/* ── HEADERS VIEW ──────────────────────────────────── */}
-      {view === "headers" && (
-        <>
-          <div className="flex justify-end">
-            <button
-              onClick={openCreateHeader}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              <AddIcon sx={{ fontSize: 18 }} /> Yeni başlıq
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-12"><CircularProgress /></div>
-          ) : headers.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-12">Başlıq yoxdur</p>
-          ) : (
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <CircularProgress />
+        </div>
+      ) : sortedHeaders.length === 0 ? (
+        <p className="py-12 text-center text-gray-500 dark:text-gray-400">
+          Hələ heç bir başlıq yoxdur.
+        </p>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={restrictToSiblings}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={sortedHeaders.map((h) => rowKey("h", h.id))}
+            strategy={verticalListSortingStrategy}
+          >
             <div className="space-y-2">
-              {headers
-                .sort((a, b) => a.display_order - b.display_order)
-                .map((h, idx) => (
-                <div key={h.id} className={`border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 overflow-hidden ${!h.is_active ? "opacity-50" : ""}`}>
-                  <div className="flex items-center px-4 py-3 gap-3">
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <button 
-                        disabled={idx === 0}
-                        onClick={() => handleMove("header", h.id, "up")}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
-                      >
-                        <ArrowUpwardIcon sx={{ fontSize: 16 }} />
-                      </button>
-                      <button 
-                        disabled={idx === headers.length - 1}
-                        onClick={() => handleMove("header", h.id, "down")}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
-                      >
-                        <ArrowDownwardIcon sx={{ fontSize: 16 }} />
-                      </button>
-                    </div>
-                    {h.image_url && (
-                      <img src={h.image_url} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{h.title}</p>
-                        {h.has_subitems ? (
-                          <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider">KATEQORİYA</span>
-                        ) : (
-                          <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded uppercase tracking-wider">KEÇİD</span>
-                        )}
-                        {!h.is_active && (
-                          <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-bold rounded uppercase tracking-wider">Passiv</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
-                        /{h.slug}
-                        {h.direct_url && <span className="ml-2 not-italic text-green-600 dark:text-green-400">→ {h.direct_url}</span>}
-                        <span className="not-italic ml-2">· Sıra: {h.display_order}</span>
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {h.has_subitems && (
-                        <button
-                          onClick={() => { setSelectedHeader(h); setView("items"); }}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          Elementlər <ExpandMoreIcon sx={{ fontSize: 16 }} />
-                        </button>
-                      )}
-                      <button onClick={() => openEditHeader(h)} className="p-1.5 bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
-                        <EditIcon sx={{ fontSize: 16, color: "white" }} />
-                      </button>
-                      <button onClick={() => handleDeleteHeader(h)} className="p-1.5 bg-red-500 rounded-lg hover:bg-red-600 transition-colors">
-                        <DeleteIcon sx={{ fontSize: 16, color: "white" }} />
-                      </button>
-                    </div>
+              {sortedHeaders.map((header) => {
+                const expanded = openHeaders.includes(header.id);
+                return (
+                  <div
+                    key={header.id}
+                    className="rounded-xl border border-gray-200 p-2 dark:border-gray-700"
+                  >
+                    <SortableRow
+                      id={rowKey("h", header.id)}
+                      disabled={sortedHeaders.length < 2}
+                    >
+                      <RowCard
+                        title={header.title_az || header.title}
+                        translation={header.title_en}
+                        path={header.direct_url || `/az/${slugOf(header, "az")}`}
+                        imageUrl={header.image_url}
+                        isActive={header.is_active}
+                        busy={busyRows.includes(rowKey("h", header.id))}
+                        childCount={header.has_subitems ? (header.items ?? []).length : undefined}
+                        childLabel="element"
+                        expanded={expanded}
+                        onToggleExpand={
+                          header.has_subitems
+                            ? () => setOpenHeaders((prev) => toggleIn(prev, header.id))
+                            : undefined
+                        }
+                        onToggleActive={() => toggleActive("h", header.id, header.is_active)}
+                        onEdit={() => openEditHeader(header)}
+                        onDelete={() =>
+                          runDelete(
+                            header.title_az || header.title,
+                            "Bütün elementlər və alt-elementlər də silinəcək.",
+                            () => deleteMenuHeader(header.id)
+                          )
+                        }
+                      />
+                    </SortableRow>
+                    {header.has_subitems && expanded && renderItems(header)}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          )}
-        </>
-      )}
-
-      {/* ── ITEMS VIEW ────────────────────────────────────── */}
-      {view === "items" && selectedHeader && (
-        <>
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setView("headers")}
-              className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-            >
-              <ArrowBackIcon sx={{ fontSize: 18 }} /> Geri
-            </button>
-            <button
-              onClick={openCreateItem}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              <AddIcon sx={{ fontSize: 18 }} /> Yeni element
-            </button>
-          </div>
-
-          {currentItems.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-12">Element yoxdur</p>
-          ) : (
-            <div className="space-y-2">
-              {currentItems
-                .sort((a, b) => a.display_order - b.display_order)
-                .map((item, idx) => (
-                <div key={item.id} className={`border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 ${!item.is_active ? "opacity-50" : ""}`}>
-                  <div className="flex items-center px-4 py-3 gap-3">
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <button 
-                        disabled={idx === 0}
-                        onClick={() => handleMove("item", item.id, "up")}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
-                      >
-                        <ArrowUpwardIcon sx={{ fontSize: 16 }} />
-                      </button>
-                      <button 
-                        disabled={idx === currentItems.length - 1}
-                        onClick={() => handleMove("item", item.id, "down")}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
-                      >
-                        <ArrowDownwardIcon sx={{ fontSize: 16 }} />
-                      </button>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title}</p>
-                        {item.has_subitems ? (
-                          <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider">KATEQORİYA</span>
-                        ) : (
-                          <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded uppercase tracking-wider">KEÇİD</span>
-                        )}
-                        {!item.is_active && (
-                          <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-bold rounded uppercase tracking-wider">Passiv</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
-                        {item.slug && <>/{item.slug}</>}
-                        {item.direct_url && <span className="text-green-600 dark:text-green-400"> → {item.direct_url}</span>}
-                        <span className="not-italic ml-2">· Sıra: {item.display_order}</span>
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {item.has_subitems && (
-                        <button
-                          onClick={() => { setSelectedItem(item); setView("subitems"); }}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          Alt-elementlər <ExpandMoreIcon sx={{ fontSize: 16 }} />
-                        </button>
-                      )}
-                      <button onClick={() => openEditItem(item)} className="p-1.5 bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
-                        <EditIcon sx={{ fontSize: 16, color: "white" }} />
-                      </button>
-                      <button onClick={() => handleDeleteItem(item)} className="p-1.5 bg-red-500 rounded-lg hover:bg-red-600 transition-colors">
-                        <DeleteIcon sx={{ fontSize: 16, color: "white" }} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── SUB-ITEMS VIEW ────────────────────────────────── */}
-      {view === "subitems" && selectedItem && (
-        <>
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setView("items")}
-              className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-            >
-              <ArrowBackIcon sx={{ fontSize: 18 }} /> Geri
-            </button>
-            <button
-              onClick={openCreateSubItem}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              <AddIcon sx={{ fontSize: 18 }} /> Yeni alt-element
-            </button>
-          </div>
-
-          {currentSubItems.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-12">Alt-element yoxdur</p>
-          ) : (
-            <div className="space-y-2">
-              {currentSubItems
-                .sort((a, b) => a.display_order - b.display_order)
-                .map((si, idx) => (
-                <div key={si.id} className={`border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 ${!si.is_active ? "opacity-50" : ""}`}>
-                  <div className="flex items-center px-4 py-3 gap-3">
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <button 
-                        disabled={idx === 0}
-                        onClick={() => handleMove("subitem", si.id, "up")}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
-                      >
-                        <ArrowUpwardIcon sx={{ fontSize: 16 }} />
-                      </button>
-                      <button 
-                        disabled={idx === currentSubItems.length - 1}
-                        onClick={() => handleMove("subitem", si.id, "down")}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20"
-                      >
-                        <ArrowDownwardIcon sx={{ fontSize: 16 }} />
-                      </button>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{si.title}</p>
-                        {!si.is_active && (
-                          <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-bold rounded uppercase tracking-wider">Passiv</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
-                        {si.slug && <>/{si.slug} · </>}
-                        <span className="text-green-600 dark:text-green-400">{si.direct_url}</span>
-                        <span className="not-italic ml-2">· Sıra: {si.display_order}</span>
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button onClick={() => openEditSubItem(si)} className="p-1.5 bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
-                        <EditIcon sx={{ fontSize: 16, color: "white" }} />
-                      </button>
-                      <button onClick={() => handleDeleteSubItem(si)} className="p-1.5 bg-red-500 rounded-lg hover:bg-red-600 transition-colors">
-                        <DeleteIcon sx={{ fontSize: 16, color: "white" }} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* ── MODAL ─────────────────────────────────────────── */}
       {modal && (
         <MenuModal
-          title={
-            modal.type === "header" ? (modal.mode === "create" ? "Yeni başlıq" : "Başlığı düzəlt") :
-            modal.type === "item" ? (modal.mode === "create" ? "Yeni element" : "Elementi düzəlt") :
-            (modal.mode === "create" ? "Yeni alt-element" : "Alt-elementi düzəlt")
-          }
+          title={MODAL_TITLES[modal.kind][modal.mode]}
           onClose={() => setModal(null)}
           onSubmit={handleSubmit}
           loading={saving}
         >
-          {/* COMMON IS_ACTIVE TOGGLE */}
-          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={
-                  modal.type === "header" ? hIsActive :
-                  modal.type === "item" ? iIsActive : siIsActive
-                }
-                onChange={(e) => {
-                  if (modal.type === "header") setHIsActive(e.target.checked);
-                  else if (modal.type === "item") setIIsActive(e.target.checked);
-                  else setSiIsActive(e.target.checked);
-                }}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
-                Aktivdir? (Saytda göstərilsin)
-              </span>
-            </label>
-          </div>
-
-          {/* HEADER FORM */}
-          {modal.type === "header" && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Field label="Başlıq (AZ) *">
-                    <Input value={hTitleAz} onChange={setHTitleAz} placeholder="Universitet" />
-                  </Field>
-                </div>
-                <div>
-                  <Field label="Başlıq (EN) *">
-                    <Input value={hTitleEn} onChange={setHTitleEn} placeholder="University" />
-                  </Field>
-                </div>
-              </div>
-
-              <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={hHasSubitems}
-                    onChange={(e) => {
-                      setHHasSubitems(e.target.checked);
-                      if (e.target.checked) setHDirectUrl("");
-                    }}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
-                    Alt-elementləri var? (Kateqoriya kimi davranır)
-                  </span>
-                </label>
-
-                {!hHasSubitems ? (
-                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <Field label="Birbaşa URL (isteğe bağlı — boş qalarsa avtomatik daxili link yaradılacaq)">
-                      <Input value={hDirectUrl} onChange={setHDirectUrl} placeholder="https://..." />
-                    </Field>
-                    <div className="grid grid-cols-2 gap-3 mt-2">
-                      <SlugPreview lang="az" title={hTitleAz} />
-                      <SlugPreview lang="en" title={hTitleEn} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <SlugPreview lang="az" title={hTitleAz} />
-                    <SlugPreview lang="en" title={hTitleEn} />
-                  </div>
-                )}
-              </div>
-
-              <Field label={modal.mode === "edit" ? "Şəkil (dəyişdirmək üçün seçin)" : "Şəkil (isteğe bağlı)"}>
-                {modal.mode === "edit" && hCurrentImageUrl && !hImageFile && (
-                  <img src={hCurrentImageUrl} alt="current" className="h-16 w-auto rounded mb-2 object-cover" />
-                )}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => setHImageFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Field label="Başlıq (AZ) *">
+                <Input
+                  value={form.titleAz}
+                  onChange={(v) => setForm({ ...form, titleAz: v })}
+                  placeholder="Universitet"
                 />
               </Field>
-              <Field label="Sıra *"><Input value={hOrder} onChange={setHOrder} placeholder="1" /></Field>
-            </>
-          )}
-
-          {/* ITEM FORM */}
-          {modal.type === "item" && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Field label="Başlıq (AZ) *">
-                    <Input value={iTitleAz} onChange={setITitleAz} placeholder="Haqqımızda" />
-                  </Field>
-                  <SlugPreview lang="az" title={iTitleAz} parentPath={headerSlug("az")} />
-                </div>
-                <div>
-                  <Field label="Başlıq (EN) *">
-                    <Input value={iTitleEn} onChange={setITitleEn} placeholder="About Us" />
-                  </Field>
-                  <SlugPreview lang="en" title={iTitleEn} parentPath={headerSlug("en")} />
-                </div>
-              </div>
-
-              <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={iHasSubitems}
-                    onChange={(e) => {
-                      setIHasSubitems(e.target.checked);
-                      if (e.target.checked) setIDirectUrl("");
-                    }}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
-                    Alt-elementləri var? (Dropdown sütun başlığı)
-                  </span>
-                </label>
-
-                {!iHasSubitems && (
-                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <Field label="Birbaşa URL (isteğe bağlı — boş qalarsa avtomatik daxili link yaradılacaq)">
-                      <Input value={iDirectUrl} onChange={setIDirectUrl} placeholder="/az/..." />
-                    </Field>
-                  </div>
-                )}
-              </div>
-
-              <Field label="Sıra *"><Input value={iOrder} onChange={setIOrder} placeholder="1" /></Field>
-            </>
-          )}
-
-          {/* SUBITEM FORM */}
-          {modal.type === "subitem" && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Field label="Başlıq (AZ) *">
-                    <Input value={siTitleAz} onChange={setSiTitleAz} placeholder="Rektor" />
-                  </Field>
-                  <SlugPreview lang="az" title={siTitleAz} parentPath={itemSlug("az")} />
-                </div>
-                <div>
-                  <Field label="Başlıq (EN) *">
-                    <Input value={siTitleEn} onChange={setSiTitleEn} placeholder="Rector" />
-                  </Field>
-                  <SlugPreview lang="en" title={siTitleEn} parentPath={itemSlug("en")} />
-                </div>
-              </div>
-              <Field label="Birbaşa URL (isteğe bağlı — boş qalarsa avtomatik yaradılacaq)">
-                <Input value={siDirectUrl} onChange={setSiDirectUrl} placeholder="/az/..." />
+              {showSlugPreview && !form.directUrl && (
+                <SlugPreview lang="az" title={form.titleAz} parentPath={parentPath("az")} />
+              )}
+            </div>
+            <div>
+              <Field label="Başlıq (EN) *">
+                <Input
+                  value={form.titleEn}
+                  onChange={(v) => setForm({ ...form, titleEn: v })}
+                  placeholder="University"
+                />
               </Field>
-              <Field label="Sıra *"><Input value={siOrder} onChange={setSiOrder} placeholder="1" /></Field>
-            </>
+              {showSlugPreview && !form.directUrl && (
+                <SlugPreview lang="en" title={form.titleEn} parentPath={parentPath("en")} />
+              )}
+            </div>
+          </div>
+
+          {modal.kind !== "subitem" && (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
+              <label className="group flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.hasSubitems}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      hasSubitems: e.target.checked,
+                      directUrl: e.target.checked ? "" : form.directUrl,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700 transition-colors group-hover:text-blue-600 dark:text-gray-300">
+                  Açılan siyahıdır (alt-elementləri var)
+                </span>
+              </label>
+              <p className="mt-1 pl-6 text-xs text-gray-400">
+                İşarəsiz qalarsa birbaşa keçid olur və alt-element qəbul etmir.
+              </p>
+            </div>
+          )}
+
+          {showSlugPreview && (
+            <Field label="Birbaşa URL" hint="Boş qalarsa yuxarıdakı daxili keçid avtomatik yaradılır.">
+              <Input
+                value={form.directUrl}
+                onChange={(v) => setForm({ ...form, directUrl: v })}
+                placeholder="/az/… və ya https://…"
+              />
+            </Field>
+          )}
+
+          {modal.kind === "header" && (
+            <Field label={modal.mode === "edit" ? "Şəkil (dəyişdirmək üçün seçin)" : "Şəkil"}>
+              {form.currentImageUrl && !form.imageFile && (
+                <img
+                  src={form.currentImageUrl}
+                  alt=""
+                  className="mb-2 h-16 w-auto rounded object-cover"
+                />
+              )}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => setForm({ ...form, imageFile: e.target.files?.[0] || null })}
+                className="w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 dark:text-gray-300"
+              />
+            </Field>
+          )}
+
+          {modal.mode === "edit" && (
+            <div className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+              <ActiveToggle
+                checked={form.isActive}
+                onChange={() => setForm({ ...form, isActive: !form.isActive })}
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Saytda göstərilsin
+              </span>
+            </div>
           )}
         </MenuModal>
       )}

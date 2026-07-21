@@ -9,10 +9,11 @@ export default function MenuHeaderPage() {
       <PageMeta title="Header Menyu | AzTU Admin" description="Header naviqasiya menyusunu idarə edin" />
       <PageBreadcrumb pageTitle="Header Menyu" />
       <div className="space-y-6">
-        <ComponentCard title="Header Naviqasiya — Bölmələr, Elementlər, Alt-Elementlər">
+        <ComponentCard title="Header Naviqasiya — Başlıqlar, Elementlər, Alt-Elementlər">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Header naviqasiyası 3 səviyyəli iyerarxiyadır: <strong>Bölmə → Element → Alt-Element</strong>.
-            Bölmə yaradın, sonra bölmə daxilindəki elementləri, element daxilindəki alt-elementləri idarə edin.
+            Header naviqasiyası 3 səviyyəli iyerarxiyadır: <strong>Başlıq → Element → Alt-Element</strong>.
+            Sətri açmaq üçün adına klikləyin, sıranı dəyişmək üçün sürükləyin, saytda göstərmək
+            və ya gizlətmək üçün açarı çevirin.
           </p>
           <HeaderManager />
         </ComponentCard>
