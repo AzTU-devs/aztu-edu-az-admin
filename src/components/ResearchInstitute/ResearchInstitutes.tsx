@@ -5,8 +5,19 @@ import { Pagination, Stack, CircularProgress } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import { InstituteListItem, deleteInstitute, getInstitutes } from "../../services/researchInstitute/researchInstituteService";
+import { API_BASE_URL } from "../../util/apiClient";
 
 const PAGE_SIZE = 10;
+
+const resolveImageUrl = (path?: string | null): string | undefined => {
+  if (!path) return undefined;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  const base = API_BASE_URL.replace(/\/$/, "");
+  const clean = path.replace(/^\//, "");
+  return clean.startsWith("static/") || clean.startsWith("media/")
+    ? `${base}/${clean}`
+    : `${base}/static/${clean}`;
+};
 
 export default function ResearchInstitutes() {
   const [end, setEnd] = useState(PAGE_SIZE);
@@ -80,10 +91,11 @@ export default function ResearchInstitutes() {
       </div>
       <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="flex items-center px-5 py-3 bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "20%" }}>Kod</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "45%" }}>İnstitut adı</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "15%" }}>Heyət sayı</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-right" style={{ width: "20%" }}>Əməliyyatlar</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "12%" }}>Loqo</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "40%" }}>İnstitut adı</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "16%" }}>Kod</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "20%" }}>Əlaqə</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-right" style={{ width: "12%" }}>Əməliyyatlar</p>
         </div>
 
         {loading ? (
@@ -110,16 +122,35 @@ export default function ResearchInstitutes() {
         ) : Array.isArray(institutes) && institutes.length > 0 ? (
           institutes.map((institute) => (
             <div key={institute.institute_code} className="flex items-center px-5 py-3.5 border-b border-gray-50 dark:border-gray-800 last:border-b-0 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors duration-150">
-              <div style={{ width: "20%" }}>
+              <div style={{ width: "12%" }}>
+                <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                  {institute.image ? (
+                    <img src={resolveImageUrl(institute.image)} alt="" className="w-full h-full object-contain" />
+                  ) : (
+                    <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  )}
+                </div>
+              </div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 pr-4" style={{ width: "40%" }}>
+                {institute.name || <span className="text-gray-400 italic">Adsız</span>}
+              </p>
+              <div style={{ width: "16%" }}>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-mono text-xs font-semibold">
                   {institute.institute_code}
                 </span>
               </div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200" style={{ width: "45%" }}>{institute.name}</p>
-              <div style={{ width: "15%" }}>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{institute.staff_count ?? 0}</span>
+              <div className="min-w-0 pr-4" style={{ width: "20%" }}>
+                {institute.email && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{institute.email}</p>
+                )}
+                {institute.website_url && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{institute.website_url}</p>
+                )}
+                {!institute.email && !institute.website_url && (
+                  <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+                )}
               </div>
-              <div className="flex justify-end items-center gap-1" style={{ width: "20%" }}>
+              <div className="flex justify-end items-center gap-1" style={{ width: "12%" }}>
                 <Link to={`/research-institutes/${institute.institute_code}`}>
                   <button className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors" title="Düzəliş et"><EditIcon sx={{ fontSize: 18 }} /></button>
                 </Link>

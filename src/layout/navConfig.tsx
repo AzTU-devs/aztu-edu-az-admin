@@ -1,4 +1,5 @@
 import ApartmentIcon from '@mui/icons-material/Apartment';
+import BiotechIcon from '@mui/icons-material/Biotech';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CategoryIcon from '@mui/icons-material/Category';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -99,8 +100,16 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Elmi fəaliyyət",
+    label: "Tədqiqat",
     items: [
+      {
+        icon: <BiotechIcon />,
+        name: "Tədqiqat İnstitutları",
+        subItems: [
+          { name: "İnstitutlar", path: "/research-institutes" },
+          { name: "Yeni institut", path: "/research-institutes/new" },
+        ],
+      },
       {
         icon: <ScienceIcon />,
         name: "Tədqiqat Laboratoriyaları",
