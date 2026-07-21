@@ -64,15 +64,23 @@ function Input({ value, onChange, placeholder }: { value: string; onChange: (v: 
   );
 }
 
-function SlugPreview({ title, parentPath }: { title: string; parentPath?: string }) {
+/**
+ * The URL the API will mint for this row when no direct_url overrides it.
+ * One language per preview: each locale walks its own ancestors, so the `en`
+ * path cannot be drawn under an `az` parent slug.
+ */
+function SlugPreview({
+  lang,
+  title,
+  parentPath,
+}: { lang: "az" | "en"; title: string; parentPath?: string }) {
   const slug = makeSlug(title);
   if (!slug) return null;
   const prefix = parentPath ? `/${parentPath}` : "";
   return (
-    <div className="text-xs text-gray-400 mt-1 font-mono space-y-0.5">
-      <p>az: <span className="text-blue-500">/az{prefix}/{slug}</span></p>
-      <p>en: <span className="text-blue-500">/en{prefix}/{slug}</span></p>
-    </div>
+    <p className="text-xs text-gray-400 mt-1 font-mono">
+      {lang}: <span className="text-blue-500">/{lang}{prefix}/{slug}</span>
+    </p>
   );
 }
 
@@ -142,14 +150,13 @@ export default function HeaderManager() {
     setHTitleAz(h.title_az || h.title); setHTitleEn(h.title_en || h.title);
     setHImageFile(null); setHCurrentImageUrl(h.image_url || "");
     setHOrder(String(h.display_order)); setHDirectUrl(h.direct_url || "");
-    setHHasSubitems((String(h.has_subitems) === "1" || h.has_subitems === true));
+    setHHasSubitems(h.has_subitems);
     setHIsActive(h.is_active);
     setModal({ type: "header", mode: "edit", target: h });
   };
 
   const openCreateItem = () => {
-    const currentItemsCount = selectedHeader?.items?.length || 0;
-    setITitleAz(""); setITitleEn(""); setIOrder(String(currentItemsCount + 1)); setIDirectUrl("");
+    setITitleAz(""); setITitleEn(""); setIOrder(String(currentItems.length + 1)); setIDirectUrl("");
     setIHasSubitems(false); setIIsActive(true);
     setModal({ type: "item", mode: "create" });
   };
@@ -157,15 +164,13 @@ export default function HeaderManager() {
   const openEditItem = (item: AdminMenuHeaderItem) => {
     setITitleAz(item.title_az || item.title); setITitleEn(item.title_en || item.title);
     setIOrder(String(item.display_order)); setIDirectUrl(item.direct_url || "");
-    setIHasSubitems((String(item.has_subitems) === "1" || item.has_subitems === true));
+    setIHasSubitems(item.has_subitems);
     setIIsActive(item.is_active);
     setModal({ type: "item", mode: "edit", target: item });
   };
 
   const openCreateSubItem = () => {
-    const it = currentItems.find(i => i.id === selectedItem?.id);
-    const currentSubItemsCount = it?.sub_items?.length || it?.subitems?.length || 0;
-    setSiTitleAz(""); setSiTitleEn(""); setSiOrder(String(currentSubItemsCount + 1)); setSiDirectUrl("");
+    setSiTitleAz(""); setSiTitleEn(""); setSiOrder(String(currentSubItems.length + 1)); setSiDirectUrl("");
     setSiIsActive(true);
     setModal({ type: "subitem", mode: "create" });
   };
@@ -271,10 +276,13 @@ export default function HeaderManager() {
 
   // ── reorder handlers ───────────────────────────────────────
   const handleMove = async (type: "header" | "item" | "subitem", id: number, direction: "up" | "down") => {
-    let list: any[] = [];
+    // Read from the lists derived off `headers`, never off `selectedHeader` /
+    // `selectedItem` — those are click-time snapshots, so a second move in a row
+    // would swap orders that the previous reload already changed.
+    let list: { id: number; display_order: number }[] = [];
     if (type === "header") list = [...headers].sort((a, b) => a.display_order - b.display_order);
-    else if (type === "item") list = [...(selectedHeader?.items || [])].sort((a, b) => a.display_order - b.display_order);
-    else if (type === "subitem") list = [...(selectedItem?.sub_items || (selectedItem as any)?.subitems || [])].sort((a, b) => a.display_order - b.display_order);
+    else if (type === "item") list = [...currentItems].sort((a, b) => a.display_order - b.display_order);
+    else list = [...currentSubItems].sort((a, b) => a.display_order - b.display_order);
 
     const idx = list.findIndex(x => x.id === id);
     if (idx === -1) return;
@@ -291,7 +299,7 @@ export default function HeaderManager() {
     b.display_order = tempOrder;
 
     setLoading(true);
-    let resA: any, resB: any;
+    let resA: string, resB: string;
     if (type === "header") {
       resA = await updateMenuHeader(a.id, { display_order: a.display_order });
       resB = await updateMenuHeader(b.id, { display_order: b.display_order });
@@ -362,13 +370,25 @@ export default function HeaderManager() {
     else Swal.fire({ icon: "error", title: "Silinə bilmədi", timer: 2000, showConfirmButton: false });
   };
 
+  // ── ancestor slugs for the URL previews, per language ──────
+  const headerSlug = (lang: "az" | "en") =>
+    (lang === "az" ? selectedHeader?.slug_az : selectedHeader?.slug_en) || selectedHeader?.slug || "";
+
+  const itemSlug = (lang: "az" | "en") =>
+    [
+      headerSlug(lang),
+      (lang === "az" ? selectedItem?.slug_az : selectedItem?.slug_en) || selectedItem?.slug,
+    ]
+      .filter(Boolean)
+      .join("/");
+
   // ── get current items/sub-items from headers state ─────────
   const currentItems: AdminMenuHeaderItem[] = selectedHeader
     ? (headers.find(h => h.id === selectedHeader.id)?.items || [])
     : [];
 
   const currentSubItems: AdminMenuHeaderSubItem[] = selectedItem
-    ? (currentItems.find(i => i.id === selectedItem.id)?.sub_items || (currentItems.find(i => i.id === selectedItem.id) as any)?.subitems || [])
+    ? (currentItems.find(i => i.id === selectedItem.id)?.sub_items || [])
     : [];
 
   // ── render ─────────────────────────────────────────────────
@@ -446,7 +466,7 @@ export default function HeaderManager() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{h.title}</p>
-                        {(String(h.has_subitems) === "1" || h.has_subitems === true) ? (
+                        {h.has_subitems ? (
                           <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider">KATEQORİYA</span>
                         ) : (
                           <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded uppercase tracking-wider">KEÇİD</span>
@@ -462,7 +482,7 @@ export default function HeaderManager() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {(String(h.has_subitems) === "1" || h.has_subitems === true) && (
+                      {h.has_subitems && (
                         <button
                           onClick={() => { setSelectedHeader(h); setView("items"); }}
                           className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -531,7 +551,7 @@ export default function HeaderManager() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title}</p>
-                        {(String(item.has_subitems) === "1" || item.has_subitems === true) ? (
+                        {item.has_subitems ? (
                           <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider">KATEQORİYA</span>
                         ) : (
                           <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded uppercase tracking-wider">KEÇİD</span>
@@ -547,12 +567,14 @@ export default function HeaderManager() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => { setSelectedItem(item); setView("subitems"); }}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        Alt-elementlər <ExpandMoreIcon sx={{ fontSize: 16 }} />
-                      </button>
+                      {item.has_subitems && (
+                        <button
+                          onClick={() => { setSelectedItem(item); setView("subitems"); }}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          Alt-elementlər <ExpandMoreIcon sx={{ fontSize: 16 }} />
+                        </button>
+                      )}
                       <button onClick={() => openEditItem(item)} className="p-1.5 bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
                         <EditIcon sx={{ fontSize: 16, color: "white" }} />
                       </button>
@@ -712,14 +734,14 @@ export default function HeaderManager() {
                       <Input value={hDirectUrl} onChange={setHDirectUrl} placeholder="https://..." />
                     </Field>
                     <div className="grid grid-cols-2 gap-3 mt-2">
-                      <SlugPreview title={hTitleAz} />
-                      <SlugPreview title={hTitleEn} />
+                      <SlugPreview lang="az" title={hTitleAz} />
+                      <SlugPreview lang="en" title={hTitleEn} />
                     </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <SlugPreview title={hTitleAz} />
-                    <SlugPreview title={hTitleEn} />
+                    <SlugPreview lang="az" title={hTitleAz} />
+                    <SlugPreview lang="en" title={hTitleEn} />
                   </div>
                 )}
               </div>
@@ -747,19 +769,13 @@ export default function HeaderManager() {
                   <Field label="Başlıq (AZ) *">
                     <Input value={iTitleAz} onChange={setITitleAz} placeholder="Haqqımızda" />
                   </Field>
-                  <SlugPreview 
-                    title={iTitleAz} 
-                    parentPath={selectedHeader?.slug || ""} 
-                  />
+                  <SlugPreview lang="az" title={iTitleAz} parentPath={headerSlug("az")} />
                 </div>
                 <div>
                   <Field label="Başlıq (EN) *">
                     <Input value={iTitleEn} onChange={setITitleEn} placeholder="About Us" />
                   </Field>
-                  <SlugPreview 
-                    title={iTitleEn} 
-                    parentPath={selectedHeader?.slug || ""} 
-                  />
+                  <SlugPreview lang="en" title={iTitleEn} parentPath={headerSlug("en")} />
                 </div>
               </div>
 
@@ -800,19 +816,13 @@ export default function HeaderManager() {
                   <Field label="Başlıq (AZ) *">
                     <Input value={siTitleAz} onChange={setSiTitleAz} placeholder="Rektor" />
                   </Field>
-                  <SlugPreview 
-                    title={siTitleAz} 
-                    parentPath={`${selectedHeader?.slug || ""}/${selectedItem?.slug || ""}`.split("/").filter(Boolean).join("/")} 
-                  />
+                  <SlugPreview lang="az" title={siTitleAz} parentPath={itemSlug("az")} />
                 </div>
                 <div>
                   <Field label="Başlıq (EN) *">
                     <Input value={siTitleEn} onChange={setSiTitleEn} placeholder="Rector" />
                   </Field>
-                  <SlugPreview 
-                    title={siTitleEn} 
-                    parentPath={`${selectedHeader?.slug || ""}/${selectedItem?.slug || ""}`.split("/").filter(Boolean).join("/")} 
-                  />
+                  <SlugPreview lang="en" title={siTitleEn} parentPath={itemSlug("en")} />
                 </div>
               </div>
               <Field label="Birbaşa URL (isteğe bağlı — boş qalarsa avtomatik yaradılacaq)">

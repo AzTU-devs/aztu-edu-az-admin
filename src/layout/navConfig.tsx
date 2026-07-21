@@ -4,6 +4,7 @@ import BiotechIcon from '@mui/icons-material/Biotech';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CategoryIcon from '@mui/icons-material/Category';
 import ForumIcon from '@mui/icons-material/Forum';
+import MenuIcon from '@mui/icons-material/Menu';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import SchoolIcon from '@mui/icons-material/School';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -126,6 +127,23 @@ export const navGroups: NavGroup[] = [
           { name: "Layihələr", path: "/research-projects" },
           { name: "Yeni layihə", path: "/research-projects/new" },
         ],
+      },
+    ],
+  },
+  {
+    /*
+      Only the header menu is listed. The footer/quick/shared editors exist and
+      are routed, but they still read the public `/api/menu/footer` and
+      `/api/menu/quick` payloads, which resolve a single language and carry no
+      row ids — nothing an editor can save against. They stay unlisted until
+      they get admin readers of their own, the way the header just did.
+    */
+    label: "Naviqasiya",
+    items: [
+      {
+        icon: <MenuIcon />,
+        name: "Menyu",
+        subItems: [{ name: "Header menyu", path: "/menu-header" }],
       },
     ],
   },
