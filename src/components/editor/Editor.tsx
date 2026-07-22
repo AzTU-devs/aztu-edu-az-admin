@@ -12,6 +12,7 @@ import Heading from '@tiptap/extension-heading';
 import React, { useState, useEffect, useRef } from 'react';
 import { FaBold, FaItalic, FaUnderline, FaListUl, FaListOl, FaLink, FaImage, FaCode, FaTable, FaEye, FaTimes, FaPaperclip } from 'react-icons/fa';
 import { uploadAnnouncementFile } from '../../services/announcement/announcementService';
+import { LineHeight, LINE_HEIGHTS } from './LineHeight';
 
 const MenuBar = ({ editor, onPreview, onAddLink, onAddEmail, onAttachFile, attaching }: { editor: any; onPreview: () => void; onAddLink: () => void; onAddEmail: () => void; onAttachFile: () => void; attaching: boolean }) => {
     if (!editor) return null;
@@ -59,6 +60,21 @@ const MenuBar = ({ editor, onPreview, onAddLink, onAddEmail, onAttachFile, attac
                 {attaching ? '…' : <FaPaperclip />}
             </button>
             <button onClick={addImage} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><FaImage /></button>
+            <select
+                title="Sətir aralığı"
+                value={editor.getAttributes('paragraph').lineHeight ?? ''}
+                onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === '') editor.chain().focus().unsetLineHeight().run();
+                    else editor.chain().focus().setLineHeight(value).run();
+                }}
+                className="rounded-lg border border-gray-200 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900"
+            >
+                <option value="">Sətir aralığı</option>
+                {LINE_HEIGHTS.map((height) => (
+                    <option key={height} value={height}>{height}</option>
+                ))}
+            </select>
             <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><FaCode /></button>
             <button onClick={addTable} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"><FaTable /></button>
             <button onClick={() => editor.chain().focus().undo().run()} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Undo</button>
@@ -81,6 +97,7 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                 heading: false,
             }),
             Underline,
+            LineHeight,
             Link.extend({
                 addAttributes() {
                     return {
