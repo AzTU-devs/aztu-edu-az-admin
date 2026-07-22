@@ -22,11 +22,16 @@ import { ABOUT_GROUP_LABELS, ABOUT_GROUP_ORDER } from "./aboutGroups";
 export default function AboutPagesPage() {
   const [pages, setPages] = useState<AboutPageListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // An empty registry and a failed request are different problems with
+  // different fixes — seed the pages vs. deploy/reach the API — so they must
+  // not collapse into the same "no pages" screen.
+  const [failed, setFailed] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     const result = await getAboutPages();
+    setFailed(result === "ERROR");
     setPages(result === "ERROR" ? [] : result);
     setLoading(false);
   }, []);
@@ -82,16 +87,41 @@ export default function AboutPagesPage() {
         <div className="flex justify-center py-20">
           <CircularProgress />
         </div>
+      ) : failed ? (
+        <div className="rounded-2xl border border-red-100 bg-white p-8 text-center dark:border-red-500/30 dark:bg-gray-900">
+          <p className="font-medium text-red-600 dark:text-red-400">
+            Səhifələr yüklənə bilmədi.
+          </p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            API cavab vermir və ya{" "}
+            <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">/api/about</code>{" "}
+            endpoint-i hələ yayımlanmayıb. Backend-i yeniləyin və yenidən cəhd edin.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <Button size="sm" variant="outline" onClick={() => void load()}>
+              Yenidən cəhd et
+            </Button>
+          </div>
+        </div>
       ) : pages.length === 0 ? (
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-gray-600 dark:text-gray-300">Heç bir səhifə tapılmadı.</p>
-          <p className="mt-2 text-sm text-gray-400">
-            Səhifə reyestrini yaratmaq üçün serverdə{" "}
+          <p className="text-gray-600 dark:text-gray-300">Cədvəllər boşdur.</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Sxem yaradılıb, lakin səhifə reyestri hələ doldurulmayıb. Verilənlər bazasında{" "}
+            <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">
+              migrations_about_pages_seed.sql
+            </code>{" "}
+            faylını icra edin — və ya serverdə{" "}
             <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">
               python -m app.scripts.seed_about_pages
-            </code>{" "}
-            əmrini icra edin.
+            </code>
+            .
           </p>
+          <div className="mt-4 flex justify-center">
+            <Button size="sm" variant="outline" onClick={() => void load()}>
+              Yenilə
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="space-y-8">

@@ -467,7 +467,11 @@ export default function AboutPageEditor() {
                 <div className="space-y-3">
                   {sorted.map((section) => (
                     <SortableSection key={section.id} id={section.id}>
-                      <AboutSectionCard section={section} onChanged={() => void load()} />
+                      <AboutSectionCard
+                        pageKey={pageKey}
+                        section={section}
+                        onChanged={() => void load()}
+                      />
                     </SortableSection>
                   ))}
                 </div>

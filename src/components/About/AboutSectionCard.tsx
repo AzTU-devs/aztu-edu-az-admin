@@ -11,11 +11,10 @@ import AboutItemForm, {
   itemToFormValue,
   type AboutItemFormValue,
 } from "./AboutItemForm";
-import AboutPersonForm, {
-  emptyPersonValue,
-  personToFormValue,
-  type AboutPersonFormValue,
-} from "./AboutPersonForm";
+import AboutPeopleCards from "./AboutPeopleCards";
+import AboutTableEditor from "./AboutTableEditor";
+import AboutGalleryEditor from "./AboutGalleryEditor";
+import AboutDocumentsEditor from "./AboutDocumentsEditor";
 import {
   linesToText,
   metaFor,
@@ -25,19 +24,13 @@ import {
 } from "./sectionTypes";
 import {
   createAboutItem,
-  createAboutPerson,
   deleteAboutItem,
-  deleteAboutPerson,
   reorderAboutItems,
-  reorderAboutPeople,
   updateAboutItem,
-  updateAboutPerson,
   updateAboutSection,
   uploadAboutItemFile,
   uploadAboutItemImage,
-  uploadAboutPersonImage,
   type AboutItem,
-  type AboutPerson,
   type AboutSection,
   type Lang,
 } from "../../services/about/aboutService";
@@ -97,12 +90,21 @@ const itemPrimary = (item: AboutItem): string =>
 const itemSecondary = (item: AboutItem): string =>
   item.az?.description || item.az?.value_text || item.link_url || item.item_key || "";
 
+/** Block types that bring their own editor instead of the generic row list. */
+const HAS_CUSTOM_EDITOR = new Set(["table", "gallery", "documents"]);
+
 interface AboutSectionCardProps {
+  /** Needed to build links into this page's person detail screens. */
+  pageKey: string;
   section: AboutSection;
   onChanged: () => void;
 }
 
-export default function AboutSectionCard({ section, onChanged }: AboutSectionCardProps) {
+export default function AboutSectionCard({
+  pageKey,
+  section,
+  onChanged,
+}: AboutSectionCardProps) {
   const meta = metaFor(section.section_type);
 
   const [form, setForm] = useState<SectionFormValue>(() => toSectionForm(section, meta));
@@ -238,47 +240,6 @@ export default function AboutSectionCard({ section, onChanged }: AboutSectionCar
     return result;
   };
 
-  // ── Person wiring ───────────────────────────────────────────────────────────
-
-  const buildPersonPayload = (value: AboutPersonFormValue) => ({
-    slug: value.slug,
-    email: value.email,
-    phone: value.phone,
-    phone_internal: value.phone_internal,
-    room_number: value.room_number,
-    az: value.az,
-    en: value.en,
-    educations: value.educations.map((education, index) => ({
-      period: education.period,
-      display_order: index,
-      az: education.az,
-      en: education.en,
-    })),
-  });
-
-  const handleCreatePerson = async (value: AboutPersonFormValue): Promise<CreateResult> => {
-    const result = await createAboutPerson(section.id, buildPersonPayload(value));
-    if (result.status !== "SUCCESS") return result;
-    if (value.imageFile) {
-      const upload = await uploadAboutPersonImage(result.id, value.imageFile);
-      if (upload !== "SUCCESS") warnUpload(value.imageFile.name);
-    }
-    return result;
-  };
-
-  const handleUpdatePerson = async (
-    id: number,
-    value: AboutPersonFormValue
-  ): Promise<MutateResult> => {
-    const result = await updateAboutPerson(id, buildPersonPayload(value));
-    if (result !== "SUCCESS") return result;
-    if (value.imageFile) {
-      const upload = await uploadAboutPersonImage(id, value.imageFile);
-      if (upload !== "SUCCESS") warnUpload(value.imageFile.name);
-    }
-    return result;
-  };
-
   const rowCount = meta.usesPeople ? section.people.length : section.items.length;
 
   return (
@@ -365,38 +326,32 @@ export default function AboutSectionCard({ section, onChanged }: AboutSectionCar
           </div>
 
           {meta.usesPeople ? (
-            <EntityManager<AboutPerson, AboutPersonFormValue>
-              title={meta.itemLabel}
-              description="Sıralamaq üçün sətirləri sürükləyin."
-              items={section.people}
-              getId={(person) => person.id}
-              getPrimary={(person) =>
-                person.az?.full_name || person.en?.full_name || "(adsız)"
-              }
-              getSecondary={(person) => person.az?.position || person.en?.position || ""}
-              getThumb={(person) => person.image_url ?? undefined}
-              showThumb
-              toFormValue={personToFormValue}
-              emptyValue={emptyPersonValue}
-              validate={(value) =>
-                value.az.full_name.trim() === "" && value.en.full_name.trim() === ""
-                  ? "Ən azı bir dildə ad tələb olunur."
-                  : null
-              }
-              renderForm={(value, onChange, helpers) => (
-                <AboutPersonForm value={value} onChange={onChange} remountKey={helpers.editorKey} />
-              )}
-              onCreate={handleCreatePerson}
-              onUpdate={handleUpdatePerson}
-              onDelete={deleteAboutPerson}
-              onReorder={(ids) => reorderAboutPeople(section.id, ids)}
+            <AboutPeopleCards
+              pageKey={pageKey}
+              sectionId={section.id}
+              people={section.people}
               onChanged={onChanged}
-              addLabel="+ Şəxs əlavə et"
-              emptyText="Hələ şəxs əlavə edilməyib."
             />
           ) : null}
 
-          {!meta.usesPeople && !meta.itemless ? (
+          {section.section_type === "table" ? (
+            <AboutTableEditor section={section} onChanged={onChanged} />
+          ) : null}
+
+          {section.section_type === "gallery" ? (
+            <AboutGalleryEditor section={section} onChanged={onChanged} />
+          ) : null}
+
+          {section.section_type === "documents" ? (
+            <AboutDocumentsEditor section={section} onChanged={onChanged} />
+          ) : null}
+
+          {/*
+            Everything else is a short list of small rows, which the generic
+            row editor handles well; only the blocks above are big enough to
+            justify a purpose-built screen.
+          */}
+          {!meta.usesPeople && !meta.itemless && !HAS_CUSTOM_EDITOR.has(section.section_type) ? (
             <EntityManager<AboutItem, AboutItemFormValue>
               title={meta.itemLabel}
               description="Sıralamaq üçün sətirləri sürükləyin."
