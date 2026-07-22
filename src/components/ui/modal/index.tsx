@@ -54,13 +54,31 @@ export const Modal: React.FC<ModalProps> = ({
     : "relative w-full rounded-3xl bg-white  dark:bg-gray-900";
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-y-auto modal z-99999">
+    /*
+      The scroll container must NOT also be the centring flex container.
+      `items-center` on an overflowing flex box pushes the excess equally in
+      both directions, and scrolling cannot go negative — so with a form taller
+      than the viewport the top of the dialog became permanently unreachable
+      (the reason zooming out appeared to "fix" it).
+
+      Scrolling lives on the outer element; centring happens on an inner
+      wrapper with `min-h-full`, which centres short dialogs and grows
+      downwards for tall ones, keeping every field reachable at any zoom.
+    */
+    <div className="fixed inset-0 overflow-y-auto modal z-99999">
       {!isFullscreen && (
         <div
           className="fixed inset-0 h-full w-full bg-gray-400/50 backdrop-blur-[32px]"
           onClick={onClose}
         ></div>
       )}
+      <div
+        className={
+          isFullscreen
+            ? "h-full w-full"
+            : "flex min-h-full items-center justify-center p-4 sm:p-6"
+        }
+      >
       <div
         ref={modalRef}
         className={`${contentClasses}  ${className}`}
@@ -88,6 +106,7 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         )}
         <div>{children}</div>
+      </div>
       </div>
     </div>
   );

@@ -105,7 +105,21 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     sectionFields: [
       TITLE,
       SUBTITLE,
-      { key: "video_url", scope: "row", label: "Video keçidi", kind: "url" },
+      BODY,
+      {
+        key: "video_url",
+        scope: "tr",
+        label: "YouTube keçidi",
+        kind: "url",
+        hint: "Hər dil üçün ayrıca — filmin AZ və EN versiyaları fərqli ola bilər.",
+      },
+      {
+        key: "video_url",
+        scope: "row",
+        label: "Ümumi video keçidi (istəyə bağlı)",
+        kind: "url",
+        hint: "Yalnız hər iki dildə eyni video olduqda doldurun.",
+      },
     ],
     itemFields: [],
   },
@@ -114,7 +128,14 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     label: "Siyahı",
     description: "Sadalanan bəndlər — istiqamətlər, öhdəliklər, dəyərlər.",
     itemLabel: "Bənd",
-    sectionFields: [TITLE, SUBTITLE, DESCRIPTION, NOTE, FOOTER],
+    sectionFields: [
+      TITLE,
+      SUBTITLE,
+      DESCRIPTION,
+      { key: "list_intro", scope: "tr", label: "Giriş mətni", kind: "rich" },
+      NOTE,
+      FOOTER,
+    ],
     itemFields: [
       ITEM_TITLE,
       ITEM_DESCRIPTION,

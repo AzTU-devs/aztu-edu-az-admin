@@ -13,6 +13,10 @@ export const ABOUT_GROUP_ORDER = [
   "affiliated",
   "policies",
   "other",
+  // Not part of the About dropdown — these are the Management section's
+  // "Ofis və Mərkəzlər" screens. They share this registry and every block
+  // editor with the About pages, but the sidebar lists them under İdarəetmə.
+  "offices",
 ] as const;
 
 export type AboutGroup = (typeof ABOUT_GROUP_ORDER)[number];
@@ -23,6 +27,7 @@ export const ABOUT_GROUP_LABELS: Record<AboutGroup, string> = {
   affiliated: "Bağlı Qurumlar",
   policies: "Siyasətlər və Sənədlər",
   other: "Digər səhifələr",
+  offices: "İdarəetmə — Ofis və Mərkəzlər",
 };
 
 /**
@@ -68,4 +73,23 @@ export const ABOUT_NAV_PAGES: AboutNavPage[] = [
   { key: "rankings", name: "Beynəlxalq Reytinqlər", group: "other" },
   { key: "hei", name: "Yüksək Təhsil İnstitutu (YTİ)", group: "other" },
   { key: "mba", name: "MBA Proqramı", group: "other" },
+];
+
+/**
+ * The Management dropdown's "Ofis və Mərkəzlər" half.
+ *
+ * Deliberately a separate list from ABOUT_NAV_PAGES: these pages live in the
+ * same registry and use the same editor, but they belong to the header's
+ * İdarəetmə section, so they must not appear under Haqqımızda in the sidebar.
+ * The other half of that dropdown — Struktur bölmələr — is the departments
+ * module, which was already dynamic.
+ */
+export const OFFICE_NAV_PAGES: AboutNavPage[] = [
+  { key: "tto", name: "Texnoloji Transfer Ofisi", group: "offices" },
+  { key: "qatim", name: "QATİM", group: "offices" },
+  { key: "sabah-center", name: "SABAH Mərkəzi", group: "offices" },
+  { key: "career-center", name: "Karyera və Məşğulluq Mərkəzi", group: "offices" },
+  { key: "lifelong-learning", name: "Ömürboyu Təhsil Mərkəzi", group: "offices" },
+  { key: "library", name: "Kitabxana-İnformasiya Mərkəzi", group: "offices" },
+  { key: "nabran", name: "Nabran İstirahət Mərkəzi", group: "offices" },
 ];

@@ -13,7 +13,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 import { GridIcon } from "../icons";
 import { permissionForPath } from "../config/routePermissions";
-import { ABOUT_NAV_PAGES } from "../pages/About/aboutGroups";
+import { ABOUT_NAV_PAGES, OFFICE_NAV_PAGES } from "../pages/About/aboutGroups";
 
 /**
  * `permission` is optional everywhere. When omitted, the entry inherits the
@@ -109,13 +109,26 @@ export const navGroups: NavGroup[] = [
           { name: "Yeni kafedra", path: "/cafedras/new" },
         ],
       },
+    ],
+  },
+  {
+    label: "İdarəetmə",
+    items: [
       {
         icon: <ApartmentIcon />,
-        name: "Departamentlər",
+        name: "Struktur bölmələr",
         subItems: [
-          { name: "Departamentlər", path: "/admin/departments" },
-          { name: "Yeni departament", path: "/admin/departments/create" },
+          { name: "Struktur bölmələr", path: "/admin/departments" },
+          { name: "Yeni struktur bölmə", path: "/admin/departments/create" },
         ],
+      },
+      {
+        icon: <AccountBalanceIcon />,
+        name: "Ofis və Mərkəzlər",
+        subItems: OFFICE_NAV_PAGES.map((page) => ({
+          name: page.name,
+          path: `/about-pages/${page.key}`,
+        })),
       },
     ],
   },
