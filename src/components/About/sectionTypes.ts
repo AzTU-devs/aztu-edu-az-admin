@@ -102,23 +102,15 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     description: "YouTube və ya birbaşa video keçidi.",
     itemless: true,
     itemLabel: "Element",
+    // Just the link: the page's heading and lead come from the page header,
+    // and the hero background video stays hard-coded in the website.
     sectionFields: [
-      TITLE,
-      SUBTITLE,
-      BODY,
       {
         key: "video_url",
         scope: "tr",
         label: "YouTube keçidi",
         kind: "url",
         hint: "Hər dil üçün ayrıca — filmin AZ və EN versiyaları fərqli ola bilər.",
-      },
-      {
-        key: "video_url",
-        scope: "row",
-        label: "Ümumi video keçidi (istəyə bağlı)",
-        kind: "url",
-        hint: "Yalnız hər iki dildə eyni video olduqda doldurun.",
       },
     ],
     itemFields: [],

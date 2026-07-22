@@ -46,9 +46,7 @@ import {
 interface PageForm {
   slug_az: string;
   slug_en: string;
-  hero_video_url: string;
   website_url: string;
-  video_url: string;
   az: TranslationForm;
   en: TranslationForm;
 }
@@ -68,9 +66,7 @@ const str = (value: string | null | undefined) => value ?? "";
 const toForm = (page: AboutPageDetail): PageForm => ({
   slug_az: str(page.slug_az),
   slug_en: str(page.slug_en),
-  hero_video_url: str(page.hero_video_url),
   website_url: str(page.website_url),
-  video_url: str(page.video_url),
   az: {
     eyebrow: str(page.az?.eyebrow),
     title: str(page.az?.title),
@@ -261,6 +257,17 @@ export default function AboutPageEditor() {
     (a, b) => order.indexOf(a.id) - order.indexOf(b.id)
   );
 
+  // Page-level fields are not universal. An external site link only means
+  // something for an affiliated entity or an office that has one; showing it
+  // on "AzTU-nun Tarixi" just invites a wrong answer to a question the page
+  // never asks.
+  const showsWebsite = page.template === "entity" || page.template === "office";
+  // And a page-level PDF is a second upload box for the same file once the
+  // page has a document block, which is where an editor looks for it.
+  const showsPagePdf =
+    !page.sections.some((section) => section.section_type === "documents") ||
+    Boolean(page.pdf_url);
+
   return (
     <>
       <PageMeta title={`${title} | AzTU Admin`} description="Haqqımızda səhifəsinin redaktəsi" />
@@ -314,34 +321,18 @@ export default function AboutPageEditor() {
                   }
                 />
               </div>
-              <div>
-                <Label>Rəsmi sayt keçidi</Label>
-                <Input
-                  value={form.website_url}
-                  onChange={(event) =>
-                    setForm((prev) => (prev ? { ...prev, website_url: event.target.value } : prev))
-                  }
-                  placeholder="https://tau.edu.az/"
-                />
-              </div>
-              <div>
-                <Label>Video keçidi</Label>
-                <Input
-                  value={form.video_url}
-                  onChange={(event) =>
-                    setForm((prev) => (prev ? { ...prev, video_url: event.target.value } : prev))
-                  }
-                />
-              </div>
-              <div>
-                <Label>Başlıq fonu üçün video keçidi</Label>
-                <Input
-                  value={form.hero_video_url}
-                  onChange={(event) =>
-                    setForm((prev) => (prev ? { ...prev, hero_video_url: event.target.value } : prev))
-                  }
-                />
-              </div>
+              {showsWebsite ? (
+                <div>
+                  <Label>Rəsmi sayt keçidi</Label>
+                  <Input
+                    value={form.website_url}
+                    onChange={(event) =>
+                      setForm((prev) => (prev ? { ...prev, website_url: event.target.value } : prev))
+                    }
+                    placeholder="https://tau.edu.az/"
+                  />
+                </div>
+              ) : null}
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -363,16 +354,18 @@ export default function AboutPageEditor() {
                 selectedFileName={coverFile?.name}
                 currentPath={page.cover_image}
               />
-              <AboutField
-                kind="file"
-                label="Səhifənin PDF sənədi"
-                value=""
-                onChange={() => {}}
-                onFileSelect={setPdfFile}
-                selectedFileName={pdfFile?.name}
-                currentPath={page.pdf_url}
-                hint={page.pdf_filename ?? undefined}
-              />
+              {showsPagePdf ? (
+                <AboutField
+                  kind="file"
+                  label="Səhifənin PDF sənədi"
+                  value=""
+                  onChange={() => {}}
+                  onFileSelect={setPdfFile}
+                  selectedFileName={pdfFile?.name}
+                  currentPath={page.pdf_url}
+                  hint={page.pdf_filename ?? undefined}
+                />
+              ) : null}
             </div>
 
             <LanguageTabs>
