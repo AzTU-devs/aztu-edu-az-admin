@@ -63,6 +63,7 @@ export const navGroups: NavGroup[] = [
         name: "Haqqımızda",
         subItems: [
           { name: "Vizyon, Missiya və Məqsəd", path: "/about/vision-mission-goal" },
+          { name: "AzTU-nun Tarixi", path: "/about/history" },
         ],
       },
     ],

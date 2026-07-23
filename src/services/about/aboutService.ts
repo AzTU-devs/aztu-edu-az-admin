@@ -27,6 +27,15 @@ export interface AboutBlock {
   en: AboutBlockTranslation;
 }
 
+/** One year on the history timeline. */
+export interface AboutMilestone {
+  id: number;
+  /** Free text — "1950", "1887-1905", "Bu gün". */
+  year: string | null;
+  az: { title: string | null; description: string | null };
+  en: { title: string | null; description: string | null };
+}
+
 export interface AboutLink {
   id: number;
   url: string | null;
@@ -38,6 +47,8 @@ export interface AboutLink {
 export interface AboutPageDetail {
   id: number;
   page_key: string;
+  /** Which form to show: statements | timeline. */
+  template: string;
   slug_az: string | null;
   slug_en: string | null;
   is_active: boolean;
@@ -45,6 +56,7 @@ export interface AboutPageDetail {
   en: AboutTranslation;
   blocks: AboutBlock[];
   links: AboutLink[];
+  milestones: AboutMilestone[];
   updated_at: string | null;
 }
 
@@ -63,6 +75,11 @@ export interface AboutPagePayload {
     url: string;
     az: { label: string };
     en: { label: string };
+  }>;
+  milestones?: Array<{
+    year: string;
+    az: { title: string; description: string };
+    en: { title: string; description: string };
   }>;
 }
 

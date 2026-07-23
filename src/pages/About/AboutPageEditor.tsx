@@ -43,12 +43,19 @@ interface LinkForm {
   label: Bilingual;
 }
 
+interface MilestoneForm {
+  year: string;
+  title: Bilingual;
+  description: Bilingual;
+}
+
 interface PageForm {
   title: Bilingual;
   description: Bilingual;
   links_title: Bilingual;
   blocks: BlockForm[];
   links: LinkForm[];
+  milestones: MilestoneForm[];
 }
 
 const str = (value: string | null | undefined) => value ?? "";
@@ -65,6 +72,14 @@ const toForm = (page: AboutPageDetail): PageForm => ({
   links: page.links.map((link) => ({
     url: str(link.url),
     label: { az: str(link.az?.label), en: str(link.en?.label) },
+  })),
+  milestones: page.milestones.map((milestone) => ({
+    year: str(milestone.year),
+    title: { az: str(milestone.az?.title), en: str(milestone.en?.title) },
+    description: {
+      az: str(milestone.az?.description),
+      en: str(milestone.en?.description),
+    },
   })),
 });
 
@@ -159,6 +174,46 @@ export default function AboutPageEditor() {
       return { ...prev, links };
     });
 
+  const setMilestone = (
+    index: number,
+    field: "year" | "title" | "description",
+    value: string
+  ) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            milestones: prev.milestones.map((milestone, i) =>
+              i !== index
+                ? milestone
+                : field === "year"
+                ? { ...milestone, year: value }
+                : { ...milestone, [field]: { ...milestone[field], [lang]: value } }
+            ),
+          }
+        : prev
+    );
+
+  const addMilestone = () =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            milestones: [
+              ...prev.milestones,
+              { year: "", title: { az: "", en: "" }, description: { az: "", en: "" } },
+            ],
+          }
+        : prev
+    );
+
+  const removeMilestone = (index: number) =>
+    setForm((prev) =>
+      prev
+        ? { ...prev, milestones: prev.milestones.filter((_, i) => i !== index) }
+        : prev
+    );
+
   const handleSave = async () => {
     if (!form) return;
     setSaving(true);
@@ -187,6 +242,20 @@ export default function AboutPageEditor() {
             url: link.url,
             az: { label: link.label.az },
             en: { label: link.label.en },
+          })),
+        // A milestone with no year and no text is an empty row the editor
+        // added and never filled in; it should not reach the website.
+        milestones: form.milestones
+          .filter(
+            (milestone) =>
+              milestone.year.trim() ||
+              milestone.title.az.trim() ||
+              milestone.title.en.trim()
+          )
+          .map((milestone) => ({
+            year: milestone.year,
+            az: { title: milestone.title.az, description: milestone.description.az },
+            en: { title: milestone.title.en, description: milestone.description.en },
           })),
       });
 
@@ -269,6 +338,8 @@ export default function AboutPageEditor() {
   }
 
   const title = form.title.az || form.title.en || page.page_key;
+  // The About pages are not all the same shape; the page says which form it is.
+  const isTimeline = page.template === "timeline";
 
   return (
     <>
@@ -350,7 +421,72 @@ export default function AboutPageEditor() {
           </div>
         </ComponentCard>
 
-        {form.blocks.map((block, index) => (
+        {isTimeline ? (
+          <ComponentCard
+            title="Tarixçə"
+            desc="İllər saytda yenidən köhnəyə doğru sıralanır — burada sıralamaq lazım deyil."
+          >
+            <div className="space-y-4">
+              {form.milestones.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ il əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {form.milestones.map((milestone, index) => (
+                    <div
+                      key={index}
+                      className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                    >
+                      <div className="mb-3 flex items-center justify-between gap-4">
+                        <div className="w-40">
+                          <Label>İl</Label>
+                          <Input
+                            value={milestone.year}
+                            onChange={(event) =>
+                              setMilestone(index, "year", event.target.value)
+                            }
+                            placeholder="1950"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeMilestone(index)}
+                          className="mt-5 text-xs text-red-500 hover:text-red-600"
+                        >
+                          Sil
+                        </button>
+                      </div>
+
+                      <div className="mb-3">
+                        <Label>Başlıq</Label>
+                        <Input
+                          value={milestone.title[lang]}
+                          onChange={(event) =>
+                            setMilestone(index, "title", event.target.value)
+                          }
+                        />
+                      </div>
+
+                      <RichTextField
+                        label="Təsvir"
+                        value={milestone.description[lang]}
+                        onChange={(next) => setMilestone(index, "description", next)}
+                        remountKey={`${formKey}-ms-${index}-${lang}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addMilestone}>
+                + İl əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        ) : null}
+
+        {!isTimeline && form.blocks.map((block, index) => (
           <ComponentCard
             key={block.block_key}
             title={block.title[lang] || block.block_key}
