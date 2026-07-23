@@ -1,4 +1,3 @@
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import BiotechIcon from '@mui/icons-material/Biotech';
@@ -13,7 +12,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 import { GridIcon } from "../icons";
 import { permissionForPath } from "../config/routePermissions";
-import { ABOUT_NAV_PAGES, OFFICE_NAV_PAGES } from "../pages/About/aboutGroups";
 
 /**
  * `permission` is optional everywhere. When omitted, the entry inherits the
@@ -72,22 +70,6 @@ export const navGroups: NavGroup[] = [
           { name: "Xəbər kateqoriyaları", path: "/news-categories" },
         ],
       },
-      {
-        /*
-          Every screen behind the public site's "Haqqımızda" dropdown, listed by
-          name so an editor reaches a page in one click rather than going via the
-          index. The names mirror the backend seed — see pages/About/aboutGroups.
-        */
-        icon: <AccountBalanceIcon />,
-        name: "Haqqımızda",
-        subItems: [
-          { name: "Bütün səhifələr", path: "/about-pages" },
-          ...ABOUT_NAV_PAGES.map((page) => ({
-            name: page.name,
-            path: `/about-pages/${page.key}`,
-          })),
-        ],
-      },
     ],
   },
   {
@@ -109,26 +91,13 @@ export const navGroups: NavGroup[] = [
           { name: "Yeni kafedra", path: "/cafedras/new" },
         ],
       },
-    ],
-  },
-  {
-    label: "İdarəetmə",
-    items: [
       {
         icon: <ApartmentIcon />,
-        name: "Struktur bölmələr",
+        name: "Departamentlər",
         subItems: [
-          { name: "Struktur bölmələr", path: "/admin/departments" },
-          { name: "Yeni struktur bölmə", path: "/admin/departments/create" },
+          { name: "Departamentlər", path: "/admin/departments" },
+          { name: "Yeni departament", path: "/admin/departments/create" },
         ],
-      },
-      {
-        icon: <AccountBalanceIcon />,
-        name: "Ofis və Mərkəzlər",
-        subItems: OFFICE_NAV_PAGES.map((page) => ({
-          name: page.name,
-          path: `/about-pages/${page.key}`,
-        })),
       },
     ],
   },

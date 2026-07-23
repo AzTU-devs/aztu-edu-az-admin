@@ -35,18 +35,6 @@ const CAFEDRAS = anyOf("cafedras", ["create", "update", "delete"]);
 const DEPARTMENTS = anyOf("departments", ["create", "update", "delete"]);
 const RESEARCH_INSTITUTES = anyOf("research_institutes", ["create", "update", "delete"]);
 const RESEARCH_PROJECTS = anyOf("research_projects", ["create", "update", "delete"]);
-const ABOUT = anyOf("about", [
-  "create",
-  "update",
-  "delete",
-  "activate",
-  "section.create",
-  "section.update",
-  "item.create",
-  "item.update",
-  "person.create",
-  "person.update",
-]);
 const MENU = anyOf("menu", ["footer_column.create", "footer_link.create", "partner_logo.create"]);
 const MENU_HEADER = anyOf("menu_header", ["create", "update", "delete"]);
 
@@ -61,10 +49,6 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[]> = {
 
   "/announcements": ANNOUNCEMENTS,
   "/announcements/new": "announcements.create",
-
-  // Detail routes inherit this by longest-prefix, so /about-pages/rector is
-  // covered without an entry of its own.
-  "/about-pages": ABOUT,
 
   "/sliders": HERO,
   "/sliders/new": "hero.create",

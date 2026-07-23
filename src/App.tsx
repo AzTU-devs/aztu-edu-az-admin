@@ -27,9 +27,6 @@ import ProjectDetailsPage from "./pages/Projects/ProjectDetailsPage";
 import NewsPage from "./pages/News/NewsPage";
 import NewNewsPage from "./pages/News/NewNewsPage";
 import NewsDetailsPage from "./pages/News/NewsDetailsPage";
-import AboutPagesPage from "./pages/About/AboutPagesPage";
-import AboutPageEditor from "./pages/About/AboutPageEditor";
-import AboutPersonPage from "./pages/About/AboutPersonPage";
 import AnnouncementsPage from "./pages/Announcements/AnnouncementsPage";
 import NewAnnouncementPage from "./pages/Announcements/NewAnnouncementPage";
 import AnnouncementDetailsPage from "./pages/Announcements/AnnouncementDetailsPage";
@@ -141,15 +138,6 @@ export default function App() {
             <Route path="/announcements/new" element={<NewAnnouncementPage />} />
             <Route path="/announcements/:announcement_id" element={<AnnouncementDetailsPage />} />
 
-            {/* About pages */}
-            <Route path="/about-pages" element={<AboutPagesPage />} />
-            <Route path="/about-pages/:page_key" element={<AboutPageEditor />} />
-            {/*
-              People get their own screen, not a modal: on the public site a
-              vice-rector card opens a full detail page, and the biography and
-              education history only exist there.
-            */}
-            <Route path="/about-pages/:page_key/people/:person_id" element={<AboutPersonPage />} />
 
             {/* Sliders */}
             <Route path="/sliders" element={<SlidersPage />} />
