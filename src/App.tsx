@@ -24,6 +24,7 @@ import ProjectsPage from "./pages/Projects/ProjectsPage";
 import NewProjectPage from "./pages/Projects/NewProjectPage";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ProjectDetailsPage from "./pages/Projects/ProjectDetailsPage";
+import AboutPageEditor from "./pages/About/AboutPageEditor";
 import NewsPage from "./pages/News/NewsPage";
 import NewNewsPage from "./pages/News/NewNewsPage";
 import NewsDetailsPage from "./pages/News/NewsDetailsPage";
@@ -127,6 +128,9 @@ export default function App() {
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/new" element={<NewProjectPage />} />
             <Route path="/projects/:project_id" element={<ProjectDetailsPage />} />
+
+            {/* About (Haqqımızda) */}
+            <Route path="/about/:page_key" element={<AboutPageEditor />} />
 
             {/* News */}
             <Route path="/news" element={<NewsPage />} />

@@ -2,6 +2,7 @@ import ApartmentIcon from '@mui/icons-material/Apartment';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import BiotechIcon from '@mui/icons-material/Biotech';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import InfoIcon from '@mui/icons-material/Info';
 import CategoryIcon from '@mui/icons-material/Category';
 import ForumIcon from '@mui/icons-material/Forum';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -47,6 +48,22 @@ export const navGroups: NavGroup[] = [
         icon: <GridIcon />,
         name: "Əsas səhifə",
         path: "/",
+      },
+    ],
+  },
+  {
+    /*
+      The public site's "Haqqımızda" dropdown. One entry per screen — the pages
+      are hand-listed rather than fetched, like every other group here.
+    */
+    label: "Haqqımızda",
+    items: [
+      {
+        icon: <InfoIcon />,
+        name: "Haqqımızda",
+        subItems: [
+          { name: "Vizyon, Missiya və Məqsəd", path: "/about/vision-mission-goal" },
+        ],
       },
     ],
   },
