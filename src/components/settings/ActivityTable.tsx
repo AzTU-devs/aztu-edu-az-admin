@@ -18,6 +18,33 @@ const statusColor = (item: ActivityItem) => {
 
 const initials = (username: string) => username.slice(0, 2).toLocaleUpperCase("az");
 
+/**
+ * How the caller identified itself. Derived server-side from the User-Agent and
+ * advisory only — a User-Agent is trivially spoofed, so a "Sayt" badge is a
+ * claim, not proof. Anything that is not a browser is coloured to stand out,
+ * because a write from curl or Postman is worth a second look.
+ */
+const CLIENT_LABELS: Record<string, string> = {
+  browser: "Sayt",
+  curl: "curl",
+  wget: "wget",
+  postman: "Postman",
+  insomnia: "Insomnia",
+  python: "Python",
+  node: "Node",
+  java: "Java",
+  go: "Go",
+  bot: "Bot",
+  other: "Digər",
+  unknown: "Naməlum",
+};
+
+const clientColor = (client: string | null): "success" | "warning" | "light" => {
+  if (client === "browser") return "success";
+  if (!client || client === "unknown" || client === "other") return "light";
+  return "warning";
+};
+
 interface ActivityTableProps {
   items: ActivityItem[];
   loading?: boolean;
@@ -156,6 +183,11 @@ export default function ActivityTable({
                   <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
                     {item.ip ?? "—"}
                   </span>
+                  <div className="mt-1">
+                    <Badge size="sm" color={clientColor(item.client)}>
+                      {CLIENT_LABELS[item.client ?? "unknown"] ?? item.client}
+                    </Badge>
+                  </div>
                 </TableCell>
 
                 <TableCell className="px-5 py-3.5 align-top">
@@ -235,6 +267,38 @@ export default function ActivityTable({
                         </pre>
                       </div>
                     </div>
+
+                    {/* Request and response, as stored. Both were sanitised and
+                        size-capped server-side, so anything secret already
+                        reads "[redacted]" here. */}
+                    <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                      <div>
+                        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                          Sorğu (request)
+                        </p>
+                        <pre className="max-h-72 overflow-auto rounded-xl border border-gray-100 bg-white p-3 font-mono text-[11px] leading-relaxed text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                          {item.request_body
+                            ? JSON.stringify(item.request_body, null, 2)
+                            : "—"}
+                        </pre>
+                      </div>
+                      <div>
+                        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                          Cavab (response)
+                        </p>
+                        <pre className="max-h-72 overflow-auto rounded-xl border border-gray-100 bg-white p-3 font-mono text-[11px] leading-relaxed text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                          {item.response_body
+                            ? JSON.stringify(item.response_body, null, 2)
+                            : "—"}
+                        </pre>
+                      </div>
+                    </div>
+
+                    {item.request_id ? (
+                      <p className="mt-3 font-mono text-[11px] text-gray-400 dark:text-gray-500">
+                        request-id: {item.request_id}
+                      </p>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ) : null,

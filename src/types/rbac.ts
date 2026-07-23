@@ -220,6 +220,17 @@ export interface ActivityItem {
   outcome: ActivityOutcome;
   ip: string | null;
   user_agent: string | null;
+  /**
+   * Coarse client type derived from the User-Agent server-side: browser, curl,
+   * postman, python, bot … Advisory only — a User-Agent is client-supplied and
+   * trivially spoofed, so this is what the caller *claimed* to be.
+   */
+  client: string | null;
+  /** Correlates this row with the application log and the X-Request-ID header. */
+  request_id: string | null;
+  /** Sanitised and size-capped server-side; secrets are already "[redacted]". */
+  request_body: unknown;
+  response_body: unknown;
   meta: Record<string, string> | null;
 }
 
