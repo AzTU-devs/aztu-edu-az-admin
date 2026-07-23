@@ -12,6 +12,25 @@ export interface AboutTranslation {
   title: string | null;
   description: string | null;
   links_title: string | null;
+  document_label: string | null;
+  pillars_title: string | null;
+}
+
+/** One numbered card under "Strateji Sütunlar". */
+export interface AboutPillar {
+  id: number;
+  az: { title: string | null; description: string | null; tags: string[] | null };
+  en: { title: string | null; description: string | null; tags: string[] | null };
+}
+
+/** A heading plus one-line entries — the corporate values and the KPIs. */
+export interface AboutList {
+  id: number;
+  list_key: string;
+  /** bullet | number */
+  style: string;
+  az: { title: string | null; items: string[] | null };
+  en: { title: string | null; items: string[] | null };
 }
 
 export interface AboutBlockTranslation {
@@ -51,12 +70,16 @@ export interface AboutPageDetail {
   template: string;
   slug_az: string | null;
   slug_en: string | null;
+  /** An uploaded file's path or a pasted URL — the page treats them alike. */
+  document_url: string | null;
   is_active: boolean;
   az: AboutTranslation;
   en: AboutTranslation;
   blocks: AboutBlock[];
   links: AboutLink[];
   milestones: AboutMilestone[];
+  pillars: AboutPillar[];
+  lists: AboutList[];
   updated_at: string | null;
 }
 
@@ -64,6 +87,7 @@ export interface AboutPageDetail {
 export interface AboutPagePayload {
   slug_az?: string;
   slug_en?: string;
+  document_url?: string;
   az?: Partial<AboutTranslation>;
   en?: Partial<AboutTranslation>;
   blocks?: Array<{
@@ -80,6 +104,16 @@ export interface AboutPagePayload {
     year: string;
     az: { title: string; description: string };
     en: { title: string; description: string };
+  }>;
+  pillars?: Array<{
+    az: { title: string; description: string; tags: string[] };
+    en: { title: string; description: string; tags: string[] };
+  }>;
+  lists?: Array<{
+    list_key: string;
+    style: string;
+    az: { title: string; items: string[] };
+    en: { title: string; items: string[] };
   }>;
 }
 
@@ -114,6 +148,18 @@ export const publishAboutPage = async (pageKey: string, isActive: boolean) => {
     const response = await apiClient.put(`${BASE}/admin/pages/${pageKey}/publish`, {
       is_active: isActive,
     });
+    return response.data?.status_code === 200 ? ("SUCCESS" as const) : ("ERROR" as const);
+  } catch {
+    return "ERROR" as const;
+  }
+};
+
+/** Uploads the plan document and points the page at the stored file. */
+export const uploadAboutDocument = async (pageKey: string, file: File) => {
+  try {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await apiClient.put(`${BASE}/admin/pages/${pageKey}/document`, body);
     return response.data?.status_code === 200 ? ("SUCCESS" as const) : ("ERROR" as const);
   } catch {
     return "ERROR" as const;
