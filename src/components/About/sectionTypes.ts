@@ -68,7 +68,6 @@ const DESCRIPTION: SectionFieldSpec = {
 const NOTE: SectionFieldSpec = { key: "note", scope: "tr", label: "Qeyd", kind: "textarea" };
 const FOOTER: SectionFieldSpec = { key: "footer", scope: "tr", label: "Altdakı mətn", kind: "textarea" };
 const BODY: SectionFieldSpec = { key: "body_html", scope: "tr", label: "Mətn", kind: "rich" };
-const CTA: SectionFieldSpec = { key: "cta_label", scope: "tr", label: "Düymə mətni", kind: "text" };
 
 const ITEM_TITLE: ItemFieldSpec = { key: "title", scope: "tr", label: "Başlıq", kind: "text" };
 const ITEM_DESCRIPTION: ItemFieldSpec = {
@@ -77,6 +76,19 @@ const ITEM_DESCRIPTION: ItemFieldSpec = {
   label: "Təsvir",
   kind: "textarea",
 };
+/** Heading and body for the blocks the spec asks to be edited "as editor". */
+const ITEM_TITLE_RICH: ItemFieldSpec = {
+  key: "title",
+  scope: "tr",
+  label: "Başlıq",
+  kind: "rich",
+};
+const ITEM_DESCRIPTION_RICH: ItemFieldSpec = {
+  key: "description",
+  scope: "tr",
+  label: "Təsvir",
+  kind: "rich",
+};
 
 export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
   paragraphs: {
@@ -84,7 +96,7 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     description: "Sərbəst mətn — abzaslar, siyahılar, keçidlər.",
     itemless: true,
     itemLabel: "Element",
-    sectionFields: [TITLE, SUBTITLE, BODY, NOTE, FOOTER],
+    sectionFields: [TITLE, BODY],
     itemFields: [],
   },
 
@@ -120,14 +132,7 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     label: "Siyahı",
     description: "Sadalanan bəndlər — istiqamətlər, öhdəliklər, dəyərlər.",
     itemLabel: "Bənd",
-    sectionFields: [
-      TITLE,
-      SUBTITLE,
-      DESCRIPTION,
-      { key: "list_intro", scope: "tr", label: "Giriş mətni", kind: "rich" },
-      NOTE,
-      FOOTER,
-    ],
+    sectionFields: [TITLE, { key: "list_intro", scope: "tr", label: "Giriş mətni", kind: "rich" }],
     itemFields: [
       ITEM_TITLE,
       ITEM_DESCRIPTION,
@@ -151,11 +156,11 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     label: "Xronologiya",
     description: "İl → hadisə. AzTU-nun tarixi səhifəsi.",
     itemLabel: "Mərhələ",
-    sectionFields: [TITLE, SUBTITLE],
+    sectionFields: [TITLE],
     itemFields: [
       { key: "year", scope: "row", label: "İl", kind: "text", placeholder: "1950" },
-      ITEM_TITLE,
-      ITEM_DESCRIPTION,
+      ITEM_TITLE_RICH,
+      ITEM_DESCRIPTION_RICH,
     ],
   },
 
@@ -163,17 +168,17 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     label: "Strateji sütunlar",
     description: "Nömrələnmiş kart — başlıq, təsvir və hədəf etiketləri.",
     itemLabel: "Sütun",
-    sectionFields: [TITLE, SUBTITLE, DESCRIPTION],
+    sectionFields: [TITLE],
     itemFields: [
       { key: "num", scope: "row", label: "Nömrə", kind: "text", placeholder: "01" },
-      ITEM_TITLE,
-      ITEM_DESCRIPTION,
+      ITEM_TITLE_RICH,
+      ITEM_DESCRIPTION_RICH,
       {
         key: "extra",
         scope: "tr",
         label: "Hədəflər",
         kind: "lines",
-        hint: "Hər sətirdə bir hədəf.",
+        hint: "Hər sətirdə bir hədəf — kartın altındakı etiketlər.",
       },
     ],
   },
@@ -185,7 +190,6 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     sectionFields: [TITLE, SUBTITLE, DESCRIPTION],
     itemFields: [
       { key: "image_url", scope: "row", label: "Şəkil", kind: "image" },
-      ITEM_TITLE,
       ITEM_DESCRIPTION,
       { key: "link_url", scope: "row", label: "Keçid", kind: "url" },
     ],
@@ -195,7 +199,7 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     label: "Qısa məlumat",
     description: "Ad → dəyər cütləri: Təsis ili, Məkan, Tələbə sayı.",
     itemLabel: "Sətir",
-    sectionFields: [TITLE, SUBTITLE],
+    sectionFields: [TITLE],
     itemFields: [
       { key: "label", scope: "tr", label: "Ad", kind: "text", placeholder: "Təsis ili" },
       { key: "value_text", scope: "tr", label: "Dəyər", kind: "text", placeholder: "2024" },
@@ -221,11 +225,10 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     label: "Keçidlər",
     description: "“Bölmədə daha çox” blokları və xarici keçidlər.",
     itemLabel: "Keçid",
-    sectionFields: [TITLE, SUBTITLE],
+    sectionFields: [TITLE],
     itemFields: [
-      ITEM_TITLE,
-      { key: "link_url", scope: "row", label: "Ünvan", kind: "url", placeholder: "/haqqimizda/..." },
-      { key: "link_label", scope: "tr", label: "Düymə mətni (istəyə bağlı)", kind: "text" },
+      { key: "title", scope: "tr", label: "Düymə mətni", kind: "text" },
+      { key: "link_url", scope: "row", label: "Düymənin ünvanı", kind: "url", placeholder: "/haqqimizda/..." },
     ],
   },
 
@@ -234,7 +237,7 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     description:
       "PDF kitabxanası. Sənədin dilə görə ayrı faylı varsa, AZ və EN fayllarını ayrıca yükləyin.",
     itemLabel: "Sənəd",
-    sectionFields: [TITLE, SUBTITLE, DESCRIPTION, NOTE, CTA],
+    sectionFields: [TITLE],
     itemFields: [
       ITEM_TITLE,
       {
@@ -266,10 +269,9 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     label: "Qalereya",
     description: "Şəkil və altyazı.",
     itemLabel: "Şəkil",
-    sectionFields: [TITLE, SUBTITLE],
+    sectionFields: [TITLE],
     itemFields: [
       { key: "image_url", scope: "row", label: "Şəkil", kind: "image" },
-      ITEM_TITLE,
       { key: "caption", scope: "tr", label: "Altyazı", kind: "textarea" },
     ],
   },
@@ -349,7 +351,7 @@ export const SECTION_TYPES: Record<SectionType, SectionTypeMeta> = {
     description: "Rektor, prorektorlar, direktor və əməkdaşlar.",
     usesPeople: true,
     itemLabel: "Şəxs",
-    sectionFields: [TITLE, SUBTITLE, DESCRIPTION, CTA, NOTE],
+    sectionFields: [TITLE],
     itemFields: [],
   },
 };

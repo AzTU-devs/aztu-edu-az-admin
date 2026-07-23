@@ -371,57 +371,59 @@ export default function AboutPageEditor() {
             <LanguageTabs>
               {(lang) => (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label>Üst etiket</Label>
-                      <Input
-                        value={form[lang].eyebrow}
-                        onChange={(event) => setTr(lang, "eyebrow", event.target.value)}
-                        placeholder="Rəhbərlik və İdarəetmə"
-                      />
-                    </div>
-                    <div>
-                      <Label>Başlıq</Label>
-                      <Input
-                        value={form[lang].title}
-                        onChange={(event) => setTr(lang, "title", event.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Naviqasiya adı</Label>
-                      <Input
-                        value={form[lang].breadcrumb}
-                        onChange={(event) => setTr(lang, "breadcrumb", event.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>SEO başlığı</Label>
-                      <Input
-                        value={form[lang].meta_title}
-                        onChange={(event) => setTr(lang, "meta_title", event.target.value)}
-                      />
-                    </div>
-                  </div>
-
                   <AboutField
-                    kind="textarea"
-                    label="Alt başlıq"
-                    value={form[lang].subtitle}
-                    onChange={(next) => setTr(lang, "subtitle", next)}
+                    kind="rich"
+                    label="Başlıq"
+                    value={form[lang].title}
+                    onChange={(next) => setTr(lang, "title", next)}
+                    remountKey={`${formKey}-title-${lang}`}
                   />
                   <AboutField
                     kind="rich"
-                    label="Giriş mətni"
-                    value={form[lang].intro}
-                    onChange={(next) => setTr(lang, "intro", next)}
-                    remountKey={`${formKey}-${lang}`}
+                    label="Qısa təsvir"
+                    value={form[lang].subtitle}
+                    onChange={(next) => setTr(lang, "subtitle", next)}
+                    remountKey={`${formKey}-subtitle-${lang}`}
+                    hint="Başlığın altında, hero bölməsində göstərilir."
                   />
-                  <AboutField
-                    kind="textarea"
-                    label="SEO təsviri"
-                    value={form[lang].meta_description}
-                    onChange={(next) => setTr(lang, "meta_description", next)}
-                  />
+
+                  <details className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                    <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-300">
+                      Əlavə parametrlər (SEO, naviqasiya)
+                    </summary>
+                    <div className="mt-4 space-y-4">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <Label>SEO başlığı</Label>
+                          <Input
+                            value={form[lang].meta_title}
+                            onChange={(event) => setTr(lang, "meta_title", event.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Naviqasiya adı</Label>
+                          <Input
+                            value={form[lang].breadcrumb}
+                            onChange={(event) => setTr(lang, "breadcrumb", event.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Üst etiket</Label>
+                          <Input
+                            value={form[lang].eyebrow}
+                            onChange={(event) => setTr(lang, "eyebrow", event.target.value)}
+                            placeholder="Rəhbərlik və İdarəetmə"
+                          />
+                        </div>
+                      </div>
+                      <AboutField
+                        kind="textarea"
+                        label="SEO təsviri"
+                        value={form[lang].meta_description}
+                        onChange={(next) => setTr(lang, "meta_description", next)}
+                      />
+                    </div>
+                  </details>
                 </div>
               )}
             </LanguageTabs>
