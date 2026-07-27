@@ -36,7 +36,7 @@ const DEPARTMENTS = anyOf("departments", ["create", "update", "delete"]);
 const RESEARCH_INSTITUTES = anyOf("research_institutes", ["create", "update", "delete"]);
 const RESEARCH_PROJECTS = anyOf("research_projects", ["create", "update", "delete"]);
 const ABOUT = anyOf("about", ["update", "activate"]);
-const RESEARCH_PAGES = anyOf("research_pages", ["update", "activate"]);
+const RESEARCH_PAGES = anyOf("research_pages", ["update", "activate", "upload"]);
 const MENU = anyOf("menu", ["footer_column.create", "footer_link.create", "partner_logo.create"]);
 const MENU_HEADER = anyOf("menu_header", ["create", "update", "delete"]);
 

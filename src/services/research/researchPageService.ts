@@ -16,8 +16,11 @@ export interface ResearchTranslation {
   title: string | null;
   /** Rich text under the H1 in the hero. */
   description: string | null;
-  /** Rich text of the "Strateji baxış" intro card. */
-  vision_html: string | null;
+  /**
+   * Rich text of the page's one intro card — the "Strateji baxış" block on the
+   * priorities page, the paragraph above the tables on the patents page.
+   */
+  body_html: string | null;
   links_title: string | null;
 }
 
@@ -27,6 +30,25 @@ export interface ResearchPriority {
   display_order: number;
   az: { title: string | null; description: string | null };
   en: { title: string | null; description: string | null };
+}
+
+/** One row of a year's patent table. */
+export interface ResearchPatent {
+  id: number;
+  /** Shown verbatim in every language: "İ 2024 0058", "WO2023242086". */
+  patent_number: string | null;
+  /** An uploaded file's path or a pasted URL — the page treats them alike. */
+  document_url: string | null;
+  display_order: number;
+  az: { name: string | null; authors: string | null };
+  en: { name: string | null; authors: string | null };
+}
+
+/** One year heading with its own table under it. */
+export interface ResearchPatentYear {
+  id: number;
+  year: string | null;
+  patents: ResearchPatent[];
 }
 
 export interface ResearchLink {
@@ -40,7 +62,7 @@ export interface ResearchLink {
 export interface ResearchPageDetail {
   id: number;
   page_key: string;
-  /** Which form to show. Today: priorities. */
+  /** Which form to show: priorities | patents. */
   template: string;
   slug_az: string | null;
   slug_en: string | null;
@@ -48,6 +70,8 @@ export interface ResearchPageDetail {
   az: ResearchTranslation;
   en: ResearchTranslation;
   priorities: ResearchPriority[];
+  /** Oldest year first — the same order the website is served. */
+  patent_years: ResearchPatentYear[];
   links: ResearchLink[];
   updated_at: string | null;
 }
@@ -61,6 +85,15 @@ export interface ResearchPagePayload {
   priorities?: Array<{
     az: { title: string; description: string };
     en: { title: string; description: string };
+  }>;
+  patent_years?: Array<{
+    year: string;
+    patents: Array<{
+      patent_number: string;
+      document_url: string;
+      az: { name: string; authors: string };
+      en: { name: string; authors: string };
+    }>;
   }>;
   links?: Array<{
     url: string;
@@ -106,5 +139,27 @@ export const publishResearchPage = async (pageKey: string, isActive: boolean) =>
     return response.data?.status_code === 200 ? ("SUCCESS" as const) : ("ERROR" as const);
   } catch {
     return "ERROR" as const;
+  }
+};
+
+/**
+ * Stores a patent certificate and returns its path for the caller to put in the
+ * form. It writes to no row on its own: patent rows are replaced on every save,
+ * so the path has to be saved by the same PUT as the rest of the page.
+ */
+export const uploadResearchDocument = async (pageKey: string, file: File) => {
+  try {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await apiClient.put(
+      `${BASE}/admin/pages/${pageKey}/document`,
+      body
+    );
+    if (response.data?.status_code === 200 && response.data?.path) {
+      return response.data.path as string;
+    }
+    return null;
+  } catch {
+    return null;
   }
 };
