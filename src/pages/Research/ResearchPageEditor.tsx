@@ -385,11 +385,19 @@ export default function ResearchPageEditor() {
               patent_years: form.patent_years
                 .map((yearRow) => ({
                   year: yearRow.year,
+                  // Anything the editor actually put in the row keeps it: a
+                  // certificate they uploaded or a link they pasted counts just
+                  // as much as a number or a name. Dropping a row that holds an
+                  // uploaded file would strand that file on disk and lose work
+                  // the editor can see on screen.
                   patents: yearRow.patents.filter(
                     (patent) =>
                       patent.patent_number.trim() ||
+                      patent.document_url.trim() ||
                       patent.name.az.trim() ||
-                      patent.name.en.trim()
+                      patent.name.en.trim() ||
+                      patent.authors.az.trim() ||
+                      patent.authors.en.trim()
                   ),
                 }))
                 .filter((yearRow) => yearRow.year.trim() || yearRow.patents.length > 0)
@@ -542,7 +550,10 @@ export default function ResearchPageEditor() {
           </Button>
           <Button
             onClick={handleSave}
-            disabled={saving}
+            // Also blocked mid-upload: saving reloads the form from the server,
+            // which re-sorts the years, and the in-flight upload is still
+            // holding the positions the old list had.
+            disabled={saving || uploading !== null}
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
           >
             Yadda saxla
@@ -780,7 +791,10 @@ export default function ResearchPageEditor() {
                                 <Label>və ya fayl yüklə</Label>
                                 <input
                                   type="file"
-                                  disabled={uploading === `${yearIndex}-${patentIndex}`}
+                                  // Every input, not just this row's: `uploading`
+                                  // is one slot, so a second concurrent upload
+                                  // would clear the first one's guard.
+                                  disabled={uploading !== null}
                                   onChange={(event) => {
                                     void handlePatentUpload(
                                       yearIndex,
@@ -988,7 +1002,10 @@ export default function ResearchPageEditor() {
         <div className="flex justify-end">
           <Button
             onClick={handleSave}
-            disabled={saving}
+            // Also blocked mid-upload: saving reloads the form from the server,
+            // which re-sorts the years, and the in-flight upload is still
+            // holding the positions the old list had.
+            disabled={saving || uploading !== null}
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
           >
             Yadda saxla
