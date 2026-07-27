@@ -1,4 +1,5 @@
 import ApartmentIcon from '@mui/icons-material/Apartment';
+import ArticleIcon from '@mui/icons-material/Article';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import BiotechIcon from '@mui/icons-material/Biotech';
 import CampaignIcon from '@mui/icons-material/Campaign';
@@ -123,6 +124,19 @@ export const navGroups: NavGroup[] = [
   {
     label: "Tədqiqat",
     items: [
+      {
+        /*
+          The section's editorial pages, listed exactly like "Haqqımızda" above:
+          one entry per screen, hand-listed rather than fetched. The entries
+          below it manage entities (institutes, labs, projects), which is why
+          this one is kept separate rather than folded in with them.
+        */
+        icon: <ArticleIcon />,
+        name: "Tədqiqat",
+        subItems: [
+          { name: "Tədqiqat Prioritetləri", path: "/research/research-priorities" },
+        ],
+      },
       {
         icon: <BiotechIcon />,
         name: "Tədqiqat İnstitutları",
