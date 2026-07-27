@@ -15,8 +15,10 @@ import {
   publishAboutPage,
   updateAboutPage,
   uploadAboutDocument,
+  uploadAboutImage,
   type AboutPageDetail,
 } from "../../services/about/aboutService";
+import { getImageUrl } from "../../util/imageUrl";
 
 /**
  * Edits one About screen.
@@ -72,6 +74,16 @@ interface PageForm {
   document_label: Bilingual;
   pillars_title: Bilingual;
   document_url: string;
+  // Rector page.
+  degree: Bilingual;
+  position: Bilingual;
+  message: Bilingual;
+  about: Bilingual;
+  experience: string;
+  email: string;
+  image_url: string;
+  /** The gallery strip — ordered image paths/URLs. */
+  images: string[];
   pillars: PillarForm[];
   lists: ListForm[];
   blocks: BlockForm[];
@@ -95,6 +107,14 @@ const toForm = (page: AboutPageDetail): PageForm => ({
   },
   pillars_title: { az: str(page.az?.pillars_title), en: str(page.en?.pillars_title) },
   document_url: str(page.document_url),
+  degree: { az: str(page.az?.degree), en: str(page.en?.degree) },
+  position: { az: str(page.az?.position), en: str(page.en?.position) },
+  message: { az: str(page.az?.message), en: str(page.en?.message) },
+  about: { az: str(page.az?.about), en: str(page.en?.about) },
+  experience: str(page.experience),
+  email: str(page.email),
+  image_url: str(page.image_url),
+  images: page.images.map((image) => str(image.image_url)).filter(Boolean),
   pillars: page.pillars.map((pillar) => ({
     title: { az: str(pillar.az?.title), en: str(pillar.en?.title) },
     description: { az: str(pillar.az?.description), en: str(pillar.en?.description) },
@@ -165,8 +185,37 @@ export default function AboutPageEditor() {
     void load();
   }, [load]);
 
-  const setField = (field: "title" | "description" | "links_title", value: string) =>
+  const setField = (
+    field:
+      | "title"
+      | "description"
+      | "links_title"
+      | "degree"
+      | "position"
+      | "message"
+      | "about",
+    value: string
+  ) =>
     setForm((prev) => (prev ? { ...prev, [field]: { ...prev[field], [lang]: value } } : prev));
+
+  // Language-neutral single-value fields (experience, email, portrait).
+  const setPlain = (field: "experience" | "email" | "image_url", value: string) =>
+    setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+
+  const removeGalleryImage = (index: number) =>
+    setForm((prev) =>
+      prev ? { ...prev, images: prev.images.filter((_, i) => i !== index) } : prev
+    );
+
+  const moveGalleryImage = (index: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      const target = index + delta;
+      if (target < 0 || target >= prev.images.length) return prev;
+      const images = [...prev.images];
+      [images[index], images[target]] = [images[target], images[index]];
+      return { ...prev, images };
+    });
 
   const setBlock = (index: number, field: "title" | "body", value: string) =>
     setForm((prev) =>
@@ -334,18 +383,62 @@ export default function AboutPageEditor() {
     }
   };
 
+  // The upload endpoint only stores the file and returns its path; the path is
+  // held in form state and persisted by the next Save (the portrait or the
+  // gallery strip), so an unsaved upload never leaves a dangling row.
+  const handlePortraitUpload = async (file: File | null) => {
+    if (!file) return;
+    setSaving(true);
+    try {
+      const result = await uploadAboutImage(pageKey, file);
+      if (result.status !== "SUCCESS") {
+        Swal.fire({ icon: "error", title: "Xəta", text: "Şəkil yüklənmədi." });
+        return;
+      }
+      setPlain("image_url", result.path);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleGalleryUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setSaving(true);
+    try {
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        const result = await uploadAboutImage(pageKey, file);
+        if (result.status === "SUCCESS") uploaded.push(result.path);
+      }
+      if (uploaded.length === 0) {
+        Swal.fire({ icon: "error", title: "Xəta", text: "Şəkillər yüklənmədi." });
+        return;
+      }
+      setForm((prev) => (prev ? { ...prev, images: [...prev.images, ...uploaded] } : prev));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!form) return;
     setSaving(true);
     try {
       const result = await updateAboutPage(pageKey, {
         document_url: form.document_url,
+        experience: form.experience,
+        email: form.email,
+        image_url: form.image_url,
         az: {
           title: form.title.az,
           description: form.description.az,
           links_title: form.links_title.az,
           document_label: form.document_label.az,
           pillars_title: form.pillars_title.az,
+          degree: form.degree.az,
+          position: form.position.az,
+          message: form.message.az,
+          about: form.about.az,
         },
         en: {
           title: form.title.en,
@@ -353,7 +446,16 @@ export default function AboutPageEditor() {
           links_title: form.links_title.en,
           document_label: form.document_label.en,
           pillars_title: form.pillars_title.en,
+          degree: form.degree.en,
+          position: form.position.en,
+          message: form.message.en,
+          about: form.about.en,
         },
+        // A blank image row was never filled in and should not reach the site.
+        images: form.images
+          .map((url) => url.trim())
+          .filter(Boolean)
+          .map((url) => ({ image_url: url })),
         // A card with no heading in either language was never filled in.
         pillars: form.pillars
           .filter((pillar) => pillar.title.az.trim() || pillar.title.en.trim())
@@ -487,6 +589,10 @@ export default function AboutPageEditor() {
   // The About pages are not all the same shape; the page says which form it is.
   const isTimeline = page.template === "timeline";
   const isStrategicPlan = page.template === "strategic_plan";
+  const isRector = page.template === "rector";
+  // The rector page's single 'offices' list is edited as one textarea per
+  // language, so it is pulled out of the generic `lists` machinery here.
+  const officesIndex = form.lists.findIndex((entry) => entry.list_key === "offices");
 
   return (
     <>
@@ -548,15 +654,19 @@ export default function AboutPageEditor() {
       <div className="space-y-6">
         <ComponentCard
           title="Başlıq bölməsi"
-          desc="Səhifənin yuxarısındakı video bölməsində göstərilir. Video saytda sabitdir."
+          desc={
+            isRector
+              ? "Səhifənin yuxarısındakı bölmə. Şəkil və başlıqların dizaynı saytda sabitdir."
+              : "Səhifənin yuxarısındakı video bölməsində göstərilir. Video saytda sabitdir."
+          }
         >
           <div className="space-y-4">
             <div>
-              <Label>Başlıq</Label>
+              <Label>{isRector ? "Ad və Soyad" : "Başlıq"}</Label>
               <Input
                 value={form.title[lang]}
                 onChange={(event) => setField("title", event.target.value)}
-                placeholder="Vizyon, Missiya və Məqsəd"
+                placeholder={isRector ? "Vilayət Vəliyev" : "Vizyon, Missiya və Məqsəd"}
               />
             </div>
             <RichTextField
@@ -567,6 +677,205 @@ export default function AboutPageEditor() {
             />
           </div>
         </ComponentCard>
+
+        {isRector && (
+          <ComponentCard
+            title="Rektor məlumatları"
+            desc="Başlıq bölməsindəki kartlarda göstərilir. Etiketlər (Doktorluq, Elmi ad, Təcrübə) saytda sabitdir."
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Elmi dərəcə</Label>
+                  <Input
+                    value={form.degree[lang]}
+                    onChange={(event) => setField("degree", event.target.value)}
+                    placeholder="Texniki elmlər"
+                  />
+                </div>
+                <div>
+                  <Label>Elmi ad</Label>
+                  <Input
+                    value={form.position[lang]}
+                    onChange={(event) => setField("position", event.target.value)}
+                    placeholder="Professor"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Təcrübə</Label>
+                  <Input
+                    value={form.experience}
+                    onChange={(event) => setPlain("experience", event.target.value)}
+                    placeholder="30+ Years"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">Bütün dillərdə eyni göstərilir.</p>
+                </div>
+                <div>
+                  <Label>E-poçt</Label>
+                  <Input
+                    value={form.email}
+                    onChange={(event) => setPlain("email", event.target.value)}
+                    placeholder="rector@aztu.edu.az"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Rektorun şəkli</Label>
+                <div className="flex flex-wrap items-center gap-4">
+                  {form.image_url ? (
+                    <img
+                      src={getImageUrl(form.image_url)}
+                      alt="Rektor"
+                      className="h-28 w-28 rounded-xl border border-gray-200 object-cover dark:border-gray-700"
+                    />
+                  ) : (
+                    <div className="flex h-28 w-28 items-center justify-center rounded-xl border border-dashed border-gray-300 text-xs text-gray-400 dark:border-gray-700">
+                      Şəkil yoxdur
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => void handlePortraitUpload(event.target.files?.[0] ?? null)}
+                      className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                    />
+                    {form.image_url ? (
+                      <button
+                        type="button"
+                        onClick={() => setPlain("image_url", "")}
+                        className="text-xs text-red-500 hover:text-red-600"
+                      >
+                        Şəkli sil
+                      </button>
+                    ) : null}
+                    <p className="text-xs text-gray-400">
+                      Yüklədikdən sonra dəyişikliyi saxlamaq üçün “Yadda saxla”ya basın.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isRector && (
+          <ComponentCard
+            title="Rektorun müraciəti"
+            desc="Redaktorda sətirlər arasına boşluq (sətir hündürlüyü) əlavə edə bilərsiniz."
+          >
+            <RichTextField
+              label="Mətn"
+              value={form.message[lang]}
+              onChange={(next) => setField("message", next)}
+              remountKey={`${formKey}-message-${lang}`}
+            />
+          </ComponentCard>
+        )}
+
+        {isRector && (
+          <ComponentCard title="Rektor haqqında" desc="Tərcümeyi-hal mətni.">
+            <RichTextField
+              label="Mətn"
+              value={form.about[lang]}
+              onChange={(next) => setField("about", next)}
+              remountKey={`${formKey}-about-${lang}`}
+            />
+          </ComponentCard>
+        )}
+
+        {isRector && officesIndex !== -1 && (
+          <ComponentCard
+            title="Rektora tabe olan bölmələr"
+            desc="Hər sətirdə bir bölmə. Sayı məhdud deyil."
+          >
+            <div>
+              <Label>Bölmələr</Label>
+              <textarea
+                value={form.lists[officesIndex].items[lang]}
+                onChange={(event) => setList(officesIndex, "items", event.target.value)}
+                rows={8}
+                placeholder={"Rektor Aparatı\nElm və İnnovasiyalar üzrə Departament"}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+              />
+              <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir bölmə.</p>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isRector && (
+          <ComponentCard title="Qalereya" desc="Rektorun şəkilləri. Sayı məhdud deyil.">
+            <div className="space-y-4">
+              {form.images.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ şəkil əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {form.images.map((image, index) => (
+                    <div
+                      key={`${image}-${index}`}
+                      className="group relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700"
+                    >
+                      <img
+                        src={getImageUrl(image)}
+                        alt={`Qalereya ${index + 1}`}
+                        className="aspect-[4/3] w-full object-cover"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/50 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => moveGalleryImage(index, -1)}
+                            disabled={index === 0}
+                            title="Sola"
+                            className="px-1 text-white disabled:opacity-30"
+                          >
+                            ←
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveGalleryImage(index, 1)}
+                            disabled={index === form.images.length - 1}
+                            title="Sağa"
+                            className="px-1 text-white disabled:opacity-30"
+                          >
+                            →
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(index)}
+                          className="text-xs font-medium text-red-300 hover:text-red-200"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div>
+                <Label>Şəkil əlavə et</Label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(event) => void handleGalleryUpload(event.target.files)}
+                  className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  Bir neçə şəkil seçə bilərsiniz. Dəyişikliyi saxlamaq üçün “Yadda saxla”ya basın.
+                </p>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
 
         {isStrategicPlan && (
           <ComponentCard
@@ -831,7 +1140,7 @@ export default function AboutPageEditor() {
           </ComponentCard>
         ) : null}
 
-        {!isTimeline && !isStrategicPlan && form.blocks.map((block, index) => (
+        {!isTimeline && !isStrategicPlan && !isRector && form.blocks.map((block, index) => (
           <ComponentCard
             key={block.block_key}
             title={block.title[lang] || block.block_key}

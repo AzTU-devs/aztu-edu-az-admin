@@ -14,6 +14,18 @@ export interface AboutTranslation {
   links_title: string | null;
   document_label: string | null;
   pillars_title: string | null;
+  /** Rector page: academic degree, title, message (rich text) and biography. */
+  degree: string | null;
+  position: string | null;
+  message: string | null;
+  about: string | null;
+}
+
+/** One picture in the rector's gallery. */
+export interface AboutImage {
+  id: number;
+  image_url: string | null;
+  display_order: number;
 }
 
 /** One numbered card under "Strateji Sütunlar". */
@@ -72,6 +84,11 @@ export interface AboutPageDetail {
   slug_en: string | null;
   /** An uploaded file's path or a pasted URL — the page treats them alike. */
   document_url: string | null;
+  /** Rector page, language-neutral. */
+  experience: string | null;
+  email: string | null;
+  /** The rector's portrait — an uploaded file's path or a pasted URL. */
+  image_url: string | null;
   is_active: boolean;
   az: AboutTranslation;
   en: AboutTranslation;
@@ -80,6 +97,8 @@ export interface AboutPageDetail {
   milestones: AboutMilestone[];
   pillars: AboutPillar[];
   lists: AboutList[];
+  /** Rector page: the gallery strip. */
+  images: AboutImage[];
   updated_at: string | null;
 }
 
@@ -88,6 +107,10 @@ export interface AboutPagePayload {
   slug_az?: string;
   slug_en?: string;
   document_url?: string;
+  /** Rector page, language-neutral. */
+  experience?: string;
+  email?: string;
+  image_url?: string;
   az?: Partial<AboutTranslation>;
   en?: Partial<AboutTranslation>;
   blocks?: Array<{
@@ -115,6 +138,8 @@ export interface AboutPagePayload {
     az: { title: string; items: string[] };
     en: { title: string; items: string[] };
   }>;
+  /** Rector page: the gallery strip, sent whole. */
+  images?: Array<{ image_url: string }>;
 }
 
 const BASE = "/api/about";
@@ -163,5 +188,24 @@ export const uploadAboutDocument = async (pageKey: string, file: File) => {
     return response.data?.status_code === 200 ? ("SUCCESS" as const) : ("ERROR" as const);
   } catch {
     return "ERROR" as const;
+  }
+};
+
+/**
+ * Uploads one image (the rector's portrait or a gallery photo) and returns its
+ * stored path. The endpoint only stores the file — the caller drops the path
+ * into `image_url` or the `images` strip and the whole-page save persists it.
+ */
+export const uploadAboutImage = async (pageKey: string, file: File) => {
+  try {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await apiClient.put(`${BASE}/admin/pages/${pageKey}/image`, body);
+    if (response.data?.status_code === 200 && typeof response.data?.path === "string") {
+      return { status: "SUCCESS" as const, path: response.data.path as string };
+    }
+    return { status: "ERROR" as const };
+  } catch {
+    return { status: "ERROR" as const };
   }
 };
