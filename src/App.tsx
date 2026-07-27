@@ -25,6 +25,7 @@ import NewProjectPage from "./pages/Projects/NewProjectPage";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ProjectDetailsPage from "./pages/Projects/ProjectDetailsPage";
 import AboutPageEditor from "./pages/About/AboutPageEditor";
+import ResearchPageEditor from "./pages/Research/ResearchPageEditor";
 import NewsPage from "./pages/News/NewsPage";
 import NewNewsPage from "./pages/News/NewNewsPage";
 import NewsDetailsPage from "./pages/News/NewsDetailsPage";
@@ -131,6 +132,14 @@ export default function App() {
 
             {/* About (Haqqımızda) */}
             <Route path="/about/:page_key" element={<AboutPageEditor />} />
+
+            {/*
+              Research (Tədqiqat) — the section's editorial pages. Distinct from
+              /research-institutes, /research-projects and /research-laboratories
+              below, which manage entities; nothing here collides with them
+              because those paths are siblings of /research, not children.
+            */}
+            <Route path="/research/:page_key" element={<ResearchPageEditor />} />
 
             {/* News */}
             <Route path="/news" element={<NewsPage />} />
