@@ -14,6 +14,7 @@ import {
   getResearchPage,
   publishResearchPage,
   updateResearchPage,
+  uploadResearchDocument,
   type ResearchPageDetail,
 } from "../../services/research/researchPageService";
 
@@ -21,9 +22,14 @@ import {
  * Edits one screen of the Tədqiqat section.
  *
  * The whole page is one form with one Save button, matching how it saves on the
- * server. Everything the website draws by itself — the breadcrumb, the eyebrow,
- * the "Strateji baxış" heading, the card icons and numbering, the counter strip
- * and the SEO tags — is deliberately absent here.
+ * server. `template` says which shape the page is, exactly as the About editor
+ * does — the sections below it are the union of every shape, each shown only
+ * for the pages that have it.
+ *
+ * Everything the website draws by itself — the hero video, the breadcrumb, the
+ * eyebrow, the "Strateji baxış" heading, the table headers, the card icons,
+ * numbering and gradients, the counter strip, the document-viewer modal and the
+ * SEO tags — is deliberately absent here.
  */
 
 type Lang = "az" | "en";
@@ -38,6 +44,18 @@ interface PriorityForm {
   description: Bilingual;
 }
 
+interface PatentForm {
+  patent_number: string;
+  document_url: string;
+  name: Bilingual;
+  authors: Bilingual;
+}
+
+interface PatentYearForm {
+  year: string;
+  patents: PatentForm[];
+}
+
 interface LinkForm {
   url: string;
   label: Bilingual;
@@ -46,9 +64,10 @@ interface LinkForm {
 interface PageForm {
   title: Bilingual;
   description: Bilingual;
-  vision_html: Bilingual;
+  body_html: Bilingual;
   links_title: Bilingual;
   priorities: PriorityForm[];
+  patent_years: PatentYearForm[];
   links: LinkForm[];
 }
 
@@ -57,7 +76,7 @@ const str = (value: string | null | undefined) => value ?? "";
 const toForm = (page: ResearchPageDetail): PageForm => ({
   title: { az: str(page.az?.title), en: str(page.en?.title) },
   description: { az: str(page.az?.description), en: str(page.en?.description) },
-  vision_html: { az: str(page.az?.vision_html), en: str(page.en?.vision_html) },
+  body_html: { az: str(page.az?.body_html), en: str(page.en?.body_html) },
   links_title: { az: str(page.az?.links_title), en: str(page.en?.links_title) },
   priorities: page.priorities.map((priority) => ({
     title: { az: str(priority.az?.title), en: str(priority.en?.title) },
@@ -65,6 +84,15 @@ const toForm = (page: ResearchPageDetail): PageForm => ({
       az: str(priority.az?.description),
       en: str(priority.en?.description),
     },
+  })),
+  patent_years: (page.patent_years ?? []).map((yearRow) => ({
+    year: str(yearRow.year),
+    patents: (yearRow.patents ?? []).map((patent) => ({
+      patent_number: str(patent.patent_number),
+      document_url: str(patent.document_url),
+      name: { az: str(patent.az?.name), en: str(patent.en?.name) },
+      authors: { az: str(patent.az?.authors), en: str(patent.en?.authors) },
+    })),
   })),
   links: page.links.map((link) => ({
     url: str(link.url),
@@ -87,6 +115,14 @@ export default function ResearchPageEditor() {
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
   const [saving, setSaving] = useState(false);
+  // "<yearIndex>-<patentIndex>" of the row whose upload is in flight, so only
+  // that row's input is disabled rather than the whole table.
+  const [uploading, setUploading] = useState<string | null>(null);
+
+  // The research pages are not all the same shape; the page says which form it
+  // is, exactly as the About editor does. Declared here rather than beside the
+  // render because `handleSave` reads it too.
+  const isPatents = page?.template === "patents";
   // `RichTextField` seeds its content once at mount, so every language switch
   // and refetch has to remount it or the editors keep showing the old text.
   const [formKey, setFormKey] = useState(0);
@@ -113,7 +149,7 @@ export default function ResearchPageEditor() {
   }, [load]);
 
   const setField = (
-    field: "title" | "description" | "vision_html" | "links_title",
+    field: "title" | "description" | "body_html" | "links_title",
     value: string
   ) =>
     setForm((prev) =>
@@ -164,6 +200,127 @@ export default function ResearchPageEditor() {
       return { ...prev, priorities };
     });
 
+  /** Rewrites one year in place; every patent handler below goes through it. */
+  const editYear = (
+    yearIndex: number,
+    change: (year: PatentYearForm) => PatentYearForm
+  ) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            patent_years: prev.patent_years.map((yearRow, i) =>
+              i === yearIndex ? change(yearRow) : yearRow
+            ),
+          }
+        : prev
+    );
+
+  const setYear = (yearIndex: number, value: string) =>
+    editYear(yearIndex, (yearRow) => ({ ...yearRow, year: value }));
+
+  const addYear = () =>
+    setForm((prev) =>
+      prev
+        ? { ...prev, patent_years: [...prev.patent_years, { year: "", patents: [] }] }
+        : prev
+    );
+
+  const removeYear = (yearIndex: number) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            patent_years: prev.patent_years.filter((_, i) => i !== yearIndex),
+          }
+        : prev
+    );
+
+  /** `patent_number` and `document_url` are language-neutral; the rest are not. */
+  const setPatent = (
+    yearIndex: number,
+    patentIndex: number,
+    field: "patent_number" | "document_url" | "name" | "authors",
+    value: string
+  ) =>
+    editYear(yearIndex, (yearRow) => ({
+      ...yearRow,
+      patents: yearRow.patents.map((patent, i) =>
+        i !== patentIndex
+          ? patent
+          : field === "patent_number" || field === "document_url"
+          ? { ...patent, [field]: value }
+          : { ...patent, [field]: { ...patent[field], [lang]: value } }
+      ),
+    }));
+
+  const addPatent = (yearIndex: number) =>
+    editYear(yearIndex, (yearRow) => ({
+      ...yearRow,
+      patents: [
+        ...yearRow.patents,
+        {
+          patent_number: "",
+          document_url: "",
+          name: { az: "", en: "" },
+          authors: { az: "", en: "" },
+        },
+      ],
+    }));
+
+  const removePatent = (yearIndex: number, patentIndex: number) =>
+    editYear(yearIndex, (yearRow) => ({
+      ...yearRow,
+      patents: yearRow.patents.filter((_, i) => i !== patentIndex),
+    }));
+
+  const movePatent = (yearIndex: number, patentIndex: number, delta: number) =>
+    editYear(yearIndex, (yearRow) => {
+      const target = patentIndex + delta;
+      if (target < 0 || target >= yearRow.patents.length) return yearRow;
+      const patents = [...yearRow.patents];
+      [patents[patentIndex], patents[target]] = [patents[target], patents[patentIndex]];
+      return { ...yearRow, patents };
+    });
+
+  /**
+   * Uploads a certificate and drops the returned path into the row. The file is
+   * stored immediately but the path is only persisted by the next Save, which
+   * is why the upload cannot write to the patent row itself — that row is
+   * replaced on every save.
+   *
+   * The row is addressed by position, and the await in the middle is exactly
+   * where a position stops being trustworthy: deleting or moving a row while
+   * the request is in flight would land the path on someone else's row. Rather
+   * than give every row a client-side id, the buttons that could move it are
+   * disabled for the duration — see `uploading` below.
+   */
+  const handlePatentUpload = async (
+    yearIndex: number,
+    patentIndex: number,
+    file: File | null
+  ) => {
+    if (!file) return;
+    setUploading(`${yearIndex}-${patentIndex}`);
+    try {
+      const path = await uploadResearchDocument(pageKey, file);
+      if (!path) {
+        Swal.fire({ icon: "error", title: "Xəta", text: "Sənəd yüklənmədi." });
+        return;
+      }
+      setPatent(yearIndex, patentIndex, "document_url", path);
+      Swal.fire({
+        icon: "success",
+        title: "Sənəd yükləndi",
+        text: "Yadda saxladıqda qeyd olunacaq.",
+        showConfirmButton: false,
+        timer: 1600,
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const setLink = (index: number, field: "url" | "label", value: string) =>
     setForm((prev) =>
       prev
@@ -208,22 +365,61 @@ export default function ResearchPageEditor() {
         az: {
           title: form.title.az,
           description: form.description.az,
-          vision_html: form.vision_html.az,
+          body_html: form.body_html.az,
           links_title: form.links_title.az,
         },
         en: {
           title: form.title.en,
           description: form.description.en,
-          vision_html: form.vision_html.en,
+          body_html: form.body_html.en,
           links_title: form.links_title.en,
         },
-        // A card with no heading in either language was never filled in.
-        priorities: form.priorities
-          .filter((priority) => priority.title.az.trim() || priority.title.en.trim())
-          .map((priority) => ({
-            az: { title: priority.title.az, description: priority.description.az },
-            en: { title: priority.title.en, description: priority.description.en },
-          })),
+        // Each template sends the collections it owns and omits the rest. An
+        // omitted key leaves those rows untouched on the server, so the patents
+        // page can never blank out a priorities page's cards, or the reverse.
+        ...(isPatents
+          ? {
+              // A patent row with no number and no name in either language is
+              // an empty row the editor added and never filled in; a year left
+              // with no label and no rows likewise. Neither reaches the site.
+              patent_years: form.patent_years
+                .map((yearRow) => ({
+                  year: yearRow.year,
+                  patents: yearRow.patents.filter(
+                    (patent) =>
+                      patent.patent_number.trim() ||
+                      patent.name.az.trim() ||
+                      patent.name.en.trim()
+                  ),
+                }))
+                .filter((yearRow) => yearRow.year.trim() || yearRow.patents.length > 0)
+                .map((yearRow) => ({
+                  year: yearRow.year,
+                  patents: yearRow.patents.map((patent) => ({
+                    patent_number: patent.patent_number,
+                    document_url: patent.document_url,
+                    az: { name: patent.name.az, authors: patent.authors.az },
+                    en: { name: patent.name.en, authors: patent.authors.en },
+                  })),
+                })),
+            }
+          : {
+              // A card with no heading in either language was never filled in.
+              priorities: form.priorities
+                .filter(
+                  (priority) => priority.title.az.trim() || priority.title.en.trim()
+                )
+                .map((priority) => ({
+                  az: {
+                    title: priority.title.az,
+                    description: priority.description.az,
+                  },
+                  en: {
+                    title: priority.title.en,
+                    description: priority.description.en,
+                  },
+                })),
+            }),
         // A button with neither a label nor a URL is an empty row the editor
         // added and never filled in; it should not reach the website.
         links: form.links
@@ -298,7 +494,11 @@ export default function ResearchPageEditor() {
               <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">
                 migrations_research_priorities.sql
               </code>{" "}
-              faylını icra edin.
+              və{" "}
+              <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">
+                migrations_research_patents.sql
+              </code>{" "}
+              fayllarını bu ardıcıllıqla icra edin.
             </>
           ) : (
             "API cavab vermir. Backend-i yoxlayıb yenidən cəhd edin."
@@ -396,17 +596,234 @@ export default function ResearchPageEditor() {
         </ComponentCard>
 
         <ComponentCard
-          title="Strateji baxış"
-          desc="Başlığın altındakı giriş mətni. Bölmənin adı saytda sabitdir — yalnız mətn buradan idarə olunur."
+          title={isPatents ? "Ətraflı təsvir" : "Strateji baxış"}
+          desc={
+            isPatents
+              ? "Cədvəllərin üstündəki giriş mətni."
+              : "Başlığın altındakı giriş mətni. Bölmənin adı saytda sabitdir — yalnız mətn buradan idarə olunur."
+          }
         >
           <RichTextField
             label="Mətn"
-            value={form.vision_html[lang]}
-            onChange={(next) => setField("vision_html", next)}
-            remountKey={`${formKey}-vision-${lang}`}
+            value={form.body_html[lang]}
+            onChange={(next) => setField("body_html", next)}
+            remountKey={`${formKey}-body-${lang}`}
           />
         </ComponentCard>
 
+        {isPatents && (
+          <ComponentCard
+            title="Patent cədvəlləri"
+            desc="Hər il üçün ayrıca cədvəl. İllər saytda yenidən köhnəyə doğru sıralanır — burada sıralamaq lazım deyil. Sətir nömrəsi (№) sıraya görə avtomatik verilir."
+          >
+            <div className="space-y-6">
+              {form.patent_years.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ il əlavə edilməyib.
+                </p>
+              ) : (
+                form.patent_years.map((yearRow, yearIndex) => (
+                  <div
+                    key={yearIndex}
+                    className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                  >
+                    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                      <div className="w-40">
+                        <Label>İl</Label>
+                        <Input
+                          value={yearRow.year}
+                          onChange={(event) => setYear(yearIndex, event.target.value)}
+                          placeholder="2025"
+                        />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-400">
+                          {yearRow.patents.length} patent
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeYear(yearIndex)}
+                          disabled={uploading !== null}
+                          className="text-xs text-red-500 hover:text-red-600 disabled:opacity-30"
+                        >
+                          İli sil
+                        </button>
+                      </div>
+                    </div>
+
+                    {yearRow.patents.length === 0 ? (
+                      <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+                        Bu ildə hələ patent yoxdur.
+                      </p>
+                    ) : (
+                      <div className="mb-3 space-y-3">
+                        {yearRow.patents.map((patent, patentIndex) => (
+                          <div
+                            key={patentIndex}
+                            className="rounded-lg border border-gray-200 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-800/30"
+                          >
+                            <div className="mb-3 flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-400">
+                                № {patentIndex + 1}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                {/* Disabled while any upload is in flight: the
+                                    upload targets a row by position, and moving
+                                    or deleting one would change what that
+                                    position means before the path lands. */}
+                                <button
+                                  type="button"
+                                  onClick={() => movePatent(yearIndex, patentIndex, -1)}
+                                  disabled={patentIndex === 0 || uploading !== null}
+                                  title="Yuxarı"
+                                  className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200"
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => movePatent(yearIndex, patentIndex, 1)}
+                                  disabled={
+                                    patentIndex === yearRow.patents.length - 1 ||
+                                    uploading !== null
+                                  }
+                                  title="Aşağı"
+                                  className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200"
+                                >
+                                  ↓
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removePatent(yearIndex, patentIndex)}
+                                  disabled={uploading !== null}
+                                  className="ml-2 text-xs text-red-500 hover:text-red-600 disabled:opacity-30"
+                                >
+                                  Sil
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <div>
+                                <Label>Patent nömrəsi</Label>
+                                <Input
+                                  value={patent.patent_number}
+                                  onChange={(event) =>
+                                    setPatent(
+                                      yearIndex,
+                                      patentIndex,
+                                      "patent_number",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="İ 2025 0065"
+                                />
+                                <p className="mt-1 text-xs text-gray-400">
+                                  Hər iki dildə eyni göstərilir.
+                                </p>
+                              </div>
+                              <div>
+                                <Label>Adı</Label>
+                                <Input
+                                  value={patent.name[lang]}
+                                  onChange={(event) =>
+                                    setPatent(
+                                      yearIndex,
+                                      patentIndex,
+                                      "name",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="Müxtəlif yönlü daxili konik səthlərin emalı üçün alət"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="mb-3">
+                              <Label>Müəlliflər</Label>
+                              <textarea
+                                value={patent.authors[lang]}
+                                onChange={(event) =>
+                                  setPatent(
+                                    yearIndex,
+                                    patentIndex,
+                                    "authors",
+                                    event.target.value
+                                  )
+                                }
+                                rows={2}
+                                placeholder="Rəsulov Nəriman, Məmmədov Ərəstun, Abbasova İradə"
+                                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                              />
+                              <p className="mt-1 text-xs text-gray-400">
+                                Vergüllə ayrılmış tək sətir — saytda olduğu kimi göstərilir.
+                              </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <div>
+                                <Label>Sənəd (keçid)</Label>
+                                <Input
+                                  value={patent.document_url}
+                                  onChange={(event) =>
+                                    setPatent(
+                                      yearIndex,
+                                      patentIndex,
+                                      "document_url",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="https://drive.google.com/file/d/…/view"
+                                />
+                              </div>
+                              <div>
+                                <Label>və ya fayl yüklə</Label>
+                                <input
+                                  type="file"
+                                  disabled={uploading === `${yearIndex}-${patentIndex}`}
+                                  onChange={(event) => {
+                                    void handlePatentUpload(
+                                      yearIndex,
+                                      patentIndex,
+                                      event.target.files?.[0] ?? null
+                                    );
+                                    // Let the same file be picked again after a
+                                    // failed upload.
+                                    event.target.value = "";
+                                  }}
+                                  className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 disabled:opacity-50 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                                />
+                                <p className="mt-1 text-xs text-gray-400">
+                                  {uploading === `${yearIndex}-${patentIndex}`
+                                    ? "Yüklənir…"
+                                    : "Yükləndikdə yandakı keçid avtomatik dolur."}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => addPatent(yearIndex)}
+                    >
+                      + Patent əlavə et
+                    </Button>
+                  </div>
+                ))
+              )}
+
+              <Button size="sm" variant="outline" onClick={addYear}>
+                + İl əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
+
+        {!isPatents && (
         <ComponentCard
           title="Prioritet sahələr"
           desc="Kartlar. Sayı məhdud deyil; nömrə və ikon sıraya görə saytda təyin olunur."
@@ -481,6 +898,7 @@ export default function ResearchPageEditor() {
             </Button>
           </div>
         </ComponentCard>
+        )}
 
         <ComponentCard
           title="Bölmədə daha çox"

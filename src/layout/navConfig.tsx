@@ -136,6 +136,10 @@ export const navGroups: NavGroup[] = [
         name: "Tədqiqat",
         subItems: [
           { name: "Tədqiqat Prioritetləri", path: "/research/research-priorities" },
+          {
+            name: "Əqli Mülkiyyət və Patentlər",
+            path: "/research/intellectual-property",
+          },
         ],
       },
       {
