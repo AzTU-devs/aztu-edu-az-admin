@@ -80,6 +80,25 @@ export interface AboutCouncil {
   secretaries: AboutCouncilMember[];
 }
 
+/** A document category on a regulatory-documents page. */
+export interface AboutDocCategory {
+  id: number;
+  category_key: string;
+  az: { name: string | null };
+  en: { name: string | null };
+}
+
+/** One downloadable document card. */
+export interface AboutDocument {
+  id: number;
+  /** References a category's category_key on the same page, or null. */
+  category_key: string | null;
+  /** An uploaded file's path or a pasted URL — any format. */
+  file_url: string | null;
+  az: { name: string | null };
+  en: { name: string | null };
+}
+
 /** One numbered card under "Strateji Sütunlar". */
 export interface AboutPillar {
   id: number;
@@ -155,6 +174,9 @@ export interface AboutPageDetail {
   persons: AboutPerson[];
   /** Scientific-board page: the councils, each with its members and secretariat. */
   councils: AboutCouncil[];
+  /** Regulatory-documents page: the categories and the document cards. */
+  doc_categories: AboutDocCategory[];
+  documents: AboutDocument[];
   updated_at: string | null;
 }
 
@@ -220,6 +242,19 @@ export interface AboutPagePayload {
       en: { name: string; surname: string; position: string };
     }>;
   }>;
+  /** Regulatory-documents page: the categories, sent whole. */
+  doc_categories?: Array<{
+    category_key: string;
+    az: { name: string };
+    en: { name: string };
+  }>;
+  /** Regulatory-documents page: the document cards, sent whole. */
+  documents?: Array<{
+    category_key: string;
+    file_url: string;
+    az: { name: string };
+    en: { name: string };
+  }>;
 }
 
 const BASE = "/api/about";
@@ -281,6 +316,25 @@ export const uploadAboutImage = async (pageKey: string, file: File) => {
     const body = new FormData();
     body.append("file", file);
     const response = await apiClient.put(`${BASE}/admin/pages/${pageKey}/image`, body);
+    if (response.data?.status_code === 200 && typeof response.data?.path === "string") {
+      return { status: "SUCCESS" as const, path: response.data.path as string };
+    }
+    return { status: "ERROR" as const };
+  } catch {
+    return { status: "ERROR" as const };
+  }
+};
+
+/**
+ * Uploads one document (any supported format) and returns its stored path. Like
+ * the image upload, it only stores the file — the caller drops the path into a
+ * document card's `file_url` and the whole-page save persists it.
+ */
+export const uploadAboutFile = async (pageKey: string, file: File) => {
+  try {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await apiClient.put(`${BASE}/admin/pages/${pageKey}/file`, body);
     if (response.data?.status_code === 200 && typeof response.data?.path === "string") {
       return { status: "SUCCESS" as const, path: response.data.path as string };
     }

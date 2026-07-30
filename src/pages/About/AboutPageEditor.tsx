@@ -15,6 +15,7 @@ import {
   publishAboutPage,
   updateAboutPage,
   uploadAboutDocument,
+  uploadAboutFile,
   uploadAboutImage,
   type AboutPageDetail,
 } from "../../services/about/aboutService";
@@ -118,6 +119,25 @@ const emptyMember = (): CouncilMemberForm => ({
   position: { az: "", en: "" },
 });
 
+/** A document category on a regulatory-documents page. */
+interface DocCategoryForm {
+  /** Stable, page-local key a document references. */
+  category_key: string;
+  name: Bilingual;
+}
+
+/** One downloadable document card. */
+interface DocumentForm {
+  /** The chosen category's key, or "" for uncategorized. */
+  category_key: string;
+  /** An uploaded file's path or a pasted URL — any format. */
+  file_url: string;
+  name: Bilingual;
+}
+
+/** A fresh, stable page-local key for a new category. */
+const makeCategoryKey = () => `c-${Math.random().toString(36).slice(2, 9)}`;
+
 interface PageForm {
   title: Bilingual;
   description: Bilingual;
@@ -146,6 +166,8 @@ interface PageForm {
   persons: PersonForm[];
   councils_title: Bilingual;
   councils: CouncilForm[];
+  doc_categories: DocCategoryForm[];
+  documents: DocumentForm[];
 }
 
 const str = (value: string | null | undefined) => value ?? "";
@@ -236,6 +258,15 @@ const toForm = (page: AboutPageDetail): PageForm => ({
       position: { az: str(member.az?.position), en: str(member.en?.position) },
     })),
   })),
+  doc_categories: page.doc_categories.map((category) => ({
+    category_key: category.category_key,
+    name: { az: str(category.az?.name), en: str(category.en?.name) },
+  })),
+  documents: page.documents.map((document) => ({
+    category_key: str(document.category_key),
+    file_url: str(document.file_url),
+    name: { az: str(document.az?.name), en: str(document.en?.name) },
+  })),
   milestones: page.milestones.map((milestone) => ({
     year: str(milestone.year),
     title: { az: str(milestone.az?.title), en: str(milestone.en?.title) },
@@ -258,6 +289,8 @@ export default function AboutPageEditor() {
   const [page, setPage] = useState<AboutPageDetail | null>(null);
   const [form, setForm] = useState<PageForm | null>(null);
   const [lang, setLang] = useState<Lang>("az");
+  // Admin-side filter over the document cards — a page can list many.
+  const [docSearch, setDocSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -467,6 +500,120 @@ export default function AboutPageEditor() {
           }
         : prev
     );
+
+  // ── Regulatory documents: categories ───────────────────────────────────────
+  const setCategoryName = (ci: number, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            doc_categories: prev.doc_categories.map((category, i) =>
+              i === ci ? { ...category, name: { ...category.name, [lang]: value } } : category
+            ),
+          }
+        : prev
+    );
+
+  const addCategory = () =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            doc_categories: [
+              ...prev.doc_categories,
+              { category_key: makeCategoryKey(), name: { az: "", en: "" } },
+            ],
+          }
+        : prev
+    );
+
+  const removeCategory = (ci: number) =>
+    setForm((prev) =>
+      prev
+        ? { ...prev, doc_categories: prev.doc_categories.filter((_, i) => i !== ci) }
+        : prev
+    );
+
+  const moveCategory = (ci: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      const target = ci + delta;
+      if (target < 0 || target >= prev.doc_categories.length) return prev;
+      const doc_categories = [...prev.doc_categories];
+      [doc_categories[ci], doc_categories[target]] = [doc_categories[target], doc_categories[ci]];
+      return { ...prev, doc_categories };
+    });
+
+  // ── Regulatory documents: document cards ────────────────────────────────────
+  const setDocumentField = (di: number, field: "category_key" | "file_url", value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            documents: prev.documents.map((document, i) =>
+              i === di ? { ...document, [field]: value } : document
+            ),
+          }
+        : prev
+    );
+
+  const setDocumentName = (di: number, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            documents: prev.documents.map((document, i) =>
+              i === di ? { ...document, name: { ...document.name, [lang]: value } } : document
+            ),
+          }
+        : prev
+    );
+
+  const addDocument = () =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            documents: [
+              ...prev.documents,
+              { category_key: "", file_url: "", name: { az: "", en: "" } },
+            ],
+          }
+        : prev
+    );
+
+  const removeDocument = (di: number) =>
+    setForm((prev) =>
+      prev ? { ...prev, documents: prev.documents.filter((_, i) => i !== di) } : prev
+    );
+
+  const moveDocument = (di: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      const target = di + delta;
+      if (target < 0 || target >= prev.documents.length) return prev;
+      const documents = [...prev.documents];
+      [documents[di], documents[target]] = [documents[target], documents[di]];
+      return { ...prev, documents };
+    });
+
+  const handleDocumentFileUpload = async (di: number, file: File | null) => {
+    if (!file) return;
+    setSaving(true);
+    try {
+      const result = await uploadAboutFile(pageKey, file);
+      if (result.status !== "SUCCESS") {
+        Swal.fire({ icon: "error", title: "Xəta", text: "Fayl yüklənmədi." });
+        return;
+      }
+      // The endpoint only stored the file; the path lands in the card's
+      // file_url and the whole-page save persists it.
+      setDocumentField(di, "file_url", result.path);
+      Swal.fire({ icon: "success", title: "Fayl yükləndi", showConfirmButton: false, timer: 1000 });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   /** One council roster (members or secretariat) as an add/remove/reorder list. */
   const renderRoster = (
@@ -944,6 +1091,26 @@ export default function AboutPageEditor() {
               secretaries: cleanRoster(council.secretaries),
             };
           }),
+        // A category with no name in either language was never filled in.
+        doc_categories: form.doc_categories
+          .filter((category) => category.name.az.trim() || category.name.en.trim())
+          .map((category) => ({
+            category_key: category.category_key,
+            az: { name: category.name.az },
+            en: { name: category.name.en },
+          })),
+        // A document with no name and no file is an empty row the editor added.
+        documents: form.documents
+          .filter(
+            (document) =>
+              document.name.az.trim() || document.name.en.trim() || document.file_url.trim()
+          )
+          .map((document) => ({
+            category_key: document.category_key,
+            file_url: document.file_url,
+            az: { name: document.name.az },
+            en: { name: document.name.en },
+          })),
         // A milestone with no year and no text is an empty row the editor
         // added and never filled in; it should not reach the website.
         milestones: form.milestones
@@ -1047,6 +1214,9 @@ export default function AboutPageEditor() {
   const isScientificBoard = page.template === "scientific-board";
   const isFormerRectors = page.template === "former-rectors";
   const isPartner = page.template === "partner-institution";
+  // Both document libraries; only the categorized one shows a categories editor.
+  const isDocuments = page.template === "documents" || page.template === "documents-simple";
+  const hasDocCategories = page.template === "documents";
   // The rector page's single 'offices' list is edited as one textarea per
   // language, so it is pulled out of the generic `lists` machinery here.
   const officesIndex = form.lists.findIndex((entry) => entry.list_key === "offices");
@@ -1114,7 +1284,7 @@ export default function AboutPageEditor() {
           desc={
             isRector
               ? "Səhifənin yuxarısındakı bölmə. Şəkil və başlıqların dizaynı saytda sabitdir."
-              : isScientificBoard || isFormerRectors || isPartner
+              : isScientificBoard || isFormerRectors || isPartner || isDocuments
               ? "Səhifənin yuxarısındakı başlıq bölməsi."
               : "Səhifənin yuxarısındakı video bölməsində göstərilir. Video saytda sabitdir."
           }
@@ -1834,6 +2004,154 @@ export default function AboutPageEditor() {
 
               <Button size="sm" variant="outline" onClick={addPillar}>
                 + Tədqiqat sahəsi əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
+
+        {hasDocCategories && (
+          <ComponentCard
+            title="Kateqoriyalar"
+            desc="Sənəd kateqoriyaları. Sənəd yaradarkən bunlardan biri seçilir."
+          >
+            <div className="space-y-4">
+              {form.doc_categories.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ kateqoriya əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {form.doc_categories.map((category, ci) => (
+                    <div
+                      key={category.category_key}
+                      className="flex items-center gap-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700"
+                    >
+                      <div className="flex-1">
+                        <Input
+                          value={category.name[lang]}
+                          onChange={(event) => setCategoryName(ci, event.target.value)}
+                          placeholder="Etika"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button type="button" onClick={() => moveCategory(ci, -1)} disabled={ci === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                        <button type="button" onClick={() => moveCategory(ci, 1)} disabled={ci === form.doc_categories.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                        <button type="button" onClick={() => removeCategory(ci)} className="ml-1 text-xs text-red-500 hover:text-red-600">Sil</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addCategory}>
+                + Kateqoriya əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isDocuments && (
+          <ComponentCard
+            title="Sənədlər"
+            desc="Sənəd kartları. Sayı məhdud deyil. Faylı yükləyin və ya keçid yapışdırın (bütün formatlar)."
+          >
+            <div className="space-y-4">
+              <div>
+                <Input
+                  value={docSearch}
+                  onChange={(event) => setDocSearch(event.target.value)}
+                  placeholder="Sənədləri ada görə axtar…"
+                />
+              </div>
+
+              {form.documents.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ sənəd əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {form.documents.map((document, di) => {
+                    const needle = docSearch.trim().toLowerCase();
+                    if (
+                      needle &&
+                      !`${document.name.az} ${document.name.en}`.toLowerCase().includes(needle)
+                    ) {
+                      return null;
+                    }
+                    return (
+                      <div
+                        key={di}
+                        className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                      >
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-400">#{di + 1}</span>
+                          <div className="flex items-center gap-1">
+                            <button type="button" onClick={() => moveDocument(di, -1)} disabled={di === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                            <button type="button" onClick={() => moveDocument(di, 1)} disabled={di === form.documents.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                            <button type="button" onClick={() => removeDocument(di)} className="ml-2 text-xs text-red-500 hover:text-red-600">Sil</button>
+                          </div>
+                        </div>
+
+                        {hasDocCategories && (
+                          <div className="mb-3">
+                            <Label>Kateqoriya</Label>
+                            <select
+                              value={document.category_key}
+                              onChange={(event) => setDocumentField(di, "category_key", event.target.value)}
+                              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                            >
+                              <option value="">Kateqoriyasız</option>
+                              {form.doc_categories.map((category) => (
+                                <option key={category.category_key} value={category.category_key}>
+                                  {category.name[lang] || category.name.az || category.name.en || "(adsız)"}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        <div className="mb-3">
+                          <Label>Sənədin adı</Label>
+                          <Input
+                            value={document.name[lang]}
+                            onChange={(event) => setDocumentName(di, event.target.value)}
+                            placeholder="Etik Davranış Qaydaları"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Fayl və ya keçid</Label>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <input
+                              type="file"
+                              onChange={(event) => void handleDocumentFileUpload(di, event.target.files?.[0] ?? null)}
+                              className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                            />
+                            <Input
+                              value={document.file_url}
+                              onChange={(event) => setDocumentField(di, "file_url", event.target.value)}
+                              placeholder="və ya https://…"
+                            />
+                          </div>
+                          {document.file_url ? (
+                            <a
+                              href={getImageUrl(document.file_url)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-1 inline-block text-xs text-brand-600 hover:text-brand-700"
+                            >
+                              Faylı aç
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addDocument}>
+                + Sənəd əlavə et
               </Button>
             </div>
           </ComponentCard>

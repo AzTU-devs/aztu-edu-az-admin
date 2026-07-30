@@ -4,6 +4,7 @@ import ArticleIcon from '@mui/icons-material/Article';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import BiotechIcon from '@mui/icons-material/Biotech';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import GavelIcon from '@mui/icons-material/Gavel';
 import InfoIcon from '@mui/icons-material/Info';
 import CategoryIcon from '@mui/icons-material/Category';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -94,6 +95,14 @@ export const navGroups: NavGroup[] = [
             name: "Bakı Dövlət Rabitə və Nəqliyyat Kolleci",
             path: "/about/baku-state-college-of-communication-and-transport",
           },
+        ],
+      },
+      {
+        icon: <GavelIcon />,
+        name: "Normativ Sənədlər",
+        subItems: [
+          { name: "Siyasət Sənədləri", path: "/about/policy-documents" },
+          { name: "Dayanıqlılıq Sənədləri", path: "/about/sustainability-documents" },
         ],
       },
     ],
