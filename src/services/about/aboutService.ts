@@ -23,6 +23,8 @@ export interface AboutTranslation {
   domains: string | null;
   section_title: string | null;
   section_body: string | null;
+  /** Scientific-board page: the heading above the councils list. */
+  councils_title: string | null;
 }
 
 /** One picture in the rector's gallery. */
@@ -41,6 +43,22 @@ export interface AboutPerson {
   image_url: string | null;
   az: { name: string | null; degree: string | null; position: string | null; bio: string | null };
   en: { name: string | null; degree: string | null; position: string | null; bio: string | null };
+}
+
+/** One person on a council — a member or a secretariat member. */
+export interface AboutCouncilMember {
+  id: number;
+  az: { name: string | null; surname: string | null; position: string | null };
+  en: { name: string | null; surname: string | null; position: string | null };
+}
+
+/** One council on the scientific-board page, with its two rosters. */
+export interface AboutCouncil {
+  id: number;
+  az: { name: string | null };
+  en: { name: string | null };
+  members: AboutCouncilMember[];
+  secretaries: AboutCouncilMember[];
 }
 
 /** One numbered card under "Strateji Sütunlar". */
@@ -116,6 +134,8 @@ export interface AboutPageDetail {
   images: AboutImage[];
   /** Vice-rector page: the person cards. */
   persons: AboutPerson[];
+  /** Scientific-board page: the councils, each with its members and secretariat. */
+  councils: AboutCouncil[];
   updated_at: string | null;
 }
 
@@ -165,6 +185,19 @@ export interface AboutPagePayload {
     image_url: string;
     az: { name: string; degree: string; position: string; bio: string };
     en: { name: string; degree: string; position: string; bio: string };
+  }>;
+  /** Scientific-board page: the councils, each with its two rosters, sent whole. */
+  councils?: Array<{
+    az: { name: string };
+    en: { name: string };
+    members: Array<{
+      az: { name: string; surname: string; position: string };
+      en: { name: string; surname: string; position: string };
+    }>;
+    secretaries: Array<{
+      az: { name: string; surname: string; position: string };
+      en: { name: string; surname: string; position: string };
+    }>;
   }>;
 }
 

@@ -78,6 +78,28 @@ interface MilestoneForm {
   description: Bilingual;
 }
 
+/** One person on a council — a member or a secretariat member. */
+interface CouncilMemberForm {
+  name: Bilingual;
+  surname: Bilingual;
+  position: Bilingual;
+}
+
+interface CouncilForm {
+  name: Bilingual;
+  members: CouncilMemberForm[];
+  secretaries: CouncilMemberForm[];
+}
+
+/** Which of a council's two rosters a member edit targets. */
+type Roster = "members" | "secretaries";
+
+const emptyMember = (): CouncilMemberForm => ({
+  name: { az: "", en: "" },
+  surname: { az: "", en: "" },
+  position: { az: "", en: "" },
+});
+
 interface PageForm {
   title: Bilingual;
   description: Bilingual;
@@ -104,6 +126,8 @@ interface PageForm {
   section_title: Bilingual;
   section_body: Bilingual;
   persons: PersonForm[];
+  councils_title: Bilingual;
+  councils: CouncilForm[];
 }
 
 const str = (value: string | null | undefined) => value ?? "";
@@ -162,6 +186,20 @@ const toForm = (page: AboutPageDetail): PageForm => ({
     degree: { az: str(person.az?.degree), en: str(person.en?.degree) },
     position: { az: str(person.az?.position), en: str(person.en?.position) },
     bio: { az: str(person.az?.bio), en: str(person.en?.bio) },
+  })),
+  councils_title: { az: str(page.az?.councils_title), en: str(page.en?.councils_title) },
+  councils: page.councils.map((council) => ({
+    name: { az: str(council.az?.name), en: str(council.en?.name) },
+    members: council.members.map((member) => ({
+      name: { az: str(member.az?.name), en: str(member.en?.name) },
+      surname: { az: str(member.az?.surname), en: str(member.en?.surname) },
+      position: { az: str(member.az?.position), en: str(member.en?.position) },
+    })),
+    secretaries: council.secretaries.map((member) => ({
+      name: { az: str(member.az?.name), en: str(member.en?.name) },
+      surname: { az: str(member.az?.surname), en: str(member.en?.surname) },
+      position: { az: str(member.az?.position), en: str(member.en?.position) },
+    })),
   })),
   milestones: page.milestones.map((milestone) => ({
     year: str(milestone.year),
@@ -395,6 +433,96 @@ export default function AboutPageEditor() {
         : prev
     );
 
+  /** One council roster (members or secretariat) as an add/remove/reorder list. */
+  const renderRoster = (
+    council: CouncilForm,
+    ci: number,
+    roster: Roster,
+    label: string
+  ) => (
+    <div className="mt-4 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-300">{label}</span>
+        <button
+          type="button"
+          onClick={() => addCouncilMember(ci, roster)}
+          className="text-xs font-medium text-brand-600 hover:text-brand-700"
+        >
+          + Əlavə et
+        </button>
+      </div>
+      {council[roster].length === 0 ? (
+        <p className="text-xs text-gray-400">Hələ əlavə edilməyib.</p>
+      ) : (
+        <div className="space-y-3">
+          {council[roster].map((member, mi) => (
+            <div
+              key={mi}
+              className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs text-gray-400">#{mi + 1}</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => moveCouncilMember(ci, roster, mi, -1)}
+                    disabled={mi === 0}
+                    title="Yuxarı"
+                    className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveCouncilMember(ci, roster, mi, 1)}
+                    disabled={mi === council[roster].length - 1}
+                    title="Aşağı"
+                    className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeCouncilMember(ci, roster, mi)}
+                    className="ml-2 text-xs text-red-500 hover:text-red-600"
+                  >
+                    Sil
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <Label>Ad</Label>
+                  <Input
+                    value={member.name[lang]}
+                    onChange={(event) => setCouncilMember(ci, roster, mi, "name", event.target.value)}
+                    placeholder="Ad"
+                  />
+                </div>
+                <div>
+                  <Label>Soyad</Label>
+                  <Input
+                    value={member.surname[lang]}
+                    onChange={(event) => setCouncilMember(ci, roster, mi, "surname", event.target.value)}
+                    placeholder="Soyad"
+                  />
+                </div>
+                <div>
+                  <Label>Vəzifə</Label>
+                  <Input
+                    value={member.position[lang]}
+                    onChange={(event) => setCouncilMember(ci, roster, mi, "position", event.target.value)}
+                    placeholder="Sədr"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const handleDocumentUpload = async (file: File | null) => {
     if (!file) return;
     setSaving(true);
@@ -449,11 +577,125 @@ export default function AboutPageEditor() {
   };
 
   const setBilingualField = (
-    field: "domains" | "section_title" | "section_body",
+    field: "domains" | "section_title" | "section_body" | "councils_title",
     value: string
   ) =>
     setForm((prev) =>
       prev ? { ...prev, [field]: { ...prev[field], [lang]: value } } : prev
+    );
+
+  // ── Scientific-board councils ──────────────────────────────────────────────
+  const setCouncilName = (ci: number, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            councils: prev.councils.map((council, i) =>
+              i === ci
+                ? { ...council, name: { ...council.name, [lang]: value } }
+                : council
+            ),
+          }
+        : prev
+    );
+
+  const addCouncil = () =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            councils: [
+              ...prev.councils,
+              { name: { az: "", en: "" }, members: [], secretaries: [] },
+            ],
+          }
+        : prev
+    );
+
+  const removeCouncil = (ci: number) =>
+    setForm((prev) =>
+      prev ? { ...prev, councils: prev.councils.filter((_, i) => i !== ci) } : prev
+    );
+
+  const moveCouncil = (ci: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      const target = ci + delta;
+      if (target < 0 || target >= prev.councils.length) return prev;
+      const councils = [...prev.councils];
+      [councils[ci], councils[target]] = [councils[target], councils[ci]];
+      return { ...prev, councils };
+    });
+
+  const addCouncilMember = (ci: number, roster: Roster) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            councils: prev.councils.map((council, i) =>
+              i === ci
+                ? { ...council, [roster]: [...council[roster], emptyMember()] }
+                : council
+            ),
+          }
+        : prev
+    );
+
+  const removeCouncilMember = (ci: number, roster: Roster, mi: number) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            councils: prev.councils.map((council, i) =>
+              i === ci
+                ? { ...council, [roster]: council[roster].filter((_, j) => j !== mi) }
+                : council
+            ),
+          }
+        : prev
+    );
+
+  const moveCouncilMember = (ci: number, roster: Roster, mi: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        councils: prev.councils.map((council, i) => {
+          if (i !== ci) return council;
+          const target = mi + delta;
+          if (target < 0 || target >= council[roster].length) return council;
+          const roster_ = [...council[roster]];
+          [roster_[mi], roster_[target]] = [roster_[target], roster_[mi]];
+          return { ...council, [roster]: roster_ };
+        }),
+      };
+    });
+
+  const setCouncilMember = (
+    ci: number,
+    roster: Roster,
+    mi: number,
+    field: "name" | "surname" | "position",
+    value: string
+  ) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            councils: prev.councils.map((council, i) =>
+              i !== ci
+                ? council
+                : {
+                    ...council,
+                    [roster]: council[roster].map((member, j) =>
+                      j !== mi
+                        ? member
+                        : { ...member, [field]: { ...member[field], [lang]: value } }
+                    ),
+                  }
+            ),
+          }
+        : prev
     );
 
   const setPerson = (
@@ -559,6 +801,10 @@ export default function AboutPageEditor() {
           position: form.position.az,
           message: form.message.az,
           about: form.about.az,
+          section_title: form.section_title.az,
+          section_body: form.section_body.az,
+          domains: form.domains.az,
+          councils_title: form.councils_title.az,
         },
         en: {
           title: form.title.en,
@@ -570,6 +816,10 @@ export default function AboutPageEditor() {
           position: form.position.en,
           message: form.message.en,
           about: form.about.en,
+          section_title: form.section_title.en,
+          section_body: form.section_body.en,
+          domains: form.domains.en,
+          councils_title: form.councils_title.en,
         },
         // A blank image row was never filled in and should not reach the site.
         images: form.images
@@ -629,6 +879,45 @@ export default function AboutPageEditor() {
             bio: person.bio.en,
           },
         })),
+        // A council with no name and no people is an empty row the editor added
+        // and never filled in; likewise a member with no name/surname.
+        councils: form.councils
+          .filter(
+            (council) =>
+              council.name.az.trim() ||
+              council.name.en.trim() ||
+              council.members.length > 0 ||
+              council.secretaries.length > 0
+          )
+          .map((council) => {
+            const cleanRoster = (roster: CouncilMemberForm[]) =>
+              roster
+                .filter(
+                  (member) =>
+                    member.name.az.trim() ||
+                    member.name.en.trim() ||
+                    member.surname.az.trim() ||
+                    member.surname.en.trim()
+                )
+                .map((member) => ({
+                  az: {
+                    name: member.name.az,
+                    surname: member.surname.az,
+                    position: member.position.az,
+                  },
+                  en: {
+                    name: member.name.en,
+                    surname: member.surname.en,
+                    position: member.position.en,
+                  },
+                }));
+            return {
+              az: { name: council.name.az },
+              en: { name: council.name.en },
+              members: cleanRoster(council.members),
+              secretaries: cleanRoster(council.secretaries),
+            };
+          }),
         // A milestone with no year and no text is an empty row the editor
         // added and never filled in; it should not reach the website.
         milestones: form.milestones
@@ -729,6 +1018,7 @@ export default function AboutPageEditor() {
   const isStrategicPlan = page.template === "strategic_plan";
   const isViceRector = page.template === "vice-rector";
   const isRector = page.template === "rector";
+  const isScientificBoard = page.template === "scientific-board";
   // The rector page's single 'offices' list is edited as one textarea per
   // language, so it is pulled out of the generic `lists` machinery here.
   const officesIndex = form.lists.findIndex((entry) => entry.list_key === "offices");
@@ -796,6 +1086,8 @@ export default function AboutPageEditor() {
           desc={
             isRector
               ? "Səhifənin yuxarısındakı bölmə. Şəkil və başlıqların dizaynı saytda sabitdir."
+              : isScientificBoard
+              ? "Səhifənin yuxarısındakı başlıq bölməsi."
               : "Səhifənin yuxarısındakı video bölməsində göstərilir. Video saytda sabitdir."
           }
         >
@@ -1173,6 +1465,112 @@ export default function AboutPageEditor() {
 
               <Button size="sm" variant="outline" onClick={addPerson}>
                 + Prorektor əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isScientificBoard && (
+          <ComponentCard
+            title="İkinci bölmə"
+            desc="Başlığın altındakı ikinci başlıq və təsvir."
+          >
+            <div className="space-y-4">
+              <div>
+                <Label>İkinci başlıq</Label>
+                <Input
+                  value={form.section_title[lang]}
+                  onChange={(event) => setBilingualField("section_title", event.target.value)}
+                  placeholder="Şura Haqqında"
+                />
+              </div>
+              <RichTextField
+                label="İkinci təsvir"
+                value={form.section_body[lang]}
+                onChange={(next) => setBilingualField("section_body", next)}
+                remountKey={`${formKey}-sb-body-${lang}`}
+              />
+            </div>
+          </ComponentCard>
+        )}
+
+        {isScientificBoard && (
+          <ComponentCard
+            title="Şuralar"
+            desc="Şuraların siyahısı. Sayı məhdud deyil. Hər şuranın üzvləri və katiblik heyəti var."
+          >
+            <div className="space-y-4">
+              <div>
+                <Label>Bölmənin başlığı</Label>
+                <Input
+                  value={form.councils_title[lang]}
+                  onChange={(event) => setBilingualField("councils_title", event.target.value)}
+                  placeholder="Şuralar"
+                />
+              </div>
+
+              {form.councils.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ şura əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {form.councils.map((council, ci) => (
+                    <div
+                      key={ci}
+                      className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400">
+                          Şura #{ci + 1}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => moveCouncil(ci, -1)}
+                            disabled={ci === 0}
+                            title="Yuxarı"
+                            className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveCouncil(ci, 1)}
+                            disabled={ci === form.councils.length - 1}
+                            title="Aşağı"
+                            className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200"
+                          >
+                            ↓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeCouncil(ci)}
+                            className="ml-2 text-xs text-red-500 hover:text-red-600"
+                          >
+                            Sil
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mb-1">
+                        <Label>Şuranın adı</Label>
+                        <Input
+                          value={council.name[lang]}
+                          onChange={(event) => setCouncilName(ci, event.target.value)}
+                          placeholder="Böyük Elmi Şura"
+                        />
+                      </div>
+
+                      {renderRoster(council, ci, "members", "Üzvlər")}
+                      {renderRoster(council, ci, "secretaries", "Katiblik heyəti")}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addCouncil}>
+                + Şura əlavə et
               </Button>
             </div>
           </ComponentCard>
