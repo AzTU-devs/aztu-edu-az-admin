@@ -34,15 +34,34 @@ export interface AboutImage {
   display_order: number;
 }
 
-/** A vice-rector card, with its own "see profile" detail copy. */
+/**
+ * A person card. Shared across pages that list people: vice-rectors (name,
+ * degree, position, bio + contact), former rectors (name, surname, duty years,
+ * bio) and a partner institution's director (photo, name, surname, degree).
+ */
 export interface AboutPerson {
   id: number;
   email: string | null;
   phone: string | null;
   phone_code: string | null;
   image_url: string | null;
-  az: { name: string | null; degree: string | null; position: string | null; bio: string | null };
-  en: { name: string | null; degree: string | null; position: string | null; bio: string | null };
+  /** Former-rectors page: the years in office. */
+  year_start: string | null;
+  year_end: string | null;
+  az: {
+    name: string | null;
+    surname: string | null;
+    degree: string | null;
+    position: string | null;
+    bio: string | null;
+  };
+  en: {
+    name: string | null;
+    surname: string | null;
+    degree: string | null;
+    position: string | null;
+    bio: string | null;
+  };
 }
 
 /** One person on a council — a member or a secretariat member. */
@@ -177,14 +196,16 @@ export interface AboutPagePayload {
   }>;
   /** Rector page: the gallery strip, sent whole. */
   images?: Array<{ image_url: string }>;
-  /** Vice-rector page: the person cards, sent whole. */
+  /** Person cards — vice-rectors, former rectors, or a partner director. */
   persons?: Array<{
     email: string;
     phone: string;
     phone_code: string;
     image_url: string;
-    az: { name: string; degree: string; position: string; bio: string };
-    en: { name: string; degree: string; position: string; bio: string };
+    year_start: string;
+    year_end: string;
+    az: { name: string; surname: string; degree: string; position: string; bio: string };
+    en: { name: string; surname: string; degree: string; position: string; bio: string };
   }>;
   /** Scientific-board page: the councils, each with its two rosters, sent whole. */
   councils?: Array<{

@@ -58,11 +58,29 @@ interface PersonForm {
   phone: string;
   phone_code: string;
   image_url: string;
+  /** Former-rectors page: the years in office. */
+  year_start: string;
+  year_end: string;
   name: Bilingual;
+  surname: Bilingual;
   degree: Bilingual;
   position: Bilingual;
   bio: Bilingual;
 }
+
+const emptyPerson = (): PersonForm => ({
+  email: "",
+  phone: "",
+  phone_code: "",
+  image_url: "",
+  year_start: "",
+  year_end: "",
+  name: { az: "", en: "" },
+  surname: { az: "", en: "" },
+  degree: { az: "", en: "" },
+  position: { az: "", en: "" },
+  bio: { az: "", en: "" },
+});
 
 interface ListForm {
   list_key: string;
@@ -131,6 +149,14 @@ interface PageForm {
 }
 
 const str = (value: string | null | undefined) => value ?? "";
+/** A person row worth saving — anything typed into it counts. Used to drop the
+ *  auto-seeded blank director and empty rows the editor added but never filled. */
+const personHasContent = (p: PersonForm) =>
+  [
+    p.name.az, p.name.en, p.surname.az, p.surname.en, p.degree.az, p.degree.en,
+    p.position.az, p.position.en, p.bio.az, p.bio.en, p.email, p.phone,
+    p.phone_code, p.image_url, p.year_start, p.year_end,
+  ].some((value) => value.trim());
 /** JSONB string arrays are edited as one-per-line text. */
 const linesOf = (values: string[] | null | undefined) => (values ?? []).join("\n");
 const toLines = (text: string) =>
@@ -177,16 +203,25 @@ const toForm = (page: AboutPageDetail): PageForm => ({
   domains: { az: str(page.az?.domains), en: str(page.en?.domains) },
   section_title: { az: str(page.az?.section_title), en: str(page.en?.section_title) },
   section_body: { az: str(page.az?.section_body), en: str(page.en?.section_body) },
-  persons: page.persons.map((person) => ({
-    email: str(person.email),
-    phone: str(person.phone),
-    phone_code: str(person.phone_code),
-    image_url: str(person.image_url),
-    name: { az: str(person.az?.name), en: str(person.en?.name) },
-    degree: { az: str(person.az?.degree), en: str(person.en?.degree) },
-    position: { az: str(person.az?.position), en: str(person.en?.position) },
-    bio: { az: str(person.az?.bio), en: str(person.en?.bio) },
-  })),
+  // A partner institution has exactly one person — its director — so seed a
+  // blank card when none is stored yet, giving the single director form
+  // something to bind to.
+  persons:
+    page.persons.length === 0 && page.template === "partner-institution"
+      ? [emptyPerson()]
+      : page.persons.map((person) => ({
+          email: str(person.email),
+          phone: str(person.phone),
+          phone_code: str(person.phone_code),
+          image_url: str(person.image_url),
+          year_start: str(person.year_start),
+          year_end: str(person.year_end),
+          name: { az: str(person.az?.name), en: str(person.en?.name) },
+          surname: { az: str(person.az?.surname), en: str(person.en?.surname) },
+          degree: { az: str(person.az?.degree), en: str(person.en?.degree) },
+          position: { az: str(person.az?.position), en: str(person.en?.position) },
+          bio: { az: str(person.az?.bio), en: str(person.en?.bio) },
+        })),
   councils_title: { az: str(page.az?.councils_title), en: str(page.en?.councils_title) },
   councils: page.councils.map((council) => ({
     name: { az: str(council.az?.name), en: str(council.en?.name) },
@@ -700,7 +735,7 @@ export default function AboutPageEditor() {
 
   const setPerson = (
     index: number,
-    field: "email" | "phone" | "phone_code" | "image_url",
+    field: "email" | "phone" | "phone_code" | "image_url" | "year_start" | "year_end",
     value: string
   ) =>
     setForm((prev) =>
@@ -716,7 +751,7 @@ export default function AboutPageEditor() {
 
   const setPersonTr = (
     index: number,
-    field: "name" | "degree" | "position" | "bio",
+    field: "name" | "surname" | "degree" | "position" | "bio",
     value: string
   ) =>
     setForm((prev) =>
@@ -734,24 +769,7 @@ export default function AboutPageEditor() {
 
   const addPerson = () =>
     setForm((prev) =>
-      prev
-        ? {
-            ...prev,
-            persons: [
-              ...prev.persons,
-              {
-                email: "",
-                phone: "",
-                phone_code: "",
-                image_url: "",
-                name: { az: "", en: "" },
-                degree: { az: "", en: "" },
-                position: { az: "", en: "" },
-                bio: { az: "", en: "" },
-              },
-            ],
-          }
-        : prev
+      prev ? { ...prev, persons: [...prev.persons, emptyPerson()] } : prev
     );
 
   const removePerson = (index: number) =>
@@ -861,24 +879,32 @@ export default function AboutPageEditor() {
             az: { label: link.label.az },
             en: { label: link.label.en },
           })),
-        persons: form.persons.map((person) => ({
-          email: person.email,
-          phone: person.phone,
-          phone_code: person.phone_code,
-          image_url: person.image_url,
-          az: {
-            name: person.name.az,
-            degree: person.degree.az,
-            position: person.position.az,
-            bio: person.bio.az,
-          },
-          en: {
-            name: person.name.en,
-            degree: person.degree.en,
-            position: person.position.en,
-            bio: person.bio.en,
-          },
-        })),
+        // A completely blank card (e.g. the auto-seeded partner director before
+        // it is filled in) should not persist.
+        persons: form.persons
+          .filter(personHasContent)
+          .map((person) => ({
+            email: person.email,
+            phone: person.phone,
+            phone_code: person.phone_code,
+            image_url: person.image_url,
+            year_start: person.year_start,
+            year_end: person.year_end,
+            az: {
+              name: person.name.az,
+              surname: person.surname.az,
+              degree: person.degree.az,
+              position: person.position.az,
+              bio: person.bio.az,
+            },
+            en: {
+              name: person.name.en,
+              surname: person.surname.en,
+              degree: person.degree.en,
+              position: person.position.en,
+              bio: person.bio.en,
+            },
+          })),
         // A council with no name and no people is an empty row the editor added
         // and never filled in; likewise a member with no name/surname.
         councils: form.councils
@@ -1019,6 +1045,8 @@ export default function AboutPageEditor() {
   const isViceRector = page.template === "vice-rector";
   const isRector = page.template === "rector";
   const isScientificBoard = page.template === "scientific-board";
+  const isFormerRectors = page.template === "former-rectors";
+  const isPartner = page.template === "partner-institution";
   // The rector page's single 'offices' list is edited as one textarea per
   // language, so it is pulled out of the generic `lists` machinery here.
   const officesIndex = form.lists.findIndex((entry) => entry.list_key === "offices");
@@ -1086,7 +1114,7 @@ export default function AboutPageEditor() {
           desc={
             isRector
               ? "Səhifənin yuxarısındakı bölmə. Şəkil və başlıqların dizaynı saytda sabitdir."
-              : isScientificBoard
+              : isScientificBoard || isFormerRectors || isPartner
               ? "Səhifənin yuxarısındakı başlıq bölməsi."
               : "Səhifənin yuxarısındakı video bölməsində göstərilir. Video saytda sabitdir."
           }
@@ -1470,9 +1498,9 @@ export default function AboutPageEditor() {
           </ComponentCard>
         )}
 
-        {isScientificBoard && (
+        {(isScientificBoard || isPartner) && (
           <ComponentCard
-            title="İkinci bölmə"
+            title={isPartner ? "Haqqında bölməsi" : "İkinci bölmə"}
             desc="Başlığın altındakı ikinci başlıq və təsvir."
           >
             <div className="space-y-4">
@@ -1481,7 +1509,7 @@ export default function AboutPageEditor() {
                 <Input
                   value={form.section_title[lang]}
                   onChange={(event) => setBilingualField("section_title", event.target.value)}
-                  placeholder="Şura Haqqında"
+                  placeholder={isPartner ? "Universitet haqqında" : "Şura Haqqında"}
                 />
               </div>
               <RichTextField
@@ -1571,6 +1599,241 @@ export default function AboutPageEditor() {
 
               <Button size="sm" variant="outline" onClick={addCouncil}>
                 + Şura əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isFormerRectors && (
+          <ComponentCard
+            title="Sabiq Rektorlar"
+            desc="Sabiq rektorların kartları. Sayı məhdud deyil."
+          >
+            <div className="space-y-4">
+              {form.persons.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ sabiq rektor əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {form.persons.map((person, index) => (
+                    <div
+                      key={index}
+                      className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400">#{index + 1}</span>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => movePerson(index, -1)} disabled={index === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                          <button type="button" onClick={() => movePerson(index, 1)} disabled={index === form.persons.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                          <button type="button" onClick={() => removePerson(index)} className="ml-2 text-xs text-red-500 hover:text-red-600">Sil</button>
+                        </div>
+                      </div>
+
+                      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <Label>Ad</Label>
+                          <Input value={person.name[lang]} onChange={(event) => setPersonTr(index, "name", event.target.value)} placeholder="Əli" />
+                        </div>
+                        <div>
+                          <Label>Soyad</Label>
+                          <Input value={person.surname[lang]} onChange={(event) => setPersonTr(index, "surname", event.target.value)} placeholder="Məmmədov" />
+                        </div>
+                      </div>
+
+                      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <Label>Vəzifə başlanğıc ili</Label>
+                          <Input value={person.year_start} onChange={(event) => setPerson(index, "year_start", event.target.value)} placeholder="1950" />
+                          <p className="mt-1 text-xs text-gray-400">Bütün dillərdə eyni.</p>
+                        </div>
+                        <div>
+                          <Label>Vəzifə bitmə ili</Label>
+                          <Input value={person.year_end} onChange={(event) => setPerson(index, "year_end", event.target.value)} placeholder="1959" />
+                        </div>
+                      </div>
+
+                      <RichTextField
+                        label="Təsvir"
+                        value={person.bio[lang]}
+                        onChange={(next) => setPersonTr(index, "bio", next)}
+                        remountKey={`${formKey}-frbio-${index}-${lang}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addPerson}>
+                + Sabiq rektor əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isPartner && (
+          <ComponentCard
+            title="Vebsayt düyməsi"
+            desc="Qurumun rəsmi saytına keçid düyməsi."
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Düymənin mətni</Label>
+                <Input
+                  value={form.document_label[lang]}
+                  onChange={(event) =>
+                    setForm((prev) =>
+                      prev
+                        ? { ...prev, document_label: { ...prev.document_label, [lang]: event.target.value } }
+                        : prev
+                    )
+                  }
+                  placeholder="Vebsayta keç"
+                />
+              </div>
+              <div>
+                <Label>Keçid (URL)</Label>
+                <Input
+                  value={form.document_url}
+                  onChange={(event) =>
+                    setForm((prev) => (prev ? { ...prev, document_url: event.target.value } : prev))
+                  }
+                  placeholder="https://…"
+                />
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isPartner && (
+          <ComponentCard title="Loqo (istəyə bağlı)" desc="Qurumun loqosu.">
+            <div className="flex flex-wrap items-center gap-4">
+              {form.image_url ? (
+                <img
+                  src={getImageUrl(form.image_url)}
+                  alt="Loqo"
+                  className="h-24 w-24 rounded-xl border border-gray-200 object-contain p-2 dark:border-gray-700"
+                />
+              ) : (
+                <div className="flex h-24 w-24 items-center justify-center rounded-xl border border-dashed border-gray-300 text-xs text-gray-400 dark:border-gray-700">
+                  Loqo yoxdur
+                </div>
+              )}
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => void handlePortraitUpload(event.target.files?.[0] ?? null)}
+                  className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                />
+                <Input
+                  value={form.image_url}
+                  onChange={(event) => setPlain("image_url", event.target.value)}
+                  placeholder="və ya keçid yapışdırın"
+                />
+                {form.image_url ? (
+                  <button
+                    type="button"
+                    onClick={() => setPlain("image_url", "")}
+                    className="text-xs text-red-500 hover:text-red-600"
+                  >
+                    Loqonu sil
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isPartner && form.persons[0] && (
+          <ComponentCard title="Rektor / Direktor" desc="Bu qurumun rəhbəri.">
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                  {form.persons[0].image_url ? (
+                    <img src={getImageUrl(form.persons[0].image_url)} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-gray-400">
+                      Şəkil yoxdur
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <Label>Şəkil</Label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => void handlePersonImageUpload(0, event.target.files?.[0] ?? null)}
+                    className="block w-full text-xs text-gray-500 file:mr-2 file:rounded-md file:border-0 file:bg-brand-50 file:px-2 file:py-1 file:text-xs file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                  />
+                  <Input
+                    value={form.persons[0].image_url}
+                    onChange={(event) => setPerson(0, "image_url", event.target.value)}
+                    placeholder="və ya keçid yapışdırın"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>Ad</Label>
+                  <Input value={form.persons[0].name[lang]} onChange={(event) => setPersonTr(0, "name", event.target.value)} placeholder="Ramin" />
+                </div>
+                <div>
+                  <Label>Soyad</Label>
+                  <Input value={form.persons[0].surname[lang]} onChange={(event) => setPersonTr(0, "surname", event.target.value)} placeholder="Məmmədov" />
+                </div>
+              </div>
+              <div>
+                <Label>Elmi ad</Label>
+                <Input value={form.persons[0].degree[lang]} onChange={(event) => setPersonTr(0, "degree", event.target.value)} placeholder="Professor" />
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isPartner && (
+          <ComponentCard
+            title="Tədqiqat sahələri (istəyə bağlı)"
+            desc="Qurumun tədqiqat sahələri. Sayı məhdud deyil."
+          >
+            <div className="space-y-4">
+              {form.pillars.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ tədqiqat sahəsi əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {form.pillars.map((pillar, index) => (
+                    <div
+                      key={index}
+                      className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400">#{index + 1}</span>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => movePillar(index, -1)} disabled={index === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                          <button type="button" onClick={() => movePillar(index, 1)} disabled={index === form.pillars.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                          <button type="button" onClick={() => removePillar(index)} className="ml-2 text-xs text-red-500 hover:text-red-600">Sil</button>
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <Label>Başlıq</Label>
+                        <Input value={pillar.title[lang]} onChange={(event) => setPillar(index, "title", event.target.value)} placeholder="Süni intellekt" />
+                      </div>
+                      <RichTextField
+                        label="Təsvir"
+                        value={pillar.description[lang]}
+                        onChange={(next) => setPillar(index, "description", next)}
+                        remountKey={`${formKey}-parea-${index}-${lang}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addPillar}>
+                + Tədqiqat sahəsi əlavə et
               </Button>
             </div>
           </ComponentCard>

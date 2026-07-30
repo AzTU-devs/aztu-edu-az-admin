@@ -1,3 +1,4 @@
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ArticleIcon from '@mui/icons-material/Article';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -66,9 +67,33 @@ export const navGroups: NavGroup[] = [
           { name: "Rektor", path: "/about/rector" },
           { name: "Prorektorlar", path: "/about/vice-rector" },
           { name: "Elmi Şura", path: "/about/scientific-board" },
+          { name: "Sabiq Rektorlarımız", path: "/about/former-rectors" },
           { name: "Vizyon, Missiya və Məqsəd", path: "/about/vision-mission-goal" },
           { name: "AzTU-nun Tarixi", path: "/about/history" },
           { name: "Strateji İnkişaf Planı", path: "/about/strategic-plan" },
+        ],
+      },
+      {
+        icon: <AccountBalanceIcon />,
+        name: "Tərəfdaş Universitet və Əlaqəli İnstitutlar",
+        subItems: [
+          {
+            name: "Türkiyə-Azərbaycan Universiteti",
+            path: "/about/turkiye-azerbaijan-university",
+          },
+          {
+            name: "İnformasiya Texnologiyaları İnstitutu",
+            path: "/about/institute-of-information-technologies",
+          },
+          {
+            name: "İdarəetmə Sistemləri İnstitutu",
+            path: "/about/management-systems-institute",
+          },
+          { name: "Bakı Texniki Kolleci", path: "/about/baku-technical-college" },
+          {
+            name: "Bakı Dövlət Rabitə və Nəqliyyat Kolleci",
+            path: "/about/baku-state-college-of-communication-and-transport",
+          },
         ],
       },
     ],
