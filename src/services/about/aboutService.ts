@@ -19,6 +19,10 @@ export interface AboutTranslation {
   position: string | null;
   message: string | null;
   about: string | null;
+  /** Vice-rector page: category line, the "Executive Leadership" heading and its lead. */
+  domains: string | null;
+  section_title: string | null;
+  section_body: string | null;
 }
 
 /** One picture in the rector's gallery. */
@@ -26,6 +30,16 @@ export interface AboutImage {
   id: number;
   image_url: string | null;
   display_order: number;
+}
+
+/** A vice-rector card, with its own "see profile" detail copy. */
+export interface AboutPerson {
+  id: number;
+  email: string | null;
+  phone: string | null;
+  phone_code: string | null;
+  az: { name: string | null; degree: string | null; position: string | null; bio: string | null };
+  en: { name: string | null; degree: string | null; position: string | null; bio: string | null };
 }
 
 /** One numbered card under "Strateji Sütunlar". */
@@ -99,6 +113,8 @@ export interface AboutPageDetail {
   lists: AboutList[];
   /** Rector page: the gallery strip. */
   images: AboutImage[];
+  /** Vice-rector page: the person cards. */
+  persons: AboutPerson[];
   updated_at: string | null;
 }
 
@@ -140,6 +156,14 @@ export interface AboutPagePayload {
   }>;
   /** Rector page: the gallery strip, sent whole. */
   images?: Array<{ image_url: string }>;
+  /** Vice-rector page: the person cards, sent whole. */
+  persons?: Array<{
+    email: string;
+    phone: string;
+    phone_code: string;
+    az: { name: string; degree: string; position: string; bio: string };
+    en: { name: string; degree: string; position: string; bio: string };
+  }>;
 }
 
 const BASE = "/api/about";

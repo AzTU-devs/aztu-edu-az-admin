@@ -64,6 +64,7 @@ export const navGroups: NavGroup[] = [
         name: "Haqqımızda",
         subItems: [
           { name: "Rektor", path: "/about/rector" },
+          { name: "Prorektorlar", path: "/about/vice-rector" },
           { name: "Vizyon, Missiya və Məqsəd", path: "/about/vision-mission-goal" },
           { name: "AzTU-nun Tarixi", path: "/about/history" },
           { name: "Strateji İnkişaf Planı", path: "/about/strategic-plan" },

@@ -53,6 +53,16 @@ interface PillarForm {
   tags: Bilingual;
 }
 
+interface PersonForm {
+  email: string;
+  phone: string;
+  phone_code: string;
+  name: Bilingual;
+  degree: Bilingual;
+  position: Bilingual;
+  bio: Bilingual;
+}
+
 interface ListForm {
   list_key: string;
   style: string;
@@ -89,6 +99,10 @@ interface PageForm {
   blocks: BlockForm[];
   links: LinkForm[];
   milestones: MilestoneForm[];
+  domains: Bilingual;
+  section_title: Bilingual;
+  section_body: Bilingual;
+  persons: PersonForm[];
 }
 
 const str = (value: string | null | undefined) => value ?? "";
@@ -134,6 +148,18 @@ const toForm = (page: AboutPageDetail): PageForm => ({
   links: page.links.map((link) => ({
     url: str(link.url),
     label: { az: str(link.az?.label), en: str(link.en?.label) },
+  })),
+  domains: { az: str(page.az?.domains), en: str(page.en?.domains) },
+  section_title: { az: str(page.az?.section_title), en: str(page.en?.section_title) },
+  section_body: { az: str(page.az?.section_body), en: str(page.en?.section_body) },
+  persons: page.persons.map((person) => ({
+    email: str(person.email),
+    phone: str(person.phone),
+    phone_code: str(person.phone_code),
+    name: { az: str(person.az?.name), en: str(person.en?.name) },
+    degree: { az: str(person.az?.degree), en: str(person.en?.degree) },
+    position: { az: str(person.az?.position), en: str(person.en?.position) },
+    bio: { az: str(person.az?.bio), en: str(person.en?.bio) },
   })),
   milestones: page.milestones.map((milestone) => ({
     year: str(milestone.year),
@@ -420,6 +446,84 @@ export default function AboutPageEditor() {
     }
   };
 
+  const setBilingualField = (
+    field: "domains" | "section_title" | "section_body",
+    value: string
+  ) =>
+    setForm((prev) =>
+      prev ? { ...prev, [field]: { ...prev[field], [lang]: value } } : prev
+    );
+
+  const setPerson = (
+    index: number,
+    field: "email" | "phone" | "phone_code",
+    value: string
+  ) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            persons: prev.persons.map((person, i) =>
+              i === index ? { ...person, [field]: value } : person
+            ),
+          }
+        : prev
+    );
+
+  const setPersonTr = (
+    index: number,
+    field: "name" | "degree" | "position" | "bio",
+    value: string
+  ) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            persons: prev.persons.map((person, i) =>
+              i === index
+                ? { ...person, [field]: { ...person[field], [lang]: value } }
+                : person
+            ),
+          }
+        : prev
+    );
+
+  const addPerson = () =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            persons: [
+              ...prev.persons,
+              {
+                email: "",
+                phone: "",
+                phone_code: "",
+                name: { az: "", en: "" },
+                degree: { az: "", en: "" },
+                position: { az: "", en: "" },
+                bio: { az: "", en: "" },
+              },
+            ],
+          }
+        : prev
+    );
+
+  const removePerson = (index: number) =>
+    setForm((prev) =>
+      prev ? { ...prev, persons: prev.persons.filter((_, i) => i !== index) } : prev
+    );
+
+  const movePerson = (index: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      const target = index + delta;
+      if (target < 0 || target >= prev.persons.length) return prev;
+      const persons = [...prev.persons];
+      [persons[index], persons[target]] = [persons[target], persons[index]];
+      return { ...prev, persons };
+    });
+
   const handleSave = async () => {
     if (!form) return;
     setSaving(true);
@@ -491,6 +595,23 @@ export default function AboutPageEditor() {
             az: { label: link.label.az },
             en: { label: link.label.en },
           })),
+        persons: form.persons.map((person) => ({
+          email: person.email,
+          phone: person.phone,
+          phone_code: person.phone_code,
+          az: {
+            name: person.name.az,
+            degree: person.degree.az,
+            position: person.position.az,
+            bio: person.bio.az,
+          },
+          en: {
+            name: person.name.en,
+            degree: person.degree.en,
+            position: person.position.en,
+            bio: person.bio.en,
+          },
+        })),
         // A milestone with no year and no text is an empty row the editor
         // added and never filled in; it should not reach the website.
         milestones: form.milestones
@@ -589,6 +710,7 @@ export default function AboutPageEditor() {
   // The About pages are not all the same shape; the page says which form it is.
   const isTimeline = page.template === "timeline";
   const isStrategicPlan = page.template === "strategic_plan";
+  const isViceRector = page.template === "vice-rector";
   const isRector = page.template === "rector";
   // The rector page's single 'offices' list is edited as one textarea per
   // language, so it is pulled out of the generic `lists` machinery here.
@@ -873,6 +995,136 @@ export default function AboutPageEditor() {
                   Bir neçə şəkil seçə bilərsiniz. Dəyişikliyi saxlamaq üçün “Yadda saxla”ya basın.
                 </p>
               </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isViceRector && (
+          <ComponentCard
+            title="Kateqoriyalar və ikinci bölmə"
+            desc="Başlığın altındakı kateqoriya sətri və 'İcraçı Rəhbərlik' bölməsi."
+          >
+            <div className="space-y-4">
+              <div>
+                <Label>Kateqoriyalar (vergüllə və ya · ilə ayırın)</Label>
+                <Input
+                  value={form.domains[lang]}
+                  onChange={(event) => setBilingualField("domains", event.target.value)}
+                  placeholder="Akademik · Elm · Beynəlxalq · Maliyyə"
+                />
+              </div>
+              <div>
+                <Label>İkinci bölmənin başlığı</Label>
+                <Input
+                  value={form.section_title[lang]}
+                  onChange={(event) => setBilingualField("section_title", event.target.value)}
+                  placeholder="İcraçı Rəhbərlik"
+                />
+              </div>
+              <RichTextField
+                label="İkinci bölmənin təsviri"
+                value={form.section_body[lang]}
+                onChange={(next) => setBilingualField("section_body", next)}
+                remountKey={`${formKey}-sectionbody-${lang}`}
+              />
+            </div>
+          </ComponentCard>
+        )}
+
+        {isViceRector && (
+          <ComponentCard
+            title="Prorektorlar"
+            desc="Şəxs kartları. Sayı məhdud deyil. Daxili kod istisna olmaqla bütün sahələr hər iki dildə tələb olunur."
+          >
+            <div className="space-y-4">
+              {form.persons.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ prorektor əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {form.persons.map((person, index) => (
+                    <div
+                      key={index}
+                      className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400">
+                          #{index + 1}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => movePerson(index, -1)} disabled={index === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                          <button type="button" onClick={() => movePerson(index, 1)} disabled={index === form.persons.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                          <button type="button" onClick={() => removePerson(index)} className="ml-2 text-xs text-red-500 hover:text-red-600">Sil</button>
+                        </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <Label>Ad və elmi ad</Label>
+                        <Input
+                          value={person.name[lang]}
+                          onChange={(event) => setPersonTr(index, "name", event.target.value)}
+                          placeholder="Prof. Sübhan Namazov"
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <Label>Elmi dərəcə</Label>
+                        <Input
+                          value={person.degree[lang]}
+                          onChange={(event) => setPersonTr(index, "degree", event.target.value)}
+                          placeholder="Texnika elmləri doktoru, professor"
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <Label>Vəzifə</Label>
+                        <Input
+                          value={person.position[lang]}
+                          onChange={(event) => setPersonTr(index, "position", event.target.value)}
+                          placeholder="Tədris işləri üzrə prorektor"
+                        />
+                      </div>
+
+                      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div>
+                          <Label>E-poçt</Label>
+                          <Input
+                            value={person.email}
+                            onChange={(event) => setPerson(index, "email", event.target.value)}
+                            placeholder="ad@aztu.edu.az"
+                          />
+                        </div>
+                        <div>
+                          <Label>Telefon</Label>
+                          <Input
+                            value={person.phone}
+                            onChange={(event) => setPerson(index, "phone", event.target.value)}
+                            placeholder="+994 12 538 00 00"
+                          />
+                        </div>
+                        <div>
+                          <Label>Daxili kod (istəyə bağlı)</Label>
+                          <Input
+                            value={person.phone_code}
+                            onChange={(event) => setPerson(index, "phone_code", event.target.value)}
+                            placeholder="1204"
+                          />
+                        </div>
+                      </div>
+
+                      <RichTextField
+                        label="Profil (böyük təsvir)"
+                        value={person.bio[lang]}
+                        onChange={(next) => setPersonTr(index, "bio", next)}
+                        remountKey={`${formKey}-bio-${index}-${lang}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addPerson}>
+                + Prorektor əlavə et
+              </Button>
             </div>
           </ComponentCard>
         )}
