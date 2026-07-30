@@ -38,6 +38,7 @@ export interface AboutPerson {
   email: string | null;
   phone: string | null;
   phone_code: string | null;
+  image_url: string | null;
   az: { name: string | null; degree: string | null; position: string | null; bio: string | null };
   en: { name: string | null; degree: string | null; position: string | null; bio: string | null };
 }
@@ -161,6 +162,7 @@ export interface AboutPagePayload {
     email: string;
     phone: string;
     phone_code: string;
+    image_url: string;
     az: { name: string; degree: string; position: string; bio: string };
     en: { name: string; degree: string; position: string; bio: string };
   }>;

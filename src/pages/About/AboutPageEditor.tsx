@@ -57,6 +57,7 @@ interface PersonForm {
   email: string;
   phone: string;
   phone_code: string;
+  image_url: string;
   name: Bilingual;
   degree: Bilingual;
   position: Bilingual;
@@ -156,6 +157,7 @@ const toForm = (page: AboutPageDetail): PageForm => ({
     email: str(person.email),
     phone: str(person.phone),
     phone_code: str(person.phone_code),
+    image_url: str(person.image_url),
     name: { az: str(person.az?.name), en: str(person.en?.name) },
     degree: { az: str(person.az?.degree), en: str(person.en?.degree) },
     position: { az: str(person.az?.position), en: str(person.en?.position) },
@@ -456,7 +458,7 @@ export default function AboutPageEditor() {
 
   const setPerson = (
     index: number,
-    field: "email" | "phone" | "phone_code",
+    field: "email" | "phone" | "phone_code" | "image_url",
     value: string
   ) =>
     setForm((prev) =>
@@ -499,6 +501,7 @@ export default function AboutPageEditor() {
                 email: "",
                 phone: "",
                 phone_code: "",
+                image_url: "",
                 name: { az: "", en: "" },
                 degree: { az: "", en: "" },
                 position: { az: "", en: "" },
@@ -523,6 +526,19 @@ export default function AboutPageEditor() {
       [persons[index], persons[target]] = [persons[target], persons[index]];
       return { ...prev, persons };
     });
+
+  const handlePersonImageUpload = async (index: number, file: File | null) => {
+    if (!file) return;
+    const result = await uploadAboutImage(pageKey, file);
+    if (result.status !== "SUCCESS") {
+      Swal.fire({ icon: "error", title: "Xəta", text: "Şəkil yüklənmədi." });
+      return;
+    }
+    // The endpoint only stored the file; the returned path lands in the
+    // person's image_url and the whole-page save persists it.
+    setPerson(index, "image_url", result.path);
+    Swal.fire({ icon: "success", title: "Şəkil yükləndi", showConfirmButton: false, timer: 1000 });
+  };
 
   const handleSave = async () => {
     if (!form) return;
@@ -599,6 +615,7 @@ export default function AboutPageEditor() {
           email: person.email,
           phone: person.phone,
           phone_code: person.phone_code,
+          image_url: person.image_url,
           az: {
             name: person.name.az,
             degree: person.degree.az,
@@ -1056,6 +1073,38 @@ export default function AboutPageEditor() {
                           <button type="button" onClick={() => movePerson(index, -1)} disabled={index === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
                           <button type="button" onClick={() => movePerson(index, 1)} disabled={index === form.persons.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
                           <button type="button" onClick={() => removePerson(index)} className="ml-2 text-xs text-red-500 hover:text-red-600">Sil</button>
+                        </div>
+                      </div>
+
+                      <div className="mb-3 flex items-center gap-4">
+                        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                          {person.image_url ? (
+                            <img
+                              src={getImageUrl(person.image_url)}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-gray-400">
+                              Şəkil yoxdur
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <Label>Şəkil</Label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) =>
+                              void handlePersonImageUpload(index, event.target.files?.[0] ?? null)
+                            }
+                            className="block w-full text-xs text-gray-500 file:mr-2 file:rounded-md file:border-0 file:bg-brand-50 file:px-2 file:py-1 file:text-xs file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                          />
+                          <Input
+                            value={person.image_url}
+                            onChange={(event) => setPerson(index, "image_url", event.target.value)}
+                            placeholder="və ya keçid yapışdırın"
+                          />
                         </div>
                       </div>
 
