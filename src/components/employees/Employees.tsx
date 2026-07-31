@@ -6,7 +6,11 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import { Employee, deleteEmployee, getEmployees } from "../../services/employee/employeeService";
 
-const BASE_URL = "https://api-aztu.karamshukurlu.site";
+import { API_BASE_URL } from "../../util/apiClient";
+
+// Single source of truth — this used to hardcode the retired
+// api-aztu.karamshukurlu.site host, so every image 404'd.
+const BASE_URL = API_BASE_URL.replace(/\/$/, "");
 const PAGE_SIZE = 10;
 
 export default function Employees() {

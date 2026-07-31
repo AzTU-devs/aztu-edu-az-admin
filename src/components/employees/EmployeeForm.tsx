@@ -34,7 +34,11 @@ const ACADEMIC_DEGREES = ["—", "Fəlsəfə doktoru (PhD)", "Elmlər doktoru", 
 const ACADEMIC_TITLES = ["—", "Professor", "Dosent", "Böyük müəllim", "Müəllim", "Assistent", "Baş elmi işçi", "Elmi işçi"];
 const DAYS = ["Bazar ertəsi", "Çərşənbə axşamı", "Çərşənbə", "Cümə axşamı", "Cümə", "Şənbə", "Bazar"];
 const EDUCATION_LEVELS = ["Bakalavr", "Magistr", "Doktorantura", "Digər"];
-const BASE_URL = "https://api-aztu.karamshukurlu.site";
+import { API_BASE_URL } from "../../util/apiClient";
+
+// Single source of truth — this used to hardcode the retired
+// api-aztu.karamshukurlu.site host, so every image 404'd.
+const BASE_URL = API_BASE_URL.replace(/\/$/, "");
 
 const TABS = [
     { id: "basic",        label: "Əsas məlumat",    icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },

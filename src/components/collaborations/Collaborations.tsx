@@ -25,7 +25,11 @@ import {
   reorderCollaboration,
 } from "../../services/collaboration/collaborationService";
 
-const BASE_URL = "https://api-aztu.karamshukurlu.site";
+import { API_BASE_URL } from "../../util/apiClient";
+
+// Single source of truth — this used to hardcode the retired
+// api-aztu.karamshukurlu.site host, so every image 404'd.
+const BASE_URL = API_BASE_URL.replace(/\/$/, "");
 
 function SortableItem({
   id,
