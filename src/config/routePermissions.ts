@@ -27,6 +27,14 @@ const ANNOUNCEMENTS = anyOf("announcements", [
   "upload_file",
 ]);
 const HERO = anyOf("hero", ["create", "update", "delete", "activate", "deactivate"]);
+const HERO_CERTIFICATES = anyOf("hero_certificates", [
+  "create",
+  "update",
+  "delete",
+  "activate",
+  "deactivate",
+  "reorder",
+]);
 const PROJECTS = anyOf("projects", ["create", "delete", "reorder"]);
 const COLLABORATIONS = anyOf("collaborations", ["create", "update", "delete", "reorder"]);
 const EMPLOYEES = anyOf("employees", ["create", "update", "delete"]);
@@ -63,6 +71,11 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[]> = {
   "/sliders": HERO,
   "/sliders/new": "hero.create",
   "/hero": HERO,
+
+  // Prefix matching only descends through "/", so `/hero-certificates` is a
+  // sibling of `/hero`, not a child of it — the two never collide.
+  "/hero-certificates": HERO_CERTIFICATES,
+  "/hero-certificates/new": "hero_certificates.create",
 
   "/projects": PROJECTS,
   "/projects/new": "projects.create",

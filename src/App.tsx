@@ -57,6 +57,9 @@ import DepartmentsPage from "./pages/Departments/DepartmentsPage";
 import NewDepartmentPage from "./pages/Departments/NewDepartmentPage";
 import DepartmentDetailsPage from "./pages/Departments/DepartmentDetailsPage";
 import HeroPage from "./pages/Hero/HeroPage";
+import HeroCertificatesPage from "./pages/HeroCertificates/HeroCertificatesPage";
+import NewHeroCertificatePage from "./pages/HeroCertificates/NewHeroCertificatePage";
+import HeroCertificateDetailsPage from "./pages/HeroCertificates/HeroCertificateDetailsPage";
 import MenuHeaderPage from "./pages/Menu/MenuHeaderPage";
 import MenuFooterPage from "./pages/Menu/MenuFooterPage";
 import MenuQuickPage from "./pages/Menu/MenuQuickPage";
@@ -204,6 +207,11 @@ export default function App() {
 
             {/* Hero */}
             <Route path="/hero" element={<HeroPage />} />
+
+            {/* Hero certificates */}
+            <Route path="/hero-certificates" element={<HeroCertificatesPage />} />
+            <Route path="/hero-certificates/new" element={<NewHeroCertificatePage />} />
+            <Route path="/hero-certificates/:certificate_id" element={<HeroCertificateDetailsPage />} />
 
             {/* Menu */}
             <Route path="/menu-header" element={<MenuHeaderPage />} />

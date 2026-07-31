@@ -13,6 +13,7 @@ import NewspaperIcon from '@mui/icons-material/Newspaper';
 import SchoolIcon from '@mui/icons-material/School';
 import ScienceIcon from '@mui/icons-material/Science';
 import SettingsIcon from '@mui/icons-material/Settings';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 
 import { GridIcon } from "../icons";
 import { permissionForPath } from "../config/routePermissions";
@@ -125,6 +126,19 @@ export const navGroups: NavGroup[] = [
           { name: "Xəbərlər", path: "/news" },
           { name: "Yeni xəbər", path: "/news/new" },
           { name: "Xəbər kateqoriyaları", path: "/news-categories" },
+        ],
+      },
+      {
+        /*
+          The homepage hero's QS ranking certificates. The hero video itself
+          (/hero) has no entry here and stays URL-reachable, like the other
+          single-screen sections.
+        */
+        icon: <WorkspacePremiumIcon />,
+        name: "Sertifikatlar",
+        subItems: [
+          { name: "Sertifikatlar", path: "/hero-certificates" },
+          { name: "Yeni sertifikat", path: "/hero-certificates/new" },
         ],
       },
     ],
