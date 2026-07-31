@@ -9,6 +9,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import CategoryIcon from '@mui/icons-material/Category';
 import ForumIcon from '@mui/icons-material/Forum';
 import MenuIcon from '@mui/icons-material/Menu';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import SchoolIcon from '@mui/icons-material/School';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -144,8 +145,18 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Akademik struktur",
+    /*
+      The Akademik section. Fakültələr and Kafedralar (and Departamentlər) are
+      nested here alongside the editorial pages under "Təhsil və proqramlar",
+      which are hand-listed like the Haqqımızda group.
+    */
+    label: "Akademik",
     items: [
+      {
+        icon: <MenuBookIcon />,
+        name: "Təhsil və proqramlar",
+        subItems: [{ name: "MBA", path: "/about/mba" }],
+      },
       {
         icon: <SchoolIcon />,
         name: "Fakültələr",

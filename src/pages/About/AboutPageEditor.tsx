@@ -138,6 +138,56 @@ interface DocumentForm {
 /** A fresh, stable page-local key for a new category. */
 const makeCategoryKey = () => `c-${Math.random().toString(36).slice(2, 9)}`;
 
+// ── MBA page (Akademik → Təhsil və proqramlar) ──────────────────────────────
+// The MBA page assembles fixed, named sections out of the generic block/list
+// children. These keys are the contract with the seed migration and the
+// website; the editor renders one labelled section per key.
+const MBA_BLOCK_KEYS = ["doctoral", "contact"] as const;
+const MBA_LIST_DEFS: { key: string; style: string }[] = [
+  { key: "highlights", style: "number" },
+  { key: "languages", style: "bullet" },
+  { key: "program_structure", style: "bullet" },
+  { key: "doctoral_formats", style: "bullet" },
+  { key: "phd", style: "bullet" },
+  { key: "doctor_of_sciences", style: "bullet" },
+  { key: "phones", style: "bullet" },
+  { key: "emails", style: "bullet" },
+];
+// Lists whose items read the same in every language (numbers, phones, e-mails):
+// edited once and written to both languages on save.
+const MBA_NEUTRAL_LISTS = new Set(["highlights", "phones", "emails"]);
+// The 4 highlight slots have fixed labels on the website; only the numbers are
+// editable, and they keep their position (an empty slot is kept, not dropped).
+const MBA_HIGHLIGHT_LABELS = [
+  "Tədris sahələri",
+  "İxtisaslaşma",
+  "Tədris dili",
+  "Qeydiyyatlı tələbələr",
+];
+
+/** Guarantees the MBA page's fixed blocks/lists exist in the form, so the
+ *  editor always renders every section even if a seed row is missing. */
+const ensureMbaScaffold = (form: PageForm): PageForm => {
+  const blocks = [...form.blocks];
+  for (const key of MBA_BLOCK_KEYS) {
+    if (!blocks.some((b) => b.block_key === key)) {
+      blocks.push({ block_key: key, title: { az: "", en: "" }, body: { az: "", en: "" } });
+    }
+  }
+  const lists = [...form.lists];
+  for (const def of MBA_LIST_DEFS) {
+    if (!lists.some((l) => l.list_key === def.key)) {
+      lists.push({
+        list_key: def.key,
+        style: def.style,
+        title: { az: "", en: "" },
+        items: { az: "", en: "" },
+      });
+    }
+  }
+  return { ...form, blocks, lists };
+};
+
 interface PageForm {
   title: Bilingual;
   description: Bilingual;
@@ -184,7 +234,8 @@ const linesOf = (values: string[] | null | undefined) => (values ?? []).join("\n
 const toLines = (text: string) =>
   text.split("\n").map((line) => line.trim()).filter(Boolean);
 
-const toForm = (page: AboutPageDetail): PageForm => ({
+const toForm = (page: AboutPageDetail): PageForm => {
+  const base: PageForm = {
   title: { az: str(page.az?.title), en: str(page.en?.title) },
   description: { az: str(page.az?.description), en: str(page.en?.description) },
   links_title: { az: str(page.az?.links_title), en: str(page.en?.links_title) },
@@ -275,7 +326,9 @@ const toForm = (page: AboutPageDetail): PageForm => ({
       en: str(milestone.en?.description),
     },
   })),
-});
+  };
+  return page.template === "mba" ? ensureMbaScaffold(base) : base;
+};
 
 /** Azerbaijani first — this dashboard is Azerbaijani. */
 const LANGS: { code: Lang; label: string }[] = [
@@ -614,6 +667,84 @@ export default function AboutPageEditor() {
       setSaving(false);
     }
   };
+
+  // ── MBA page: keyed block/list editing ─────────────────────────────────────
+  const setListTitleByKey = (key: string, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            lists: prev.lists.map((entry) =>
+              entry.list_key === key
+                ? { ...entry, title: { ...entry.title, [lang]: value } }
+                : entry
+            ),
+          }
+        : prev
+    );
+
+  const setListItemsByKey = (key: string, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            lists: prev.lists.map((entry) =>
+              entry.list_key === key
+                ? { ...entry, items: { ...entry.items, [lang]: value } }
+                : entry
+            ),
+          }
+        : prev
+    );
+
+  // Language-neutral list: the same value is written to both languages.
+  const setNeutralListItems = (key: string, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            lists: prev.lists.map((entry) =>
+              entry.list_key === key ? { ...entry, items: { az: value, en: value } } : entry
+            ),
+          }
+        : prev
+    );
+
+  const listItemsText = (key: string) => {
+    const entry = form?.lists.find((l) => l.list_key === key);
+    if (!entry) return "";
+    return MBA_NEUTRAL_LISTS.has(key) ? entry.items.az || entry.items.en : entry.items[lang];
+  };
+
+  const highlightValues = (): string[] => {
+    const raw = listItemsText("highlights");
+    const arr = raw.split("\n");
+    while (arr.length < 4) arr.push("");
+    return arr.slice(0, 4);
+  };
+
+  const setHighlight = (slot: number, value: string) => {
+    const four = highlightValues();
+    four[slot] = value;
+    setNeutralListItems("highlights", four.join("\n"));
+  };
+
+  const setBlockByKey = (key: string, field: "title" | "body", value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            blocks: prev.blocks.map((block) =>
+              block.block_key === key
+                ? { ...block, [field]: { ...block[field], [lang]: value } }
+                : block
+            ),
+          }
+        : prev
+    );
+
+  const blockValue = (key: string, field: "title" | "body") =>
+    form?.blocks.find((b) => b.block_key === key)?.[field][lang] ?? "";
 
   /** One council roster (members or secretariat) as an add/remove/reorder list. */
   const renderRoster = (
@@ -1006,12 +1137,27 @@ export default function AboutPageEditor() {
               tags: toLines(pillar.tags.en),
             },
           })),
-        lists: form.lists.map((entry) => ({
-          list_key: entry.list_key,
-          style: entry.style,
-          az: { title: entry.title.az, items: toLines(entry.items.az) },
-          en: { title: entry.title.en, items: toLines(entry.items.en) },
-        })),
+        lists: form.lists.map((entry) => {
+          // The 4 MBA highlight numbers keep their fixed positions (an empty
+          // slot stays "", it is not dropped) and read the same in both langs.
+          if (entry.list_key === "highlights") {
+            const four = (entry.items.az || entry.items.en).split("\n").map((s) => s.trim());
+            while (four.length < 4) four.push("");
+            const items = four.slice(0, 4);
+            return { list_key: entry.list_key, style: entry.style, az: { title: entry.title.az, items }, en: { title: entry.title.en, items } };
+          }
+          // Phones and e-mails are language-neutral: one list, written to both.
+          if (entry.list_key === "phones" || entry.list_key === "emails") {
+            const items = toLines(entry.items.az || entry.items.en);
+            return { list_key: entry.list_key, style: entry.style, az: { title: entry.title.az, items }, en: { title: entry.title.en, items } };
+          }
+          return {
+            list_key: entry.list_key,
+            style: entry.style,
+            az: { title: entry.title.az, items: toLines(entry.items.az) },
+            en: { title: entry.title.en, items: toLines(entry.items.en) },
+          };
+        }),
         blocks: form.blocks.map((block) => ({
           block_key: block.block_key,
           az: { title: block.title.az, body: block.body.az },
@@ -1217,6 +1363,7 @@ export default function AboutPageEditor() {
   // Both document libraries; only the categorized one shows a categories editor.
   const isDocuments = page.template === "documents" || page.template === "documents-simple";
   const hasDocCategories = page.template === "documents";
+  const isMba = page.template === "mba";
   // The rector page's single 'offices' list is edited as one textarea per
   // language, so it is pulled out of the generic `lists` machinery here.
   const officesIndex = form.lists.findIndex((entry) => entry.list_key === "offices");
@@ -1284,7 +1431,7 @@ export default function AboutPageEditor() {
           desc={
             isRector
               ? "Səhifənin yuxarısındakı bölmə. Şəkil və başlıqların dizaynı saytda sabitdir."
-              : isScientificBoard || isFormerRectors || isPartner || isDocuments
+              : isScientificBoard || isFormerRectors || isPartner || isDocuments || isMba
               ? "Səhifənin yuxarısındakı başlıq bölməsi."
               : "Səhifənin yuxarısındakı video bölməsində göstərilir. Video saytda sabitdir."
           }
@@ -1668,9 +1815,9 @@ export default function AboutPageEditor() {
           </ComponentCard>
         )}
 
-        {(isScientificBoard || isPartner) && (
+        {(isScientificBoard || isPartner || isMba) && (
           <ComponentCard
-            title={isPartner ? "Haqqında bölməsi" : "İkinci bölmə"}
+            title={isMba ? "MBA haqqında" : isPartner ? "Haqqında bölməsi" : "İkinci bölmə"}
             desc="Başlığın altındakı ikinci başlıq və təsvir."
           >
             <div className="space-y-4">
@@ -1679,7 +1826,13 @@ export default function AboutPageEditor() {
                 <Input
                   value={form.section_title[lang]}
                   onChange={(event) => setBilingualField("section_title", event.target.value)}
-                  placeholder={isPartner ? "Universitet haqqında" : "Şura Haqqında"}
+                  placeholder={
+                    isMba
+                      ? "MBA Proqramı haqqında"
+                      : isPartner
+                      ? "Universitet haqqında"
+                      : "Şura Haqqında"
+                  }
                 />
               </div>
               <RichTextField
@@ -2157,6 +2310,178 @@ export default function AboutPageEditor() {
           </ComponentCard>
         )}
 
+        {isMba && (
+          <ComponentCard
+            title="Proqramın əsas göstəriciləri"
+            desc="Bölmənin başlığı və 4 göstəricinin rəqəmləri. Etiketlər saytda sabitdir."
+          >
+            <div className="space-y-4">
+              <div>
+                <Label>Bölmənin başlığı</Label>
+                <Input
+                  value={form.pillars_title[lang]}
+                  onChange={(event) =>
+                    setForm((prev) =>
+                      prev
+                        ? { ...prev, pillars_title: { ...prev.pillars_title, [lang]: event.target.value } }
+                        : prev
+                    )
+                  }
+                  placeholder="Proqramın əsas göstəriciləri"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {MBA_HIGHLIGHT_LABELS.map((label, slot) => (
+                  <div key={slot}>
+                    <Label>{label}</Label>
+                    <Input
+                      value={highlightValues()[slot]}
+                      onChange={(event) => setHighlight(slot, event.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400">Rəqəmlər bütün dillərdə eyni göstərilir.</p>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isMba && (
+          <ComponentCard
+            title="Tədris dilləri və Proqram strukturu"
+            desc="Hər iki siyahının başlığı və bəndləri."
+          >
+            <div className="space-y-6">
+              {[
+                { key: "languages", placeholder: "Azərbaycan\nİngilis\nAlman\nRus" },
+                { key: "program_structure", placeholder: "Strateji idarəetmə və liderlik" },
+              ].map(({ key, placeholder }) => (
+                <div key={key}>
+                  <div className="mb-2">
+                    <Label>Başlıq</Label>
+                    <Input
+                      value={form.lists.find((l) => l.list_key === key)?.title[lang] ?? ""}
+                      onChange={(event) => setListTitleByKey(key, event.target.value)}
+                    />
+                  </div>
+                  <Label>Bəndlər</Label>
+                  <textarea
+                    value={listItemsText(key)}
+                    onChange={(event) => setListItemsByKey(key, event.target.value)}
+                    rows={5}
+                    placeholder={placeholder}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir bənd.</p>
+                </div>
+              ))}
+            </div>
+          </ComponentCard>
+        )}
+
+        {isMba && (
+          <ComponentCard
+            title="Doktorantura yolları"
+            desc="Başlıq, təsvir, format kartları və iki dərəcə kartı."
+          >
+            <div className="space-y-5">
+              <div>
+                <Label>Başlıq</Label>
+                <Input
+                  value={blockValue("doctoral", "title")}
+                  onChange={(event) => setBlockByKey("doctoral", "title", event.target.value)}
+                  placeholder="Doktorantura yolları"
+                />
+              </div>
+              <RichTextField
+                label="Təsvir"
+                value={blockValue("doctoral", "body")}
+                onChange={(next) => setBlockByKey("doctoral", "body", next)}
+                remountKey={`${formKey}-mba-doctoral-${lang}`}
+              />
+              <div>
+                <Label>Format kartları</Label>
+                <textarea
+                  value={listItemsText("doctoral_formats")}
+                  onChange={(event) => setListItemsByKey("doctoral_formats", event.target.value)}
+                  rows={3}
+                  placeholder={"Əyani (istehsalatdan ayrılmaqla)\nQiyabi (istehsalatdan ayrılmadan)\nDissertant"}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                />
+                <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir format.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {[
+                  { key: "phd", placeholder: "Əyani: 3 il\nQiyabi: 4 il\nDissertant: 4 il" },
+                  {
+                    key: "doctor_of_sciences",
+                    placeholder: "Əyani: 4 il\nQiyabi: 5 il\nDissertant: 5 il",
+                  },
+                ].map(({ key, placeholder }) => (
+                  <div key={key} className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                    <div className="mb-2">
+                      <Label>Kartın başlığı</Label>
+                      <Input
+                        value={form.lists.find((l) => l.list_key === key)?.title[lang] ?? ""}
+                        onChange={(event) => setListTitleByKey(key, event.target.value)}
+                      />
+                    </div>
+                    <Label>Bəndlər</Label>
+                    <textarea
+                      value={listItemsText(key)}
+                      onChange={(event) => setListItemsByKey(key, event.target.value)}
+                      rows={4}
+                      placeholder={placeholder}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                    />
+                    <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir bənd.</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isMba && (
+          <ComponentCard title="Əlaqə" desc="Ünvan, telefon nömrələri və e-poçt ünvanları.">
+            <div className="space-y-4">
+              <div>
+                <Label>Ünvan</Label>
+                <textarea
+                  value={blockValue("contact", "body")}
+                  onChange={(event) => setBlockByKey("contact", "body", event.target.value)}
+                  rows={2}
+                  placeholder="Bakı ş., H.Cavid pr. 25"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                />
+              </div>
+              <div>
+                <Label>Telefon nömrələri</Label>
+                <textarea
+                  value={listItemsText("phones")}
+                  onChange={(event) => setNeutralListItems("phones", event.target.value)}
+                  rows={3}
+                  placeholder={"+994 12 538 00 00\n+994 12 539 00 00"}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                />
+                <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir nömrə. Bütün dillərdə eyni.</p>
+              </div>
+              <div>
+                <Label>E-poçt ünvanları</Label>
+                <textarea
+                  value={listItemsText("emails")}
+                  onChange={(event) => setNeutralListItems("emails", event.target.value)}
+                  rows={2}
+                  placeholder={"mba@aztu.edu.az"}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                />
+                <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir e-poçt. Bütün dillərdə eyni.</p>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
         {isStrategicPlan && (
           <ComponentCard
             title="Sənəd"
@@ -2420,7 +2745,7 @@ export default function AboutPageEditor() {
           </ComponentCard>
         ) : null}
 
-        {!isTimeline && !isStrategicPlan && !isRector && form.blocks.map((block, index) => (
+        {!isTimeline && !isStrategicPlan && !isRector && !isMba && form.blocks.map((block, index) => (
           <ComponentCard
             key={block.block_key}
             title={block.title[lang] || block.block_key}
