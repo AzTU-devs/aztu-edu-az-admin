@@ -23,6 +23,7 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import {
   HeroCertificate,
   FAMILY_OPTIONS,
+  ISSUER_OPTIONS,
   getHeroCertificates,
   reorderHeroCertificate,
   activateHeroCertificate,
@@ -49,6 +50,28 @@ const FAMILY_BADGE_CLASSES: Record<string, string> = {
   subject: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400",
   other: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
 };
+
+const ISSUER_LABELS: Record<string, string> = ISSUER_OPTIONS.reduce(
+  (acc, option) => ({ ...acc, [option.value]: option.label }),
+  {} as Record<string, string>
+);
+
+// Amber reads as QS and teal as AQAS everywhere the two issuers appear,
+// including on the public hero — the list keeps that pairing.
+const ISSUER_BADGE_CLASSES: Record<string, string> = {
+  qs: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400",
+  aqas: "bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400",
+};
+
+/**
+ * A row written before the issuer column existed comes back without the key,
+ * and that has always meant QS — so only an explicit "aqas" changes anything.
+ */
+function resolveIssuer(certificate: HeroCertificate): string {
+  return certificate.issuer === "aqas" ? "aqas" : "qs";
+}
+
+const emDash = <span className="text-gray-400 dark:text-gray-600 italic">—</span>;
 
 function SortableItem({
   id,
@@ -237,7 +260,7 @@ export default function HeroCertificates() {
       return (
         <img
           src={resolveFileUrl(certificate.image)}
-          alt={certificate.title ?? certificate.rank_label}
+          alt={certificate.title ?? certificate.rank_label ?? "Sertifikat"}
           className="h-9 w-9 object-contain rounded-md border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800"
         />
       );
@@ -289,12 +312,13 @@ export default function HeroCertificates() {
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "4%" }}>#</p>
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "5%" }}>Sıra</p>
           <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "8%" }}>Öncədən</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "9%" }}>Reytinq</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "26%" }}>Başlıq</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "11%" }}>Kateqoriya</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "11%" }}>Tarix</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "10%" }}>Status</p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-right" style={{ width: "16%" }}>Əməliyyatlar</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "8%" }}>Verən</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "8%" }}>Reytinq</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "22%" }}>Başlıq</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "9%" }}>Kateqoriya</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "10%" }}>Tarix</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ width: "9%" }}>Status</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 text-right" style={{ width: "17%" }}>Əməliyyatlar</p>
         </div>
 
         {loading ? (
@@ -304,12 +328,13 @@ export default function HeroCertificates() {
                 <div className="h-4 w-4 bg-gray-100 dark:bg-gray-800 rounded" style={{ width: "4%" }}></div>
                 <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full ml-1" style={{ width: "4%" }}></div>
                 <div className="h-9 w-9 bg-gray-100 dark:bg-gray-800 rounded-lg ml-2" style={{ width: "7%" }}></div>
-                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full ml-2" style={{ width: "8%" }}></div>
-                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full ml-3" style={{ width: "24%" }}></div>
-                <div className="h-5 bg-gray-100 dark:bg-gray-800 rounded-full ml-3" style={{ width: "9%" }}></div>
+                <div className="h-5 bg-gray-100 dark:bg-gray-800 rounded-full ml-2" style={{ width: "6%" }}></div>
+                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full ml-2" style={{ width: "6%" }}></div>
+                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full ml-3" style={{ width: "20%" }}></div>
+                <div className="h-5 bg-gray-100 dark:bg-gray-800 rounded-full ml-3" style={{ width: "8%" }}></div>
                 <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full ml-3" style={{ width: "9%" }}></div>
                 <div className="h-5 bg-gray-100 dark:bg-gray-800 rounded-full ml-3" style={{ width: "8%" }}></div>
-                <div className="flex justify-end gap-1.5 ml-3" style={{ width: "15%" }}>
+                <div className="flex justify-end gap-1.5 ml-3" style={{ width: "14%" }}>
                   <div className="h-7 w-7 bg-gray-100 dark:bg-gray-800 rounded-lg"></div>
                   <div className="h-7 w-12 bg-gray-100 dark:bg-gray-800 rounded-lg"></div>
                   <div className="h-7 w-7 bg-gray-100 dark:bg-gray-800 rounded-lg"></div>
@@ -345,31 +370,44 @@ export default function HeroCertificates() {
 
                       <div style={{ width: "8%" }}>{renderPreview(certificate)}</div>
 
-                      <div style={{ width: "9%" }}>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-mono text-xs font-semibold">
-                          {certificate.rank_label}
+                      <div style={{ width: "8%" }}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wide ${ISSUER_BADGE_CLASSES[resolveIssuer(certificate)]}`}>
+                          {ISSUER_LABELS[resolveIssuer(certificate)]}
                         </span>
                       </div>
 
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200 pr-3" style={{ width: "26%" }}>
-                        {certificate.title
-                          ? truncate(certificate.title, 45)
-                          : <span className="text-gray-400 dark:text-gray-600 italic">—</span>}
+                      {/* An AQAS row has no rank at all, so the chip is dropped rather than left empty. */}
+                      <div style={{ width: "8%" }}>
+                        {certificate.rank_label ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-mono text-xs font-semibold">
+                            {certificate.rank_label}
+                          </span>
+                        ) : (
+                          emDash
+                        )}
+                      </div>
+
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200 pr-3" style={{ width: "22%" }}>
+                        {certificate.title ? truncate(certificate.title, 45) : emDash}
                       </p>
 
-                      <div style={{ width: "11%" }}>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${FAMILY_BADGE_CLASSES[certificate.family] ?? FAMILY_BADGE_CLASSES.other}`}>
-                          {FAMILY_LABELS[certificate.family] ?? certificate.family}
-                        </span>
+                      <div style={{ width: "9%" }}>
+                        {certificate.family ? (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${FAMILY_BADGE_CLASSES[certificate.family] ?? FAMILY_BADGE_CLASSES.other}`}>
+                            {FAMILY_LABELS[certificate.family] ?? certificate.family}
+                          </span>
+                        ) : (
+                          emDash
+                        )}
                       </div>
 
-                      <p className="text-sm text-gray-500 dark:text-gray-400" style={{ width: "11%" }}>
+                      <p className="text-sm text-gray-500 dark:text-gray-400" style={{ width: "10%" }}>
                         {certificate.issued_date
                           ? new Date(certificate.issued_date).toLocaleDateString("az-AZ")
-                          : <span className="text-gray-400 dark:text-gray-600 italic">—</span>}
+                          : emDash}
                       </p>
 
-                      <div style={{ width: "10%" }}>
+                      <div style={{ width: "9%" }}>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
                           certificate.is_active
                             ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
@@ -380,7 +418,7 @@ export default function HeroCertificates() {
                         </span>
                       </div>
 
-                      <div className="flex justify-end items-center gap-1" style={{ width: "16%" }}>
+                      <div className="flex justify-end items-center gap-1" style={{ width: "17%" }}>
                         <Link to={`/hero-certificates/${certificate.certificate_id}`}>
                           <button className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors" title="Düzəliş et">
                             <EditIcon sx={{ fontSize: 18 }} />

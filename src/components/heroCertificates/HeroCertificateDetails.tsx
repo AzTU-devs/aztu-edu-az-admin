@@ -10,6 +10,7 @@ import {
     getHeroCertificateDetail,
     updateHeroCertificate,
     FAMILY_OPTIONS,
+    ISSUER_OPTIONS,
     HeroCertificateDetail,
 } from "../../services/heroCertificate/heroCertificateService";
 
@@ -91,7 +92,9 @@ function HeroCertificateEditForm({ certificate, navigate }: EditFormProps) {
     const [removeDocument, setRemoveDocument] = useState(false);
     const [externalUrl, setExternalUrl] = useState(certificate.external_url ?? "");
 
-    // Section 2 — details
+    // Section 2 — details. A record saved before the issuer column existed comes
+    // back without the key, and that has always meant QS.
+    const [issuer, setIssuer] = useState(certificate.issuer === "aqas" ? "aqas" : "qs");
     const [rankLabel, setRankLabel] = useState(certificate.rank_label ?? "");
     const [family, setFamily] = useState(certificate.family ?? "");
     const [issuedDate, setIssuedDate] = useState(certificate.issued_date ?? "");
@@ -117,10 +120,26 @@ function HeroCertificateEditForm({ certificate, navigate }: EditFormProps) {
         keepsStoredDocument ||
         externalUrl.trim() !== "";
 
+    // AQAS accredits programmes rather than ranking them, so it carries no rank
+    // and no family. Every issuer test asks "is it AQAS?" so that anything else
+    // keeps the original QS behaviour.
+    const isAqas = issuer === "aqas";
+
+    // Switching a stored QS record to AQAS does not just hide the two QS-only
+    // fields, it empties them, so the rank that came back from the API cannot
+    // survive in state behind the hidden inputs and be re-submitted.
+    const changeIssuer = (next: string) => {
+        setIssuer(next);
+        if (next === "aqas") {
+            setRankLabel("");
+            setFamily("");
+        }
+    };
+
+    // Mirrors the server matrix exactly, so the editor never sees a raw 422.
     const isFormValid =
         hasSource &&
-        rankLabel.trim() !== "" &&
-        family !== "" &&
+        (isAqas || (rankLabel.trim() !== "" && family !== "")) &&
         azTitle.trim() !== "" &&
         enTitle.trim() !== "";
 
@@ -144,8 +163,11 @@ function HeroCertificateEditForm({ certificate, navigate }: EditFormProps) {
         setSaving(true);
         const result = await updateHeroCertificate({
             certificate_id: certificate.certificate_id,
-            rank_label: rankLabel.trim(),
-            family,
+            issuer,
+            // Flipping QS -> AQAS has to clear the stored rank and family, so
+            // they are dropped from the payload rather than sent stale.
+            rank_label: isAqas ? undefined : rankLabel.trim(),
+            family: isAqas ? undefined : family,
             issued_date: issuedDate.trim() || undefined,
             external_url: externalUrl.trim() || undefined,
             // Uploads are sent only when the user picked a new file; otherwise
@@ -332,33 +354,61 @@ function HeroCertificateEditForm({ certificate, navigate }: EditFormProps) {
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Məlumatlar</span>
                     <span className="ml-auto text-[11px] text-red-500 font-medium">Məcburi</span>
                 </div>
-                <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-5">
-                    <div>
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
-                            Reytinq göstəricisi
-                        </Label>
-                        <Input placeholder="=30 və ya 801-850" value={rankLabel} onChange={(e) => setRankLabel(e.target.value)} />
-                    </div>
+                <div className="p-5 space-y-5">
+                    {isAqas && (
+                        <p className="text-xs rounded-lg bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 px-3 py-2">
+                            AQAS proqram akkreditasiyası verir, reytinq deyil — buna görə
+                            <span className="font-semibold"> reytinq göstəricisi</span> və
+                            <span className="font-semibold"> kateqoriya</span> doldurulmur.
+                            Ana səhifədə əsas mətn kimi <span className="font-semibold">proqramın adı</span> göstərilir.
+                        </p>
+                    )}
 
-                    <div>
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
-                            Kateqoriya
-                        </Label>
-                        <select className={selectClass} value={family} onChange={(e) => setFamily(e.target.value)}>
-                            <option value="">— Seçilməyib —</option>
-                            {FAMILY_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div>
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                Sertifikatı verən
+                            </Label>
+                            <select className={selectClass} value={issuer} onChange={(e) => changeIssuer(e.target.value)}>
+                                {ISSUER_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div>
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
-                            Sertifikat tarixi
-                        </Label>
-                        <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} />
+                        {!isAqas && (
+                            <div>
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Reytinq göstəricisi
+                                </Label>
+                                <Input placeholder="=30 və ya 801-850" value={rankLabel} onChange={(e) => setRankLabel(e.target.value)} />
+                            </div>
+                        )}
+
+                        {!isAqas && (
+                            <div>
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Kateqoriya
+                                </Label>
+                                <select className={selectClass} value={family} onChange={(e) => setFamily(e.target.value)}>
+                                    <option value="">— Seçilməyib —</option>
+                                    {FAMILY_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <div>
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                                Sertifikat tarixi
+                            </Label>
+                            <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -372,8 +422,14 @@ function HeroCertificateEditForm({ certificate, navigate }: EditFormProps) {
                 </div>
                 <div className="p-5 space-y-5">
                     <div>
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Başlıq</Label>
-                        <Input placeholder="QS Avropa 2026: Qərbi Asiya" value={azTitle} onChange={(e) => setAzTitle(e.target.value)} />
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                            {isAqas ? "Proqramın adı" : "Başlıq"}
+                        </Label>
+                        <Input
+                            placeholder={isAqas ? "Process Automation Engineering (MA)" : "QS Avropa 2026: Qərbi Asiya"}
+                            value={azTitle}
+                            onChange={(e) => setAzTitle(e.target.value)}
+                        />
                     </div>
                     <div>
                         <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Üst yazı</Label>
@@ -395,8 +451,14 @@ function HeroCertificateEditForm({ certificate, navigate }: EditFormProps) {
                 </div>
                 <div className="p-5 space-y-5">
                     <div>
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Title</Label>
-                        <Input placeholder="QS Europe 2026: Western Asia" value={enTitle} onChange={(e) => setEnTitle(e.target.value)} />
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+                            {isAqas ? "Programme name" : "Title"}
+                        </Label>
+                        <Input
+                            placeholder={isAqas ? "Process Automation Engineering (MA)" : "QS Europe 2026: Western Asia"}
+                            value={enTitle}
+                            onChange={(e) => setEnTitle(e.target.value)}
+                        />
                     </div>
                     <div>
                         <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Kicker</Label>

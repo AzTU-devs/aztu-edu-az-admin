@@ -12,6 +12,18 @@ export const FAMILY_OPTIONS: { value: HeroCertificateFamily; label: string }[] =
     { value: "other", label: "Digər" },
 ];
 
+/**
+ * Who attested the certificate. QS is a ranking body, so its rows carry a rank
+ * and a family; AQAS is a programme-accreditation agency, so its rows carry
+ * neither — the programme name is the whole story.
+ */
+export type HeroCertificateIssuer = "qs" | "aqas";
+
+export const ISSUER_OPTIONS: { value: HeroCertificateIssuer; label: string }[] = [
+    { value: "qs", label: "QS" },
+    { value: "aqas", label: "AQAS" },
+];
+
 /** One language's worth of certificate copy. All plain text — no rich editor. */
 export interface HeroCertificateTranslation {
     title: string;
@@ -23,8 +35,10 @@ export interface HeroCertificateTranslation {
 export interface HeroCertificate {
     id: number;
     certificate_id: number;
-    rank_label: string;
-    family: HeroCertificateFamily | string;
+    /** Optional: a record written before the issuer column existed comes back without it — treat that as QS. */
+    issuer?: HeroCertificateIssuer | string;
+    rank_label: string | null;
+    family: HeroCertificateFamily | string | null;
     image: string | null;
     document: string | null;
     external_url: string | null;
@@ -42,8 +56,10 @@ export interface HeroCertificate {
 export interface HeroCertificateDetail {
     id: number;
     certificate_id: number;
-    rank_label: string;
-    family: HeroCertificateFamily | string;
+    /** Optional for the same reason as on `HeroCertificate` — a missing value means QS. */
+    issuer?: HeroCertificateIssuer | string;
+    rank_label: string | null;
+    family: HeroCertificateFamily | string | null;
     image: string | null;
     document: string | null;
     external_url: string | null;
@@ -57,8 +73,11 @@ export interface HeroCertificateDetail {
 }
 
 export interface CreateHeroCertificatePayload {
-    rank_label: string;
-    family: HeroCertificateFamily | string;
+    issuer: HeroCertificateIssuer | string;
+    /** Required by the API only when `issuer` is `"qs"`; ignored for AQAS. */
+    rank_label?: string;
+    /** Required by the API only when `issuer` is `"qs"`; ignored for AQAS. */
+    family?: HeroCertificateFamily | string;
     issued_date?: string;
     external_url?: string;
     image?: File | null;
@@ -102,8 +121,12 @@ const appendOptional = (formData: FormData, key: string, value?: string | null) 
 const buildCertificateFormData = (payload: CreateHeroCertificatePayload) => {
     const formData = new FormData();
 
-    formData.append("rank_label", payload.rank_label);
-    formData.append("family", payload.family);
+    formData.append("issuer", payload.issuer);
+    // `rank_label` / `family` belong to QS only, but they are still sent for an
+    // AQAS row — as "" — because the API reads a blank here as "not set" and
+    // clears the stored value, which is what flipping QS -> AQAS has to do.
+    formData.append("rank_label", payload.rank_label ?? "");
+    formData.append("family", payload.family ?? "");
     appendOptional(formData, "issued_date", payload.issued_date);
     appendOptional(formData, "external_url", payload.external_url);
 
