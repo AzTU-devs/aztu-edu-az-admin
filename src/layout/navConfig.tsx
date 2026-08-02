@@ -9,6 +9,7 @@ import GavelIcon from '@mui/icons-material/Gavel';
 import InfoIcon from '@mui/icons-material/Info';
 import CategoryIcon from '@mui/icons-material/Category';
 import ForumIcon from '@mui/icons-material/Forum';
+import GroupsIcon from '@mui/icons-material/Groups';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
@@ -201,6 +202,25 @@ export const navGroups: NavGroup[] = [
         subItems: [
           { name: "Ofis və Mərkəzlər", path: "/offices" },
           { name: "Yeni ofis/mərkəz", path: "/offices/new" },
+        ],
+      },
+    ],
+  },
+  {
+    /*
+      Students. The "Tədris təqvimi və qaydalar" pages are hand-listed editorial
+      screens (About CMS), like the Haqqımızda and Akademik groups.
+    */
+    label: "Tələbələr",
+    items: [
+      {
+        icon: <GroupsIcon />,
+        name: "Tədris təqvimi və qaydalar",
+        subItems: [
+          { name: "Akademik Təqvim", path: "/about/academic-calendar" },
+          { name: "Qiymətləndirmə və İmtahan Qaydaları", path: "/about/assessment-rules" },
+          { name: "Kredit Sistemi", path: "/about/credit-system" },
+          { name: "LMS Təlimatları", path: "/about/lms-guidelines" },
         ],
       },
     ],

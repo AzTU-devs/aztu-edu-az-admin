@@ -177,6 +177,13 @@ export interface AboutPageDetail {
   /** Regulatory-documents page: the categories and the document cards. */
   doc_categories: AboutDocCategory[];
   documents: AboutDocument[];
+  /** Students pages: the grade-scale table (both descriptions per row). */
+  grade_scale: Array<{
+    points: string | null;
+    grade: string | null;
+    description_az: string | null;
+    description_en: string | null;
+  }>;
   updated_at: string | null;
 }
 
@@ -254,6 +261,13 @@ export interface AboutPagePayload {
     file_url: string;
     az: { name: string };
     en: { name: string };
+  }>;
+  /** Students pages: the grade-scale table, sent whole. */
+  grade_scale?: Array<{
+    points: string;
+    grade: string;
+    description_az: string;
+    description_en: string;
   }>;
 }
 

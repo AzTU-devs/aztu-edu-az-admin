@@ -174,12 +174,47 @@ const CDIO_LIST_DEFS: { key: string; style: string }[] = [
   { key: "society_items", style: "bullet" },
 ];
 
-/** Guarantees a template's fixed blocks/lists exist in the form, so the editor
- *  always renders every section even if a seed row is missing. */
+// ── Students pages (Tələbələr → Tədris təqvimi və qaydalar) ──────────────────
+// Each fixed section is a keyed block/list; grade tables use `grade_scale`,
+// semesters use milestones, additional-info uses pillars, downloads use
+// `document_url` (+ a `documents` slot for the LMS "trained staff" file).
+const STUDENT_SCAFFOLD: Record<
+  string,
+  { blocks: string[]; lists: { key: string; style: string }[]; docs?: string[] }
+> = {
+  "assessment-rules": {
+    blocks: ["download", "assessment", "requirement", "grade"],
+    lists: [{ key: "assessment_items", style: "bullet" }],
+  },
+  "credit-system": {
+    blocks: ["download", "credit", "bachelor", "master", "grade"],
+    lists: [
+      { key: "bachelor_items", style: "bullet" },
+      { key: "master_items", style: "bullet" },
+    ],
+  },
+  "lms-guidelines": {
+    blocks: ["lms", "guidelines", "support"],
+    lists: [],
+    docs: ["trained_staff"],
+  },
+};
+
+/** One grade-scale row: points and grade read the same in both languages; the
+ *  description is bilingual. */
+interface GradeRowForm {
+  points: string;
+  grade: string;
+  description: Bilingual;
+}
+
+/** Guarantees a template's fixed blocks/lists/document-slots exist in the form,
+ *  so the editor always renders every section even if a seed row is missing. */
 const ensureScaffold = (
   form: PageForm,
   blockKeys: readonly string[],
-  listDefs: { key: string; style: string }[]
+  listDefs: { key: string; style: string }[],
+  docCategories: readonly string[] = []
 ): PageForm => {
   const blocks = [...form.blocks];
   for (const key of blockKeys) {
@@ -198,7 +233,13 @@ const ensureScaffold = (
       });
     }
   }
-  return { ...form, blocks, lists };
+  const documents = [...form.documents];
+  for (const key of docCategories) {
+    if (!documents.some((d) => d.category_key === key)) {
+      documents.push({ category_key: key, file_url: "", name: { az: "", en: "" } });
+    }
+  }
+  return { ...form, blocks, lists, documents };
 };
 
 interface PageForm {
@@ -231,6 +272,7 @@ interface PageForm {
   councils: CouncilForm[];
   doc_categories: DocCategoryForm[];
   documents: DocumentForm[];
+  grade_scale: GradeRowForm[];
 }
 
 const str = (value: string | null | undefined) => value ?? "";
@@ -339,9 +381,16 @@ const toForm = (page: AboutPageDetail): PageForm => {
       en: str(milestone.en?.description),
     },
   })),
+  grade_scale: (page.grade_scale ?? []).map((row) => ({
+    points: str(row.points),
+    grade: str(row.grade),
+    description: { az: str(row.description_az), en: str(row.description_en) },
+  })),
   };
   if (page.template === "mba") return ensureScaffold(base, MBA_BLOCK_KEYS, MBA_LIST_DEFS);
   if (page.template === "cdio") return ensureScaffold(base, CDIO_BLOCK_KEYS, CDIO_LIST_DEFS);
+  const student = STUDENT_SCAFFOLD[page.template];
+  if (student) return ensureScaffold(base, student.blocks, student.lists, student.docs);
   return base;
 };
 
@@ -760,6 +809,86 @@ export default function AboutPageEditor() {
 
   const blockValue = (key: string, field: "title" | "body") =>
     form?.blocks.find((b) => b.block_key === key)?.[field][lang] ?? "";
+
+  // ── Students pages: grade-scale table ──────────────────────────────────────
+  const setGradeCell = (i: number, field: "points" | "grade", value: string) =>
+    setForm((prev) =>
+      prev
+        ? { ...prev, grade_scale: prev.grade_scale.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)) }
+        : prev
+    );
+  const setGradeDesc = (i: number, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            grade_scale: prev.grade_scale.map((r, idx) =>
+              idx === i ? { ...r, description: { ...r.description, [lang]: value } } : r
+            ),
+          }
+        : prev
+    );
+  const addGradeRow = () =>
+    setForm((prev) =>
+      prev ? { ...prev, grade_scale: [...prev.grade_scale, { points: "", grade: "", description: { az: "", en: "" } }] } : prev
+    );
+  const removeGradeRow = (i: number) =>
+    setForm((prev) => (prev ? { ...prev, grade_scale: prev.grade_scale.filter((_, idx) => idx !== i) } : prev));
+  const moveGradeRow = (i: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      const t = i + delta;
+      if (t < 0 || t >= prev.grade_scale.length) return prev;
+      const grade_scale = [...prev.grade_scale];
+      [grade_scale[i], grade_scale[t]] = [grade_scale[t], grade_scale[i]];
+      return { ...prev, grade_scale };
+    });
+
+  // ── Students pages: a document addressed by its category_key (the LMS files) ─
+  const docByCategory = (key: string) => form?.documents.find((d) => d.category_key === key);
+  const setDocByCategory = (key: string, field: "file_url", value: string) =>
+    setForm((prev) =>
+      prev
+        ? { ...prev, documents: prev.documents.map((d) => (d.category_key === key ? { ...d, [field]: value } : d)) }
+        : prev
+    );
+  const setDocNameByCategory = (key: string, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            documents: prev.documents.map((d) =>
+              d.category_key === key ? { ...d, name: { ...d.name, [lang]: value } } : d
+            ),
+          }
+        : prev
+    );
+  const handleCategoryFileUpload = async (key: string, file: File | null) => {
+    if (!file) return;
+    setSaving(true);
+    try {
+      const result = await uploadAboutFile(pageKey, file);
+      if (result.status !== "SUCCESS") {
+        Swal.fire({ icon: "error", title: "Xəta", text: "Fayl yüklənmədi." });
+        return;
+      }
+      setDocByCategory(key, "file_url", result.path);
+      Swal.fire({ icon: "success", title: "Fayl yükləndi", showConfirmButton: false, timer: 1000 });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Reorder a milestone (used for the academic-calendar's semesters).
+  const moveMilestone = (index: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      const t = index + delta;
+      if (t < 0 || t >= prev.milestones.length) return prev;
+      const milestones = [...prev.milestones];
+      [milestones[index], milestones[t]] = [milestones[t], milestones[index]];
+      return { ...prev, milestones };
+    });
 
   /** One council roster (members or secretariat) as an add/remove/reorder list. */
   const renderRoster = (
@@ -1280,6 +1409,16 @@ export default function AboutPageEditor() {
             az: { name: document.name.az },
             en: { name: document.name.en },
           })),
+        // The grade-scale table — a row with no points and no grade was never
+        // filled in.
+        grade_scale: form.grade_scale
+          .filter((row) => row.points.trim() || row.grade.trim() || row.description.az.trim() || row.description.en.trim())
+          .map((row) => ({
+            points: row.points,
+            grade: row.grade,
+            description_az: row.description.az,
+            description_en: row.description.en,
+          })),
         // A milestone with no year and no text is an empty row the editor
         // added and never filled in; it should not reach the website.
         milestones: form.milestones
@@ -1388,9 +1527,163 @@ export default function AboutPageEditor() {
   const hasDocCategories = page.template === "documents";
   const isMba = page.template === "mba";
   const isCdio = page.template === "cdio";
+  const isAcademicCalendar = page.template === "academic-calendar";
+  const isAssessmentRules = page.template === "assessment-rules";
+  const isCreditSystem = page.template === "credit-system";
+  const isLmsGuidelines = page.template === "lms-guidelines";
+  // Every Students page ends with an "Additional Information" section.
+  const isStudentPage = isAcademicCalendar || isAssessmentRules || isCreditSystem || isLmsGuidelines;
   // The rector page's single 'offices' list is edited as one textarea per
   // language, so it is pulled out of the generic `lists` machinery here.
   const officesIndex = form.lists.findIndex((entry) => entry.list_key === "offices");
+
+  const studentTextarea =
+    "w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90";
+
+  // ── Reusable render helpers for the Students pages ──────────────────────────
+  const renderDownload = (blockKey: string, cardTitle = "Sənəd") => (
+    <ComponentCard title={cardTitle} desc="Bölmənin başlığı, sənəd (fayl və ya keçid) və düymə mətni.">
+      <div className="space-y-4">
+        <div>
+          <Label>Bölmənin başlığı</Label>
+          <Input value={blockValue(blockKey, "title")} onChange={(e) => setBlockByKey(blockKey, "title", e.target.value)} placeholder="Download Full Documentation" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label>Fayl yüklə</Label>
+            <input
+              type="file"
+              onChange={(e) => void handleDocumentUpload(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+            />
+            <p className="mt-1 text-xs text-gray-400">Yükləndikdə ünvan avtomatik yenilənir.</p>
+          </div>
+          <div>
+            <Label>və ya keçid</Label>
+            <Input
+              value={form.document_url}
+              onChange={(e) => setForm((prev) => (prev ? { ...prev, document_url: e.target.value } : prev))}
+              placeholder="https://…"
+            />
+          </div>
+        </div>
+        <div>
+          <Label>Düymənin mətni</Label>
+          <Input
+            value={form.document_label[lang]}
+            onChange={(e) =>
+              setForm((prev) => (prev ? { ...prev, document_label: { ...prev.document_label, [lang]: e.target.value } } : prev))
+            }
+            placeholder="Sənədi yüklə"
+          />
+        </div>
+      </div>
+    </ComponentCard>
+  );
+
+  const renderBlockSection = (key: string, cardTitle: string, titlePlaceholder: string, withBody: boolean, bodyLabel = "Təsvir") => (
+    <ComponentCard title={cardTitle} desc={withBody ? "Başlıq və mətn." : "Bölmənin başlığı."}>
+      <div className="space-y-4">
+        <div>
+          <Label>Başlıq</Label>
+          <Input value={blockValue(key, "title")} onChange={(e) => setBlockByKey(key, "title", e.target.value)} placeholder={titlePlaceholder} />
+        </div>
+        {withBody && (
+          <RichTextField
+            label={bodyLabel}
+            value={blockValue(key, "body")}
+            onChange={(next) => setBlockByKey(key, "body", next)}
+            remountKey={`${formKey}-${key}-body-${lang}`}
+          />
+        )}
+      </div>
+    </ComponentCard>
+  );
+
+  const renderGradeScale = (blockKey: string) => (
+    <ComponentCard title="Qiymət şkalası" desc="Başlıq və qiymət cədvəli (ballar, qiymət, təsvir).">
+      <div className="space-y-4">
+        <div>
+          <Label>Bölmənin başlığı</Label>
+          <Input value={blockValue(blockKey, "title")} onChange={(e) => setBlockByKey(blockKey, "title", e.target.value)} placeholder="Qiymət şkalası" />
+        </div>
+        {form.grade_scale.length === 0 ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">Hələ sətir əlavə edilməyib.</p>
+        ) : (
+          <div className="space-y-2">
+            {form.grade_scale.map((row, i) => (
+              <div key={i} className="flex flex-wrap items-end gap-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                <div className="w-28">
+                  <Label>Ballar</Label>
+                  <Input value={row.points} onChange={(e) => setGradeCell(i, "points", e.target.value)} placeholder="91-100" />
+                </div>
+                <div className="w-20">
+                  <Label>Qiymət</Label>
+                  <Input value={row.grade} onChange={(e) => setGradeCell(i, "grade", e.target.value)} placeholder="A" />
+                </div>
+                <div className="min-w-[160px] flex-1">
+                  <Label>Təsvir</Label>
+                  <Input value={row.description[lang]} onChange={(e) => setGradeDesc(i, e.target.value)} placeholder="Əla" />
+                </div>
+                <div className="flex items-center gap-1 pb-1">
+                  <button type="button" onClick={() => moveGradeRow(i, -1)} disabled={i === 0} className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                  <button type="button" onClick={() => moveGradeRow(i, 1)} disabled={i === form.grade_scale.length - 1} className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                  <button type="button" onClick={() => removeGradeRow(i)} className="ml-1 text-xs text-red-500 hover:text-red-600">Sil</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <Button size="sm" variant="outline" onClick={addGradeRow}>+ Sətir əlavə et</Button>
+      </div>
+    </ComponentCard>
+  );
+
+  const renderAdditionalInfo = () => (
+    <ComponentCard title="Əlavə məlumat" desc="Başlıq və məlumat kartları (başlıq + təsvir). Sayı məhdud deyil.">
+      <div className="space-y-4">
+        <div>
+          <Label>Bölmənin başlığı</Label>
+          <Input
+            value={form.pillars_title[lang]}
+            onChange={(e) =>
+              setForm((prev) => (prev ? { ...prev, pillars_title: { ...prev.pillars_title, [lang]: e.target.value } } : prev))
+            }
+            placeholder="Əlavə məlumat"
+          />
+        </div>
+        {form.pillars.length === 0 ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">Hələ məlumat əlavə edilməyib.</p>
+        ) : (
+          <div className="space-y-4">
+            {form.pillars.map((pillar, i) => (
+              <div key={i} className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-400">#{i + 1}</span>
+                  <div className="flex items-center gap-1">
+                    <button type="button" onClick={() => movePillar(i, -1)} disabled={i === 0} className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                    <button type="button" onClick={() => movePillar(i, 1)} disabled={i === form.pillars.length - 1} className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                    <button type="button" onClick={() => removePillar(i)} className="ml-2 text-xs text-red-500 hover:text-red-600">Sil</button>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <Label>Başlıq</Label>
+                  <Input value={pillar.title[lang]} onChange={(e) => setPillar(i, "title", e.target.value)} placeholder="İstehsalat təcrübəsi" />
+                </div>
+                <RichTextField
+                  label="Təsvir"
+                  value={pillar.description[lang]}
+                  onChange={(next) => setPillar(i, "description", next)}
+                  remountKey={`${formKey}-addinfo-${i}-${lang}`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        <Button size="sm" variant="outline" onClick={addPillar}>+ Məlumat əlavə et</Button>
+      </div>
+    </ComponentCard>
+  );
 
   return (
     <>
@@ -1455,7 +1748,7 @@ export default function AboutPageEditor() {
           desc={
             isRector
               ? "Səhifənin yuxarısındakı bölmə. Şəkil və başlıqların dizaynı saytda sabitdir."
-              : isScientificBoard || isFormerRectors || isPartner || isDocuments || isMba
+              : isScientificBoard || isFormerRectors || isPartner || isDocuments || isMba || isCdio || isStudentPage
               ? "Səhifənin yuxarısındakı başlıq bölməsi."
               : "Səhifənin yuxarısındakı video bölməsində göstərilir. Video saytda sabitdir."
           }
@@ -2641,6 +2934,165 @@ export default function AboutPageEditor() {
           </ComponentCard>
         )}
 
+        {/* ── Students: Academic Calendar ── */}
+        {isAcademicCalendar && (
+          <ComponentCard title="Semestrlər" desc="Hər semestrin adı, tarixi və təsviri. Sayı məhdud deyil.">
+            <div className="space-y-4">
+              {form.milestones.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">Hələ semestr əlavə edilməyib.</p>
+              ) : (
+                <div className="space-y-4">
+                  {form.milestones.map((milestone, index) => (
+                    <div key={index} className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400">#{index + 1}</span>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => moveMilestone(index, -1)} disabled={index === 0} className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                          <button type="button" onClick={() => moveMilestone(index, 1)} disabled={index === form.milestones.length - 1} className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                          <button type="button" onClick={() => removeMilestone(index)} className="ml-2 text-xs text-red-500 hover:text-red-600">Sil</button>
+                        </div>
+                      </div>
+                      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <Label>Semestrin adı</Label>
+                          <Input value={milestone.title[lang]} onChange={(e) => setMilestone(index, "title", e.target.value)} placeholder="Payiz Semestri 2025" />
+                        </div>
+                        <div>
+                          <Label>Tarix</Label>
+                          <Input value={milestone.year} onChange={(e) => setMilestone(index, "year", e.target.value)} placeholder="15.09.2025 – 31.01.2026" />
+                          <p className="mt-1 text-xs text-gray-400">Bütün dillərdə eyni.</p>
+                        </div>
+                      </div>
+                      <RichTextField
+                        label="Təsvir"
+                        value={milestone.description[lang]}
+                        onChange={(next) => setMilestone(index, "description", next)}
+                        remountKey={`${formKey}-sem-${index}-${lang}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button size="sm" variant="outline" onClick={addMilestone}>+ Semestr əlavə et</Button>
+            </div>
+          </ComponentCard>
+        )}
+        {isAcademicCalendar && renderAdditionalInfo()}
+
+        {/* ── Students: Assessment & Examination Rules ── */}
+        {isAssessmentRules && renderDownload("download", "Tam sənədi yüklə")}
+        {isAssessmentRules && (
+          <ComponentCard title="Qiymətləndirmə sistemi" desc="Başlıq, təsvir, bəndlər və tələb mətni.">
+            <div className="space-y-4">
+              <div>
+                <Label>Başlıq</Label>
+                <Input value={blockValue("assessment", "title")} onChange={(e) => setBlockByKey("assessment", "title", e.target.value)} placeholder="Qiymətləndirmə sistemi" />
+              </div>
+              <RichTextField label="Qısa təsvir" value={blockValue("assessment", "body")} onChange={(next) => setBlockByKey("assessment", "body", next)} remountKey={`${formKey}-assessment-body-${lang}`} />
+              <div>
+                <Label>Bəndlər</Label>
+                <textarea
+                  value={listItemsText("assessment_items")}
+                  onChange={(e) => setListItemsByKey("assessment_items", e.target.value)}
+                  rows={5}
+                  placeholder={"Seminar / Praktik: 30 bal\nDavamiyyət: 10 bal\nSərbəst iş: 10 bal\nİmtahan: 50 bal"}
+                  className={studentTextarea}
+                />
+                <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir bənd.</p>
+              </div>
+              <div>
+                <Label>Tələb mətni</Label>
+                <textarea
+                  value={blockValue("requirement", "body")}
+                  onChange={(e) => setBlockByKey("requirement", "body", e.target.value)}
+                  rows={2}
+                  placeholder="İmtahandan keçmək üçün minimum 17 bal tələb olunur."
+                  className={studentTextarea}
+                />
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+        {isAssessmentRules && renderGradeScale("grade")}
+        {isAssessmentRules && renderAdditionalInfo()}
+
+        {/* ── Students: Credit System ── */}
+        {isCreditSystem && renderDownload("download", "Tam sənədi yüklə")}
+        {isCreditSystem && renderBlockSection("credit", "Kredit nədir?", "Kredit nədir?", true)}
+        {isCreditSystem && (
+          <ComponentCard title="Bakalavr səviyyəsi" desc="Başlıq, təsvir və bəndlər.">
+            <div className="space-y-4">
+              <div>
+                <Label>Başlıq</Label>
+                <Input value={blockValue("bachelor", "title")} onChange={(e) => setBlockByKey("bachelor", "title", e.target.value)} placeholder="Bakalavr səviyyəsi" />
+              </div>
+              <RichTextField label="Təsvir" value={blockValue("bachelor", "body")} onChange={(next) => setBlockByKey("bachelor", "body", next)} remountKey={`${formKey}-bachelor-body-${lang}`} />
+              <div>
+                <Label>Bəndlər</Label>
+                <textarea value={listItemsText("bachelor_items")} onChange={(e) => setListItemsByKey("bachelor_items", e.target.value)} rows={4} className={studentTextarea} />
+                <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir bənd.</p>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+        {isCreditSystem && (
+          <ComponentCard title="Magistratura səviyyəsi" desc="Başlıq, təsvir və bəndlər.">
+            <div className="space-y-4">
+              <div>
+                <Label>Başlıq</Label>
+                <Input value={blockValue("master", "title")} onChange={(e) => setBlockByKey("master", "title", e.target.value)} placeholder="Magistratura səviyyəsi" />
+              </div>
+              <RichTextField label="Təsvir" value={blockValue("master", "body")} onChange={(next) => setBlockByKey("master", "body", next)} remountKey={`${formKey}-master-body-${lang}`} />
+              <div>
+                <Label>Bəndlər</Label>
+                <textarea value={listItemsText("master_items")} onChange={(e) => setListItemsByKey("master_items", e.target.value)} rows={4} className={studentTextarea} />
+                <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir bənd.</p>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+        {isCreditSystem && renderGradeScale("grade")}
+        {isCreditSystem && renderAdditionalInfo()}
+
+        {/* ── Students: LMS Guidelines ── */}
+        {isLmsGuidelines && renderBlockSection("lms", "LMS sistemi", "LMS sistemi", true)}
+        {isLmsGuidelines && renderDownload("guidelines", "Rəsmi istifadə təlimatı")}
+        {isLmsGuidelines && (
+          <ComponentCard title="Sistem dəstəyi və heyət" desc="Başlıq, təsvir və “Təlim keçmiş heyət” sənədi.">
+            <div className="space-y-4">
+              <div>
+                <Label>Başlıq</Label>
+                <Input value={blockValue("support", "title")} onChange={(e) => setBlockByKey("support", "title", e.target.value)} placeholder="Sistem dəstəyi və heyət" />
+              </div>
+              <RichTextField label="Təsvir" value={blockValue("support", "body")} onChange={(next) => setBlockByKey("support", "body", next)} remountKey={`${formKey}-support-body-${lang}`} />
+              <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                <div className="mb-3">
+                  <Label>Sənədin adı</Label>
+                  <Input
+                    value={docByCategory("trained_staff")?.name[lang] ?? ""}
+                    onChange={(e) => setDocNameByCategory("trained_staff", e.target.value)}
+                    placeholder="Təlim keçmiş heyət"
+                  />
+                </div>
+                <Label>Fayl və ya keçid</Label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input
+                    type="file"
+                    onChange={(e) => void handleCategoryFileUpload("trained_staff", e.target.files?.[0] ?? null)}
+                    className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                  />
+                  <Input
+                    value={docByCategory("trained_staff")?.file_url ?? ""}
+                    onChange={(e) => setDocByCategory("trained_staff", "file_url", e.target.value)}
+                    placeholder="və ya https://…"
+                  />
+                </div>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+        {isLmsGuidelines && renderAdditionalInfo()}
+
         {isStrategicPlan && (
           <ComponentCard
             title="Sənəd"
@@ -2904,7 +3356,7 @@ export default function AboutPageEditor() {
           </ComponentCard>
         ) : null}
 
-        {!isTimeline && !isStrategicPlan && !isRector && !isMba && !isCdio && form.blocks.map((block, index) => (
+        {!isTimeline && !isStrategicPlan && !isRector && !isMba && !isCdio && !isStudentPage && form.blocks.map((block, index) => (
           <ComponentCard
             key={block.block_key}
             title={block.title[lang] || block.block_key}
@@ -2928,8 +3380,8 @@ export default function AboutPageEditor() {
           </ComponentCard>
         ))}
 
-        {/* The CDIO page has no "More in this section" block. */}
-        {!isCdio && (
+        {/* CDIO and the Students pages have no "More in this section" block. */}
+        {!isCdio && !isStudentPage && (
         <ComponentCard
           title="Bölmədə daha çox"
           desc="Səhifənin altındakı düymələr. Sayı məhdud deyil."
