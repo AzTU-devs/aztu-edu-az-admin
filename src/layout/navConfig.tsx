@@ -155,7 +155,10 @@ export const navGroups: NavGroup[] = [
       {
         icon: <MenuBookIcon />,
         name: "Təhsil və proqramlar",
-        subItems: [{ name: "MBA", path: "/about/mba" }],
+        subItems: [
+          { name: "MBA", path: "/about/mba" },
+          { name: "CDIO", path: "/about/cdio" },
+        ],
       },
       {
         icon: <SchoolIcon />,

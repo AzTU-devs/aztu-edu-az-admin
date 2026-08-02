@@ -165,17 +165,30 @@ const MBA_HIGHLIGHT_LABELS = [
   "Qeydiyyatlı tələbələr",
 ];
 
-/** Guarantees the MBA page's fixed blocks/lists exist in the form, so the
- *  editor always renders every section even if a seed row is missing. */
-const ensureMbaScaffold = (form: PageForm): PageForm => {
+// ── CDIO page (Akademik → Təhsil və proqramlar) ─────────────────────────────
+// "What is CDIO?" boxes are the page's pillars (rich description only). The two
+// heading + rich-text sections and their item lists are blocks/lists by key.
+const CDIO_BLOCK_KEYS = ["institutes", "society"] as const;
+const CDIO_LIST_DEFS: { key: string; style: string }[] = [
+  { key: "institute_items", style: "bullet" },
+  { key: "society_items", style: "bullet" },
+];
+
+/** Guarantees a template's fixed blocks/lists exist in the form, so the editor
+ *  always renders every section even if a seed row is missing. */
+const ensureScaffold = (
+  form: PageForm,
+  blockKeys: readonly string[],
+  listDefs: { key: string; style: string }[]
+): PageForm => {
   const blocks = [...form.blocks];
-  for (const key of MBA_BLOCK_KEYS) {
+  for (const key of blockKeys) {
     if (!blocks.some((b) => b.block_key === key)) {
       blocks.push({ block_key: key, title: { az: "", en: "" }, body: { az: "", en: "" } });
     }
   }
   const lists = [...form.lists];
-  for (const def of MBA_LIST_DEFS) {
+  for (const def of listDefs) {
     if (!lists.some((l) => l.list_key === def.key)) {
       lists.push({
         list_key: def.key,
@@ -327,7 +340,9 @@ const toForm = (page: AboutPageDetail): PageForm => {
     },
   })),
   };
-  return page.template === "mba" ? ensureMbaScaffold(base) : base;
+  if (page.template === "mba") return ensureScaffold(base, MBA_BLOCK_KEYS, MBA_LIST_DEFS);
+  if (page.template === "cdio") return ensureScaffold(base, CDIO_BLOCK_KEYS, CDIO_LIST_DEFS);
+  return base;
 };
 
 /** Azerbaijani first — this dashboard is Azerbaijani. */
@@ -1122,9 +1137,17 @@ export default function AboutPageEditor() {
           .map((url) => url.trim())
           .filter(Boolean)
           .map((url) => ({ image_url: url })),
-        // A card with no heading in either language was never filled in.
+        // A card with nothing typed was never filled in. The heading counts,
+        // and so does the body — the CDIO "What is CDIO?" boxes carry only a
+        // description, no title.
         pillars: form.pillars
-          .filter((pillar) => pillar.title.az.trim() || pillar.title.en.trim())
+          .filter(
+            (pillar) =>
+              pillar.title.az.trim() ||
+              pillar.title.en.trim() ||
+              pillar.description.az.trim() ||
+              pillar.description.en.trim()
+          )
           .map((pillar) => ({
             az: {
               title: pillar.title.az,
@@ -1364,6 +1387,7 @@ export default function AboutPageEditor() {
   const isDocuments = page.template === "documents" || page.template === "documents-simple";
   const hasDocCategories = page.template === "documents";
   const isMba = page.template === "mba";
+  const isCdio = page.template === "cdio";
   // The rector page's single 'offices' list is edited as one textarea per
   // language, so it is pulled out of the generic `lists` machinery here.
   const officesIndex = form.lists.findIndex((entry) => entry.list_key === "offices");
@@ -1815,9 +1839,17 @@ export default function AboutPageEditor() {
           </ComponentCard>
         )}
 
-        {(isScientificBoard || isPartner || isMba) && (
+        {(isScientificBoard || isPartner || isMba || isCdio) && (
           <ComponentCard
-            title={isMba ? "MBA haqqında" : isPartner ? "Haqqında bölməsi" : "İkinci bölmə"}
+            title={
+              isCdio
+                ? "CDIO Təşəbbüsü"
+                : isMba
+                ? "MBA haqqında"
+                : isPartner
+                ? "Haqqında bölməsi"
+                : "İkinci bölmə"
+            }
             desc="Başlığın altındakı ikinci başlıq və təsvir."
           >
             <div className="space-y-4">
@@ -1827,7 +1859,9 @@ export default function AboutPageEditor() {
                   value={form.section_title[lang]}
                   onChange={(event) => setBilingualField("section_title", event.target.value)}
                   placeholder={
-                    isMba
+                    isCdio
+                      ? "CDIO Təşəbbüsü"
+                      : isMba
                       ? "MBA Proqramı haqqında"
                       : isPartner
                       ? "Universitet haqqında"
@@ -2482,6 +2516,131 @@ export default function AboutPageEditor() {
           </ComponentCard>
         )}
 
+        {isCdio && (
+          <ComponentCard
+            title="CDIO nədir?"
+            desc="Bölmənin başlığı və mətn qutuları. Qutuların sayı məhdud deyil."
+          >
+            <div className="space-y-4">
+              <div>
+                <Label>Bölmənin başlığı</Label>
+                <Input
+                  value={form.pillars_title[lang]}
+                  onChange={(event) =>
+                    setForm((prev) =>
+                      prev
+                        ? { ...prev, pillars_title: { ...prev.pillars_title, [lang]: event.target.value } }
+                        : prev
+                    )
+                  }
+                  placeholder="CDIO nədir?"
+                />
+              </div>
+
+              {form.pillars.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ mətn qutusu əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {form.pillars.map((pillar, index) => (
+                    <div
+                      key={index}
+                      className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400">#{index + 1}</span>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => movePillar(index, -1)} disabled={index === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                          <button type="button" onClick={() => movePillar(index, 1)} disabled={index === form.pillars.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                          <button type="button" onClick={() => removePillar(index)} className="ml-2 text-xs text-red-500 hover:text-red-600">Sil</button>
+                        </div>
+                      </div>
+                      <RichTextField
+                        label="Mətn"
+                        value={pillar.description[lang]}
+                        onChange={(next) => setPillar(index, "description", next)}
+                        remountKey={`${formKey}-cdiobox-${index}-${lang}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addPillar}>
+                + Mətn qutusu əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isCdio && (
+          <ComponentCard
+            title="CDIO Tədqiqat İnstitutları"
+            desc="Başlıq, təsvir və institutların siyahısı."
+          >
+            <div className="space-y-4">
+              <div>
+                <Label>Başlıq</Label>
+                <Input
+                  value={blockValue("institutes", "title")}
+                  onChange={(event) => setBlockByKey("institutes", "title", event.target.value)}
+                  placeholder="AzTU-nun CDIO Tədqiqat İnstitutları"
+                />
+              </div>
+              <RichTextField
+                label="Təsvir"
+                value={blockValue("institutes", "body")}
+                onChange={(next) => setBlockByKey("institutes", "body", next)}
+                remountKey={`${formKey}-cdio-inst-${lang}`}
+              />
+              <div>
+                <Label>İnstitutlar</Label>
+                <textarea
+                  value={listItemsText("institute_items")}
+                  onChange={(event) => setListItemsByKey("institute_items", event.target.value)}
+                  rows={6}
+                  placeholder={"Sənaye Dizaynı İnstitutu\nMüdafiə Texnologiyaları İnstitutu"}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                />
+                <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir institut.</p>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isCdio && (
+          <ComponentCard title="Tələbə Elmi Cəmiyyəti" desc="Başlıq, təsvir və siyahı.">
+            <div className="space-y-4">
+              <div>
+                <Label>Başlıq</Label>
+                <Input
+                  value={blockValue("society", "title")}
+                  onChange={(event) => setBlockByKey("society", "title", event.target.value)}
+                  placeholder="Tələbə Elmi Cəmiyyəti"
+                />
+              </div>
+              <RichTextField
+                label="Təsvir"
+                value={blockValue("society", "body")}
+                onChange={(next) => setBlockByKey("society", "body", next)}
+                remountKey={`${formKey}-cdio-soc-${lang}`}
+              />
+              <div>
+                <Label>Siyahı</Label>
+                <textarea
+                  value={listItemsText("society_items")}
+                  onChange={(event) => setListItemsByKey("society_items", event.target.value)}
+                  rows={6}
+                  placeholder={"Elmi yaradıcılığı təşviq etmək\nTədqiqat metodologiyası bacarıqlarını inkişaf etdirmək"}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                />
+                <p className="mt-1 text-xs text-gray-400">Hər sətirdə bir bənd.</p>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
         {isStrategicPlan && (
           <ComponentCard
             title="Sənəd"
@@ -2745,7 +2904,7 @@ export default function AboutPageEditor() {
           </ComponentCard>
         ) : null}
 
-        {!isTimeline && !isStrategicPlan && !isRector && !isMba && form.blocks.map((block, index) => (
+        {!isTimeline && !isStrategicPlan && !isRector && !isMba && !isCdio && form.blocks.map((block, index) => (
           <ComponentCard
             key={block.block_key}
             title={block.title[lang] || block.block_key}
@@ -2769,6 +2928,8 @@ export default function AboutPageEditor() {
           </ComponentCard>
         ))}
 
+        {/* The CDIO page has no "More in this section" block. */}
+        {!isCdio && (
         <ComponentCard
           title="Bölmədə daha çox"
           desc="Səhifənin altındakı düymələr. Sayı məhdud deyil."
@@ -2851,6 +3012,7 @@ export default function AboutPageEditor() {
             </Button>
           </div>
         </ComponentCard>
+        )}
 
         <div className="flex justify-end">
           <Button
