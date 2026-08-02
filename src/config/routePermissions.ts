@@ -44,6 +44,7 @@ const DEPARTMENTS = anyOf("departments", ["create", "update", "delete"]);
 const RESEARCH_INSTITUTES = anyOf("research_institutes", ["create", "update", "delete"]);
 const RESEARCH_PROJECTS = anyOf("research_projects", ["create", "update", "delete"]);
 const ABOUT = anyOf("about", ["update", "activate"]);
+const OFFICE = anyOf("office", ["create", "update", "delete"]);
 const RESEARCH_PAGES = anyOf("research_pages", ["update", "activate", "upload"]);
 const MENU = anyOf("menu", ["footer_column.create", "footer_link.create", "partner_logo.create"]);
 const MENU_HEADER = anyOf("menu_header", ["create", "update", "delete"]);
@@ -94,6 +95,9 @@ export const ROUTE_PERMISSIONS: Record<string, string | string[]> = {
 
   "/admin/departments": DEPARTMENTS,
   "/admin/departments/create": "departments.create",
+
+  "/offices": OFFICE,
+  "/offices/new": "office.create",
 
   "/research-institutes": RESEARCH_INSTITUTES,
   "/research-institutes/new": "research_institutes.create",

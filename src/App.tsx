@@ -25,6 +25,9 @@ import NewProjectPage from "./pages/Projects/NewProjectPage";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ProjectDetailsPage from "./pages/Projects/ProjectDetailsPage";
 import AboutPageEditor from "./pages/About/AboutPageEditor";
+import OfficesList from "./pages/Offices/OfficesList";
+import NewOffice from "./pages/Offices/NewOffice";
+import OfficeEditor from "./pages/Offices/OfficeEditor";
 import ResearchPageEditor from "./pages/Research/ResearchPageEditor";
 import NewsPage from "./pages/News/NewsPage";
 import NewNewsPage from "./pages/News/NewNewsPage";
@@ -135,6 +138,11 @@ export default function App() {
 
             {/* About (Haqqımızda) */}
             <Route path="/about/:page_key" element={<AboutPageEditor />} />
+
+            {/* Offices and Centres (İdarəetmə) — /new before the :id edit route */}
+            <Route path="/offices" element={<OfficesList />} />
+            <Route path="/offices/new" element={<NewOffice />} />
+            <Route path="/offices/:office_id" element={<OfficeEditor />} />
 
             {/*
               Research (Tədqiqat) — the section's editorial pages. Distinct from

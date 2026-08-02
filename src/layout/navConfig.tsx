@@ -4,6 +4,7 @@ import ArticleIcon from '@mui/icons-material/Article';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import BiotechIcon from '@mui/icons-material/Biotech';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import GavelIcon from '@mui/icons-material/Gavel';
 import InfoIcon from '@mui/icons-material/Info';
 import CategoryIcon from '@mui/icons-material/Category';
@@ -146,9 +147,9 @@ export const navGroups: NavGroup[] = [
   },
   {
     /*
-      The Akademik section. Fakültələr and Kafedralar (and Departamentlər) are
-      nested here alongside the editorial pages under "Təhsil və proqramlar",
-      which are hand-listed like the Haqqımızda group.
+      The Akademik section. Fakültələr and Kafedralar are nested here alongside
+      the editorial pages under "Təhsil və proqramlar", which are hand-listed
+      like the Haqqımızda group. Departments moved to the İdarəetmə group below.
     */
     label: "Akademik",
     items: [
@@ -176,12 +177,30 @@ export const navGroups: NavGroup[] = [
           { name: "Yeni kafedra", path: "/cafedras/new" },
         ],
       },
+    ],
+  },
+  {
+    /*
+      Management. Departamentlər is nested here, and "Ofis və Mərkəzlər" is a
+      creatable CRUD list (its own /offices screens), unlike the hand-listed
+      editorial groups above.
+    */
+    label: "İdarəetmə",
+    items: [
       {
         icon: <ApartmentIcon />,
         name: "Departamentlər",
         subItems: [
           { name: "Departamentlər", path: "/admin/departments" },
           { name: "Yeni departament", path: "/admin/departments/create" },
+        ],
+      },
+      {
+        icon: <CorporateFareIcon />,
+        name: "Ofis və Mərkəzlər",
+        subItems: [
+          { name: "Ofis və Mərkəzlər", path: "/offices" },
+          { name: "Yeni ofis/mərkəz", path: "/offices/new" },
         ],
       },
     ],
