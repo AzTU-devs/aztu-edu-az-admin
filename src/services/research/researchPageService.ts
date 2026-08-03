@@ -18,10 +18,16 @@ export interface ResearchTranslation {
   description: string | null;
   /**
    * Rich text of the page's one intro card — the "Strateji baxış" block on the
-   * priorities page, the paragraph above the tables on the patents page.
+   * priorities page, the paragraph above the tables on the patents page, the
+   * "About the journal" text on a journal page.
    */
   body_html: string | null;
   links_title: string | null;
+  /** Journal page. */
+  journal_name: string | null;
+  journal_language: string | null;
+  founder: string | null;
+  button_label: string | null;
 }
 
 /** One numbered card in the priority grid. */
@@ -76,6 +82,14 @@ export interface ResearchPageDetail {
   slug_az: string | null;
   slug_en: string | null;
   is_active: boolean;
+  /** Journal page, language-neutral. */
+  image_url: string | null;
+  issn: string | null;
+  eissn: string | null;
+  doi: string | null;
+  publication_year: string | null;
+  yearly_count: string | null;
+  button_url: string | null;
   az: ResearchTranslation;
   en: ResearchTranslation;
   priorities: ResearchPriority[];
@@ -91,6 +105,14 @@ export interface ResearchPageDetail {
 export interface ResearchPagePayload {
   slug_az?: string;
   slug_en?: string;
+  /** Journal page, language-neutral. */
+  image_url?: string;
+  issn?: string;
+  eissn?: string;
+  doi?: string;
+  publication_year?: string;
+  yearly_count?: string;
+  button_url?: string;
   az?: Partial<ResearchTranslation>;
   en?: Partial<ResearchTranslation>;
   priorities?: Array<{
@@ -171,6 +193,21 @@ export const uploadResearchDocument = async (pageKey: string, file: File) => {
       `${BASE}/admin/pages/${pageKey}/document`,
       body
     );
+    if (response.data?.status_code === 200 && response.data?.path) {
+      return response.data.path as string;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+/** Stores a journal cover image and returns its path for the next whole-page save. */
+export const uploadResearchImage = async (pageKey: string, file: File) => {
+  try {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await apiClient.put(`${BASE}/admin/pages/${pageKey}/image`, body);
     if (response.data?.status_code === 200 && response.data?.path) {
       return response.data.path as string;
     }

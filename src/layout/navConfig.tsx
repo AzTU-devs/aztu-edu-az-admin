@@ -2,6 +2,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ArticleIcon from '@mui/icons-material/Article';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import BiotechIcon from '@mui/icons-material/Biotech';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
@@ -244,6 +245,18 @@ export const navGroups: NavGroup[] = [
             path: "/research/intellectual-property",
           },
           { name: "Seminarlar və Təlimlər", path: "/research/seminars" },
+        ],
+      },
+      {
+        icon: <AutoStoriesIcon />,
+        name: "Elmi jurnallar",
+        subItems: [
+          { name: "Maşınşünaslıq", path: "/research/journal-machine-science" },
+          {
+            name: "Enerji Davamlılığı, Risklər və Qərarların Qəbul Edilməsi",
+            path: "/research/journal-energy-sustainability",
+          },
+          { name: "Elmi Əsərlər", path: "/research/journal-scientific-works" },
         ],
       },
       {

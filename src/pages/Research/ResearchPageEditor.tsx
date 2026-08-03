@@ -15,8 +15,10 @@ import {
   publishResearchPage,
   updateResearchPage,
   uploadResearchDocument,
+  uploadResearchImage,
   type ResearchPageDetail,
 } from "../../services/research/researchPageService";
+import { getImageUrl } from "../../util/imageUrl";
 
 /**
  * Edits one screen of the Tədqiqat section.
@@ -76,6 +78,18 @@ interface PageForm {
   patent_years: PatentYearForm[];
   seminars: SeminarForm[];
   links: LinkForm[];
+  // Journal page.
+  image_url: string;
+  issn: string;
+  eissn: string;
+  doi: string;
+  publication_year: string;
+  yearly_count: string;
+  button_url: string;
+  journal_name: Bilingual;
+  journal_language: Bilingual;
+  founder: Bilingual;
+  button_label: Bilingual;
 }
 
 const str = (value: string | null | undefined) => value ?? "";
@@ -109,6 +123,17 @@ const toForm = (page: ResearchPageDetail): PageForm => ({
     url: str(link.url),
     label: { az: str(link.az?.label), en: str(link.en?.label) },
   })),
+  image_url: str(page.image_url),
+  issn: str(page.issn),
+  eissn: str(page.eissn),
+  doi: str(page.doi),
+  publication_year: str(page.publication_year),
+  yearly_count: str(page.yearly_count),
+  button_url: str(page.button_url),
+  journal_name: { az: str(page.az?.journal_name), en: str(page.en?.journal_name) },
+  journal_language: { az: str(page.az?.journal_language), en: str(page.en?.journal_language) },
+  founder: { az: str(page.az?.founder), en: str(page.en?.founder) },
+  button_label: { az: str(page.az?.button_label), en: str(page.en?.button_label) },
 });
 
 /** Azerbaijani first — this dashboard is Azerbaijani. */
@@ -135,6 +160,7 @@ export default function ResearchPageEditor() {
   // render because `handleSave` reads it too.
   const isPatents = page?.template === "patents";
   const isSeminars = page?.template === "seminars";
+  const isJournal = page?.template === "journal";
   // `RichTextField` seeds its content once at mount, so every language switch
   // and refetch has to remount it or the editors keep showing the old text.
   const [formKey, setFormKey] = useState(0);
@@ -333,6 +359,49 @@ export default function ResearchPageEditor() {
     }
   };
 
+  // ── Journal ───────────────────────────────────────────────────────────────
+  const setJournalNeutral = (
+    field:
+      | "image_url"
+      | "issn"
+      | "eissn"
+      | "doi"
+      | "publication_year"
+      | "yearly_count"
+      | "button_url",
+    value: string
+  ) => setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+
+  const setJournalTr = (
+    field: "journal_name" | "journal_language" | "founder" | "button_label",
+    value: string
+  ) =>
+    setForm((prev) =>
+      prev ? { ...prev, [field]: { ...prev[field], [lang]: value } } : prev
+    );
+
+  const handleJournalImageUpload = async (file: File | null) => {
+    if (!file) return;
+    setUploading("journal-image");
+    try {
+      const path = await uploadResearchImage(pageKey, file);
+      if (!path) {
+        Swal.fire({ icon: "error", title: "Xəta", text: "Şəkil yüklənmədi." });
+        return;
+      }
+      setJournalNeutral("image_url", path);
+      Swal.fire({
+        icon: "success",
+        title: "Şəkil yükləndi",
+        text: "Yadda saxladıqda qeyd olunacaq.",
+        showConfirmButton: false,
+        timer: 1400,
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   // ── Seminars & Trainings ──────────────────────────────────────────────────
   const setSeminar = (index: number, field: "url" | "name", value: string) =>
     setForm((prev) =>
@@ -411,17 +480,46 @@ export default function ResearchPageEditor() {
     setSaving(true);
     try {
       const result = await updateResearchPage(pageKey, {
+        // Journal page, language-neutral. Sent only for the journal template so
+        // the other pages' rows are never touched by empty journal fields.
+        ...(isJournal
+          ? {
+              image_url: form.image_url,
+              issn: form.issn,
+              eissn: form.eissn,
+              doi: form.doi,
+              publication_year: form.publication_year,
+              yearly_count: form.yearly_count,
+              button_url: form.button_url,
+            }
+          : {}),
         az: {
           title: form.title.az,
           description: form.description.az,
           body_html: form.body_html.az,
           links_title: form.links_title.az,
+          ...(isJournal
+            ? {
+                journal_name: form.journal_name.az,
+                journal_language: form.journal_language.az,
+                founder: form.founder.az,
+                button_label: form.button_label.az,
+              }
+            : {}),
         },
         en: {
           title: form.title.en,
           description: form.description.en,
           body_html: form.body_html.en,
           links_title: form.links_title.en,
+          ...(isJournal
+            ? {
+                journal_name: form.journal_name.en,
+                journal_language: form.journal_language.en,
+                founder: form.founder.en,
+                button_label: form.button_label.en,
+              }
+            : {}),
         },
         // Each template sends the collections it owns and omits the rest. An
         // omitted key leaves those rows untouched on the server, so the patents
@@ -475,6 +573,8 @@ export default function ResearchPageEditor() {
                   en: { name: seminar.name.en },
                 })),
             }
+          : isJournal
+          ? {}
           : {
               // A card with no heading in either language was never filled in.
               priorities: form.priorities
@@ -493,14 +593,21 @@ export default function ResearchPageEditor() {
                 })),
             }),
         // A button with neither a label nor a URL is an empty row the editor
-        // added and never filled in; it should not reach the website.
-        links: form.links
-          .filter((link) => link.url.trim() || link.label.az.trim() || link.label.en.trim())
-          .map((link) => ({
-            url: link.url,
-            az: { label: link.label.az },
-            en: { label: link.label.en },
-          })),
+        // added and never filled in; it should not reach the website. The
+        // journal page has no "More in this section", so it sends no links.
+        ...(isJournal
+          ? {}
+          : {
+              links: form.links
+                .filter(
+                  (link) => link.url.trim() || link.label.az.trim() || link.label.en.trim()
+                )
+                .map((link) => ({
+                  url: link.url,
+                  az: { label: link.label.az },
+                  en: { label: link.label.en },
+                })),
+            }),
       });
 
       if (result !== "SUCCESS") {
@@ -670,13 +777,113 @@ export default function ResearchPageEditor() {
           </div>
         </ComponentCard>
 
+        {isJournal && (
+          <ComponentCard title="Jurnal məlumatları" desc="Jurnalın şəkli, adı və göstəriciləri.">
+            <div className="space-y-4">
+              <div>
+                <Label>Jurnalın şəkli</Label>
+                <div className="flex flex-wrap items-center gap-4">
+                  {form.image_url ? (
+                    <img
+                      src={getImageUrl(form.image_url)}
+                      alt="Jurnal"
+                      className="h-28 w-24 rounded-lg border border-gray-200 object-cover dark:border-gray-700"
+                    />
+                  ) : (
+                    <div className="flex h-28 w-24 items-center justify-center rounded-lg border border-dashed border-gray-300 text-xs text-gray-400 dark:border-gray-700">
+                      Şəkil yoxdur
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploading !== null}
+                      onChange={(event) => {
+                        void handleJournalImageUpload(event.target.files?.[0] ?? null);
+                        event.target.value = "";
+                      }}
+                      className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 disabled:opacity-50 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                    />
+                    <Input
+                      value={form.image_url}
+                      onChange={(event) => setJournalNeutral("image_url", event.target.value)}
+                      placeholder="və ya keçid yapışdırın"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label>Jurnalın adı</Label>
+                <Input
+                  value={form.journal_name[lang]}
+                  onChange={(event) => setJournalTr("journal_name", event.target.value)}
+                  placeholder="Maşınşünaslıq"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>ISSN</Label>
+                  <Input value={form.issn} onChange={(e) => setJournalNeutral("issn", e.target.value)} placeholder="2306-9163" />
+                </div>
+                <div>
+                  <Label>E-ISSN</Label>
+                  <Input value={form.eissn} onChange={(e) => setJournalNeutral("eissn", e.target.value)} placeholder="2409-4145" />
+                </div>
+                <div>
+                  <Label>Nəşr ili</Label>
+                  <Input value={form.publication_year} onChange={(e) => setJournalNeutral("publication_year", e.target.value)} placeholder="2013" />
+                </div>
+                <div>
+                  <Label>İllik buraxılış sayı</Label>
+                  <Input value={form.yearly_count} onChange={(e) => setJournalNeutral("yearly_count", e.target.value)} placeholder="4" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>DOI</Label>
+                  <Input value={form.doi} onChange={(e) => setJournalNeutral("doi", e.target.value)} placeholder="https://doi.org/…" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">ISSN, E-ISSN, il, sayı və DOI bütün dillərdə eyni göstərilir.</p>
+
+              <div>
+                <Label>Jurnalın dili</Label>
+                <Input
+                  value={form.journal_language[lang]}
+                  onChange={(event) => setJournalTr("journal_language", event.target.value)}
+                  placeholder="Azərbaycan, İngilis, Rus"
+                />
+              </div>
+              <div>
+                <Label>Jurnalın təsisçisi</Label>
+                <Input
+                  value={form.founder[lang]}
+                  onChange={(event) => setJournalTr("founder", event.target.value)}
+                  placeholder="Azərbaycan Texniki Universiteti"
+                />
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
         <ComponentCard
-          title={isPatents ? "Ətraflı təsvir" : isSeminars ? "Səhifə təsviri" : "Strateji baxış"}
+          title={
+            isPatents
+              ? "Ətraflı təsvir"
+              : isSeminars
+              ? "Səhifə təsviri"
+              : isJournal
+              ? "Jurnal haqqında"
+              : "Strateji baxış"
+          }
           desc={
             isPatents
               ? "Cədvəllərin üstündəki giriş mətni."
               : isSeminars
               ? "Səhifənin əsas təsvir mətni."
+              : isJournal
+              ? "Jurnal haqqında mətn."
               : "Başlığın altındakı giriş mətni. Bölmənin adı saytda sabitdir — yalnız mətn buradan idarə olunur."
           }
         >
@@ -687,6 +894,29 @@ export default function ResearchPageEditor() {
             remountKey={`${formKey}-body-${lang}`}
           />
         </ComponentCard>
+
+        {isJournal && (
+          <ComponentCard title="Jurnal düyməsi" desc="Jurnalın rəsmi saytına keçid düyməsi.">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Düymənin mətni</Label>
+                <Input
+                  value={form.button_label[lang]}
+                  onChange={(event) => setJournalTr("button_label", event.target.value)}
+                  placeholder="Jurnalın saytına keç"
+                />
+              </div>
+              <div>
+                <Label>Keçid (URL)</Label>
+                <Input
+                  value={form.button_url}
+                  onChange={(event) => setJournalNeutral("button_url", event.target.value)}
+                  placeholder="https://…"
+                />
+              </div>
+            </div>
+          </ComponentCard>
+        )}
 
         {isPatents && (
           <ComponentCard
@@ -954,7 +1184,7 @@ export default function ResearchPageEditor() {
           </ComponentCard>
         )}
 
-        {!isPatents && !isSeminars && (
+        {!isPatents && !isSeminars && !isJournal && (
         <ComponentCard
           title="Prioritet sahələr"
           desc="Kartlar. Sayı məhdud deyil; nömrə və ikon sıraya görə saytda təyin olunur."
@@ -1031,6 +1261,8 @@ export default function ResearchPageEditor() {
         </ComponentCard>
         )}
 
+        {/* The journal page has no "More in this section" block. */}
+        {!isJournal && (
         <ComponentCard
           title="Bölmədə daha çox"
           desc="Səhifənin altındakı düymələr. Sayı məhdud deyil."
@@ -1115,6 +1347,7 @@ export default function ResearchPageEditor() {
             </Button>
           </div>
         </ComponentCard>
+        )}
 
         <div className="flex justify-end">
           <Button
