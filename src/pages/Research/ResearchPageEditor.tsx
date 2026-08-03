@@ -61,6 +61,12 @@ interface LinkForm {
   label: Bilingual;
 }
 
+/** One seminar/training: a rich-text name linking to a news item. */
+interface SeminarForm {
+  url: string;
+  name: Bilingual;
+}
+
 interface PageForm {
   title: Bilingual;
   description: Bilingual;
@@ -68,6 +74,7 @@ interface PageForm {
   links_title: Bilingual;
   priorities: PriorityForm[];
   patent_years: PatentYearForm[];
+  seminars: SeminarForm[];
   links: LinkForm[];
 }
 
@@ -93,6 +100,10 @@ const toForm = (page: ResearchPageDetail): PageForm => ({
       name: { az: str(patent.az?.name), en: str(patent.en?.name) },
       authors: { az: str(patent.az?.authors), en: str(patent.en?.authors) },
     })),
+  })),
+  seminars: (page.seminars ?? []).map((seminar) => ({
+    url: str(seminar.url),
+    name: { az: str(seminar.az?.name), en: str(seminar.en?.name) },
   })),
   links: page.links.map((link) => ({
     url: str(link.url),
@@ -123,6 +134,7 @@ export default function ResearchPageEditor() {
   // is, exactly as the About editor does. Declared here rather than beside the
   // render because `handleSave` reads it too.
   const isPatents = page?.template === "patents";
+  const isSeminars = page?.template === "seminars";
   // `RichTextField` seeds its content once at mount, so every language switch
   // and refetch has to remount it or the editors keep showing the old text.
   const [formKey, setFormKey] = useState(0);
@@ -321,6 +333,43 @@ export default function ResearchPageEditor() {
     }
   };
 
+  // ── Seminars & Trainings ──────────────────────────────────────────────────
+  const setSeminar = (index: number, field: "url" | "name", value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            seminars: prev.seminars.map((seminar, i) =>
+              i !== index
+                ? seminar
+                : field === "url"
+                ? { ...seminar, url: value }
+                : { ...seminar, name: { ...seminar.name, [lang]: value } }
+            ),
+          }
+        : prev
+    );
+
+  const addSeminar = () =>
+    setForm((prev) =>
+      prev ? { ...prev, seminars: [...prev.seminars, { url: "", name: { az: "", en: "" } }] } : prev
+    );
+
+  const removeSeminar = (index: number) =>
+    setForm((prev) =>
+      prev ? { ...prev, seminars: prev.seminars.filter((_, i) => i !== index) } : prev
+    );
+
+  const moveSeminar = (index: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      const target = index + delta;
+      if (target < 0 || target >= prev.seminars.length) return prev;
+      const seminars = [...prev.seminars];
+      [seminars[index], seminars[target]] = [seminars[target], seminars[index]];
+      return { ...prev, seminars };
+    });
+
   const setLink = (index: number, field: "url" | "label", value: string) =>
     setForm((prev) =>
       prev
@@ -409,6 +458,21 @@ export default function ResearchPageEditor() {
                     az: { name: patent.name.az, authors: patent.authors.az },
                     en: { name: patent.name.en, authors: patent.authors.en },
                   })),
+                })),
+            }
+          : isSeminars
+          ? {
+              // A seminar with no name and no URL is an empty row the editor
+              // added and never filled in; it should not reach the website.
+              seminars: form.seminars
+                .filter(
+                  (seminar) =>
+                    seminar.name.az.trim() || seminar.name.en.trim() || seminar.url.trim()
+                )
+                .map((seminar) => ({
+                  url: seminar.url,
+                  az: { name: seminar.name.az },
+                  en: { name: seminar.name.en },
                 })),
             }
           : {
@@ -607,10 +671,12 @@ export default function ResearchPageEditor() {
         </ComponentCard>
 
         <ComponentCard
-          title={isPatents ? "Ətraflı təsvir" : "Strateji baxış"}
+          title={isPatents ? "Ətraflı təsvir" : isSeminars ? "Səhifə təsviri" : "Strateji baxış"}
           desc={
             isPatents
               ? "Cədvəllərin üstündəki giriş mətni."
+              : isSeminars
+              ? "Səhifənin əsas təsvir mətni."
               : "Başlığın altındakı giriş mətni. Bölmənin adı saytda sabitdir — yalnız mətn buradan idarə olunur."
           }
         >
@@ -837,7 +903,58 @@ export default function ResearchPageEditor() {
           </ComponentCard>
         )}
 
-        {!isPatents && (
+        {isSeminars && (
+          <ComponentCard
+            title="Seminarlar və Təlimlər"
+            desc="Hər bir seminar/təlimin adı (redaktor) və xəbər səhifəsinə keçid. Sayı məhdud deyil."
+          >
+            <div className="space-y-4">
+              {form.seminars.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ seminar/təlim əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {form.seminars.map((seminar, index) => (
+                    <div key={index} className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400">#{index + 1}</span>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => moveSeminar(index, -1)} disabled={index === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                          <button type="button" onClick={() => moveSeminar(index, 1)} disabled={index === form.seminars.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                          <button type="button" onClick={() => removeSeminar(index)} className="ml-2 text-xs text-red-500 hover:text-red-600">Sil</button>
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <RichTextField
+                          label="Ad"
+                          value={seminar.name[lang]}
+                          onChange={(next) => setSeminar(index, "name", next)}
+                          remountKey={`${formKey}-seminar-${index}-${lang}`}
+                        />
+                      </div>
+                      <div>
+                        <Label>Xəbər keçidi (URL)</Label>
+                        <Input
+                          value={seminar.url}
+                          onChange={(event) => setSeminar(index, "url", event.target.value)}
+                          placeholder="/az/xeberler/suni-intellekt-seminari"
+                        />
+                        <p className="mt-1 text-xs text-gray-400">Saytın xəbər səhifəsinə keçid. Hər iki dildə eyni.</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addSeminar}>
+                + Seminar/təlim əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
+
+        {!isPatents && !isSeminars && (
         <ComponentCard
           title="Prioritet sahələr"
           desc="Kartlar. Sayı məhdud deyil; nömrə və ikon sıraya görə saytda təyin olunur."

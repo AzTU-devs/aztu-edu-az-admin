@@ -243,6 +243,7 @@ export const navGroups: NavGroup[] = [
             name: "Əqli Mülkiyyət və Patentlər",
             path: "/research/intellectual-property",
           },
+          { name: "Seminarlar və Təlimlər", path: "/research/seminars" },
         ],
       },
       {

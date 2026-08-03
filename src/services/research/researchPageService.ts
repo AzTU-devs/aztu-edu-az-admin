@@ -51,6 +51,15 @@ export interface ResearchPatentYear {
   patents: ResearchPatent[];
 }
 
+/** One seminar/training entry — a rich-text name linking to a news item. */
+export interface ResearchSeminar {
+  id: number;
+  url: string | null;
+  display_order: number;
+  az: { name: string | null };
+  en: { name: string | null };
+}
+
 export interface ResearchLink {
   id: number;
   url: string | null;
@@ -72,6 +81,8 @@ export interface ResearchPageDetail {
   priorities: ResearchPriority[];
   /** Oldest year first — the same order the website is served. */
   patent_years: ResearchPatentYear[];
+  /** Seminars & Trainings page. */
+  seminars: ResearchSeminar[];
   links: ResearchLink[];
   updated_at: string | null;
 }
@@ -94,6 +105,11 @@ export interface ResearchPagePayload {
       az: { name: string; authors: string };
       en: { name: string; authors: string };
     }>;
+  }>;
+  seminars?: Array<{
+    url: string;
+    az: { name: string };
+    en: { name: string };
   }>;
   links?: Array<{
     url: string;
