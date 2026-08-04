@@ -7,6 +7,7 @@ import BiotechIcon from '@mui/icons-material/Biotech';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import GavelIcon from '@mui/icons-material/Gavel';
+import HomeIcon from '@mui/icons-material/Home';
 import InfoIcon from '@mui/icons-material/Info';
 import CategoryIcon from '@mui/icons-material/Category';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -56,6 +57,21 @@ export const navGroups: NavGroup[] = [
         icon: <GridIcon />,
         name: "Əsas səhifə",
         path: "/",
+      },
+    ],
+  },
+  {
+    /*
+      The public homepage's editable metric groups — the hero reytinq badges and
+      the "Rəqəmlərlə Universitetimiz" counters. A singleton editor, hand-listed
+      like the other editorial screens. Distinct from the "/" dashboard above.
+    */
+    label: "Ana səhifə",
+    items: [
+      {
+        icon: <HomeIcon />,
+        name: "Ana səhifə",
+        path: "/home",
       },
     ],
   },
