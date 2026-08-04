@@ -77,21 +77,6 @@ export default function DirectorTab({
 
             <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <Label className={fieldLabel}>Ad</Label>
-                <Input placeholder="Ad" value={director?.first_name ?? ""} onChange={(e) => changeDirectorField("first_name", e.target.value)} />
-              </div>
-              <div>
-                <Label className={fieldLabel}>Soyad</Label>
-                <Input placeholder="Soyad" value={director?.last_name ?? ""} onChange={(e) => changeDirectorField("last_name", e.target.value)} />
-              </div>
-              <div>
-                <Label className={fieldLabel}>Ata adı</Label>
-                <Input placeholder="Ata adı" value={director?.father_name ?? ""} onChange={(e) => changeDirectorField("father_name", e.target.value)} />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <div>
                 <Label className={fieldLabel}>Email</Label>
                 <Input placeholder="email@aztu.edu.az" value={director?.email ?? ""} onChange={(e) => changeDirectorField("email", e.target.value)} />
               </div>
@@ -108,6 +93,14 @@ export default function DirectorTab({
             <LangPair
               az={
                 <>
+                  <div>
+                    <Label className={fieldLabel}>Ad</Label>
+                    <Input placeholder="Ad" value={director?.az.first_name ?? ""} onChange={(e) => changeDirectorLanguageField("az", "first_name", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className={fieldLabel}>Soyad</Label>
+                    <Input placeholder="Soyad" value={director?.az.last_name ?? ""} onChange={(e) => changeDirectorLanguageField("az", "last_name", e.target.value)} />
+                  </div>
                   <div>
                     <Label className={fieldLabel}>Elmi dərəcə</Label>
                     <Input placeholder="Texnika elmləri doktoru" value={director?.az.scientific_degree ?? ""} onChange={(e) => changeDirectorLanguageField("az", "scientific_degree", e.target.value)} />
@@ -132,6 +125,14 @@ export default function DirectorTab({
               }
               en={
                 <>
+                  <div>
+                    <Label className={fieldLabel}>Name</Label>
+                    <Input placeholder="Name" value={director?.en.first_name ?? ""} onChange={(e) => changeDirectorLanguageField("en", "first_name", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className={fieldLabel}>Surname</Label>
+                    <Input placeholder="Surname" value={director?.en.last_name ?? ""} onChange={(e) => changeDirectorLanguageField("en", "last_name", e.target.value)} />
+                  </div>
                   <div>
                     <Label className={fieldLabel}>Scientific degree</Label>
                     <Input placeholder="Doctor of Technical Sciences" value={director?.en.scientific_degree ?? ""} onChange={(e) => changeDirectorLanguageField("en", "scientific_degree", e.target.value)} />

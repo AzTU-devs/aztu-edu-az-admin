@@ -72,11 +72,8 @@ export interface EducationItem {
 }
 
 export interface DirectorPayload {
-    first_name: string;
-    last_name: string;
-    father_name: string;
-    az: { scientific_degree: string; scientific_title: string; bio: string; scientific_research_fields: string[]; room: string };
-    en: { scientific_degree: string; scientific_title: string; bio: string; scientific_research_fields: string[]; room: string };
+    az: { first_name: string; last_name: string; scientific_degree: string; scientific_title: string; bio: string; scientific_research_fields: string[]; room: string };
+    en: { first_name: string; last_name: string; scientific_degree: string; scientific_title: string; bio: string; scientific_research_fields: string[]; room: string };
     email: string;
     phone: string;
     phone_code: string;
@@ -90,14 +87,11 @@ export interface DirectorPayload {
 
 export interface Worker {
     id?: number;
-    first_name: string;
-    last_name: string;
-    father_name: string;
     email: string;
     phone: string;
     phone_code: string;
-    az: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
-    en: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    az: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    en: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
     profile_image?: string;
 }
 
@@ -187,15 +181,12 @@ const mergePeople = (azArr: any[] = [], enArr: any[] = []) =>
         const e = enArr?.[i] ?? {};
         return {
             id: a.id,
-            first_name: a.first_name ?? "",
-            last_name: a.last_name ?? "",
-            father_name: a.father_name ?? "",
             email: a.email ?? "",
             phone: a.phone ?? "",
             phone_code: a.phone_code ?? "",
             profile_image: a.profile_image,
-            az: { duty: a.duty ?? "", scientific_name: a.scientific_name ?? "", scientific_degree: a.scientific_degree ?? "", room: a.room ?? "", working_hours: a.working_hours ?? "" },
-            en: { duty: e.duty ?? "", scientific_name: e.scientific_name ?? "", scientific_degree: e.scientific_degree ?? "", room: e.room ?? "", working_hours: e.working_hours ?? "" },
+            az: { first_name: a.first_name ?? "", last_name: a.last_name ?? "", duty: a.duty ?? "", scientific_name: a.scientific_name ?? "", scientific_degree: a.scientific_degree ?? "", room: a.room ?? "", working_hours: a.working_hours ?? "" },
+            en: { first_name: e.first_name ?? "", last_name: e.last_name ?? "", duty: e.duty ?? "", scientific_name: e.scientific_name ?? "", scientific_degree: e.scientific_degree ?? "", room: e.room ?? "", working_hours: e.working_hours ?? "" },
         };
     });
 
@@ -212,14 +203,13 @@ const mergeDirector = (a: any, e: any) => {
     if (!a) return null;
     e = e ?? {};
     return {
-        first_name: a.first_name ?? "",
-        last_name: a.last_name ?? "",
-        father_name: a.father_name ?? "",
         email: a.email ?? "",
         phone: a.phone ?? "",
         phone_code: a.phone_code ?? "",
         profile_image: a.profile_image,
         az: {
+            first_name: a.first_name ?? "",
+            last_name: a.last_name ?? "",
             scientific_degree: a.scientific_degree ?? "",
             scientific_title: a.scientific_title ?? "",
             bio: a.bio ?? "",
@@ -227,6 +217,8 @@ const mergeDirector = (a: any, e: any) => {
             room: a.room ?? "",
         },
         en: {
+            first_name: e.first_name ?? "",
+            last_name: e.last_name ?? "",
             scientific_degree: e.scientific_degree ?? "",
             scientific_title: e.scientific_title ?? "",
             bio: e.bio ?? "",
@@ -410,14 +402,11 @@ export const uploadCafedraDeputyDirectorImage = async (deputyDirectorId: number,
 
 /** Shared create/update payload for any cafedra person (worker / deputy director / council member). */
 export type CafedraPersonPayload = {
-    first_name: string;
-    last_name: string;
-    father_name: string;
     email: string;
     phone: string;
     phone_code: string;
-    az: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
-    en: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    az: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    en: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
 };
 
 export type CreateResult = { status: "SUCCESS"; id: number } | { status: "ERROR" };

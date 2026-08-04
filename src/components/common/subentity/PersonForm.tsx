@@ -2,28 +2,43 @@ import Input from "../../form/input/InputField";
 import Label from "../../form/Label";
 import { getImageUrl } from "../../../util/imageUrl";
 
-export interface PersonFormValue {
+/** One language's translated person fields. Name + surname are bilingual. */
+export interface PersonTranslationValue {
   first_name: string;
   last_name: string;
-  father_name: string;
+  duty: string;
+  scientific_name: string;
+  scientific_degree: string;
+  room: string;
+  working_hours: string;
+}
+
+export interface PersonFormValue {
   email: string;
   phone: string;
   /** Internal phone extension (language-neutral). */
   phone_code: string;
-  az: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
-  en: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+  az: PersonTranslationValue;
+  en: PersonTranslationValue;
   profile_image?: string;
 }
 
-export const emptyPersonValue = (): PersonFormValue => ({
+const emptyTranslation = (): PersonTranslationValue => ({
   first_name: "",
   last_name: "",
-  father_name: "",
+  duty: "",
+  scientific_name: "",
+  scientific_degree: "",
+  room: "",
+  working_hours: "",
+});
+
+export const emptyPersonValue = (): PersonFormValue => ({
   email: "",
   phone: "",
   phone_code: "",
-  az: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
-  en: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
+  az: emptyTranslation(),
+  en: emptyTranslation(),
   profile_image: "",
 });
 
@@ -43,12 +58,12 @@ export default function PersonForm({
   selectedImageName,
   showImage = true,
 }: PersonFormProps) {
-  const setField = (field: keyof PersonFormValue, v: string) => {
+  const setField = (field: "email" | "phone" | "phone_code", v: string) => {
     onChange({ ...value, [field]: v });
   };
   const setTr = (
     lang: "az" | "en",
-    field: "duty" | "scientific_name" | "scientific_degree" | "room" | "working_hours",
+    field: keyof PersonTranslationValue,
     v: string
   ) => {
     onChange({ ...value, [lang]: { ...value[lang], [field]: v } });
@@ -56,21 +71,6 @@ export default function PersonForm({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div>
-          <Label>Ad</Label>
-          <Input value={value.first_name} onChange={(e) => setField("first_name", e.target.value)} placeholder="Ad" />
-        </div>
-        <div>
-          <Label>Soyad</Label>
-          <Input value={value.last_name} onChange={(e) => setField("last_name", e.target.value)} placeholder="Soyad" />
-        </div>
-        <div>
-          <Label>Ata adı</Label>
-          <Input value={value.father_name} onChange={(e) => setField("father_name", e.target.value)} placeholder="Ata adı" />
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <Label>Email</Label>
@@ -90,6 +90,16 @@ export default function PersonForm({
         <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
           <p className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">AZ</p>
           <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <Label>Ad</Label>
+                <Input value={value.az.first_name} onChange={(e) => setTr("az", "first_name", e.target.value)} placeholder="Ad" />
+              </div>
+              <div>
+                <Label>Soyad</Label>
+                <Input value={value.az.last_name} onChange={(e) => setTr("az", "last_name", e.target.value)} placeholder="Soyad" />
+              </div>
+            </div>
             <div>
               <Label>Vəzifə</Label>
               <Input value={value.az.duty} onChange={(e) => setTr("az", "duty", e.target.value)} placeholder="Vəzifə" />
@@ -116,6 +126,16 @@ export default function PersonForm({
         <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
           <p className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">EN</p>
           <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <Label>Name</Label>
+                <Input value={value.en.first_name} onChange={(e) => setTr("en", "first_name", e.target.value)} placeholder="Name" />
+              </div>
+              <div>
+                <Label>Surname</Label>
+                <Input value={value.en.last_name} onChange={(e) => setTr("en", "last_name", e.target.value)} placeholder="Surname" />
+              </div>
+            </div>
             <div>
               <Label>Duty</Label>
               <Input value={value.en.duty} onChange={(e) => setTr("en", "duty", e.target.value)} placeholder="Duty" />

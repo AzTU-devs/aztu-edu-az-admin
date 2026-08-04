@@ -51,19 +51,20 @@ const blankEducation: EducationItem = {
 };
 
 const blankDirector: DirectorPayload = {
-  first_name: "",
-  last_name: "",
-  father_name: "",
   email: "",
   phone: "",
   phone_code: "",
   az: {
+    first_name: "",
+    last_name: "",
     scientific_degree: "",
     scientific_title: "",
     bio: "",
     room: "",
   },
   en: {
+    first_name: "",
+    last_name: "",
     scientific_degree: "",
     scientific_title: "",
     bio: "",
@@ -74,13 +75,12 @@ const blankDirector: DirectorPayload = {
 };
 
 const blankWorker: CreateDepartmentPayload["workers"][0] = {
-  first_name: "",
-  last_name: "",
-  father_name: "",
   email: "",
   phone: "",
   phone_code: "",
   az: {
+    first_name: "",
+    last_name: "",
     duty: "",
     scientific_degree: "",
     scientific_name: "",
@@ -88,6 +88,8 @@ const blankWorker: CreateDepartmentPayload["workers"][0] = {
     working_hours: "",
   },
   en: {
+    first_name: "",
+    last_name: "",
     duty: "",
     scientific_degree: "",
     scientific_name: "",
@@ -127,20 +129,21 @@ const normalizePayload = (value: CreateDepartmentPayload | null | undefined): Cr
     })),
     director: value.director
       ? {
-          first_name: value.director.first_name ?? "",
-          last_name: value.director.last_name ?? "",
-          father_name: value.director.father_name ?? "",
           email: value.director.email ?? "",
           phone: value.director.phone ?? "",
           phone_code: value.director.phone_code ?? "",
           profile_image: value.director.profile_image ?? "",
           az: {
+            first_name: value.director.az?.first_name ?? "",
+            last_name: value.director.az?.last_name ?? "",
             scientific_degree: value.director.az?.scientific_degree ?? "",
             scientific_title: value.director.az?.scientific_title ?? "",
             bio: value.director.az?.bio ?? "",
             room: value.director.az?.room ?? "",
           },
           en: {
+            first_name: value.director.en?.first_name ?? "",
+            last_name: value.director.en?.last_name ?? "",
             scientific_degree: value.director.en?.scientific_degree ?? "",
             scientific_title: value.director.en?.scientific_title ?? "",
             bio: value.director.en?.bio ?? "",
@@ -160,14 +163,13 @@ const normalizePayload = (value: CreateDepartmentPayload | null | undefined): Cr
         }
       : null,
     workers: (Array.isArray(value.workers) ? value.workers : []).map((w: any) => ({
-      first_name: w.first_name ?? "",
-      last_name: w.last_name ?? "",
-      father_name: w.father_name ?? "",
       email: w.email ?? "",
       phone: w.phone ?? "",
       phone_code: w.phone_code ?? "",
       profile_image: w.profile_image ?? "",
       az: {
+        first_name: w.az?.first_name ?? "",
+        last_name: w.az?.last_name ?? "",
         duty: w.az?.duty ?? "",
         scientific_degree: w.az?.scientific_degree ?? "",
         scientific_name: w.az?.scientific_name ?? "",
@@ -175,6 +177,8 @@ const normalizePayload = (value: CreateDepartmentPayload | null | undefined): Cr
         working_hours: w.az?.working_hours ?? "",
       },
       en: {
+        first_name: w.en?.first_name ?? "",
+        last_name: w.en?.last_name ?? "",
         duty: w.en?.duty ?? "",
         scientific_degree: w.en?.scientific_degree ?? "",
         scientific_name: w.en?.scientific_name ?? "",
@@ -615,30 +619,6 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
           <div className="p-5 space-y-4">
             <div className="grid gap-4 lg:grid-cols-2">
               <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Ad</Label>
-                <Input
-                  placeholder="Ad"
-                  value={payload.director?.first_name ?? ""}
-                  onChange={(e) => changeDirectorField("first_name", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Soyad</Label>
-                <Input
-                  placeholder="Soyad"
-                  value={payload.director?.last_name ?? ""}
-                  onChange={(e) => changeDirectorField("last_name", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Ata adı</Label>
-                <Input
-                  placeholder="Ata adı"
-                  value={payload.director?.father_name ?? ""}
-                  onChange={(e) => changeDirectorField("father_name", e.target.value)}
-                />
-              </div>
-              <div>
                 <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Email</Label>
                 <Input
                   type="email"
@@ -679,6 +659,22 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
               <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Ad (AZ)</Label>
+                <Input
+                  placeholder="Ad"
+                  value={payload.director?.az.first_name ?? ""}
+                  onChange={(e) => changeDirectorTranslated("az", "first_name", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Soyad (AZ)</Label>
+                <Input
+                  placeholder="Soyad"
+                  value={payload.director?.az.last_name ?? ""}
+                  onChange={(e) => changeDirectorTranslated("az", "last_name", e.target.value)}
+                />
+              </div>
+              <div>
                 <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Elmi dərəcə (AZ)</Label>
                 <Input
                   placeholder="f.e.d."
@@ -700,6 +696,22 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
                   placeholder="1-202"
                   value={payload.director?.az.room ?? ""}
                   onChange={(e) => changeDirectorTranslated("az", "room", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Name (EN)</Label>
+                <Input
+                  placeholder="Name"
+                  value={payload.director?.en.first_name ?? ""}
+                  onChange={(e) => changeDirectorTranslated("en", "first_name", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Surname (EN)</Label>
+                <Input
+                  placeholder="Surname"
+                  value={payload.director?.en.last_name ?? ""}
+                  onChange={(e) => changeDirectorTranslated("en", "last_name", e.target.value)}
                 />
               </div>
               <div>
@@ -882,18 +894,22 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
                   <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">İşçi #{index + 1}</p>
                   <button type="button" className="text-sm text-red-500 hover:underline" onClick={() => removeWorker(index)}>Sil</button>
                 </div>
-                <div className="grid gap-4 lg:grid-cols-3">
+                <div className="grid gap-4 lg:grid-cols-2">
                   <div>
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Ad</Label>
-                    <Input value={worker.first_name} onChange={(e) => updateWorkerField(index, "first_name", e.target.value)} placeholder="Ad" />
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Ad (AZ)</Label>
+                    <Input value={worker.az.first_name} onChange={(e) => updateWorkerTranslatedField(index, "az", "first_name", e.target.value)} placeholder="Ad" />
                   </div>
                   <div>
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Soyad</Label>
-                    <Input value={worker.last_name} onChange={(e) => updateWorkerField(index, "last_name", e.target.value)} placeholder="Soyad" />
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Soyad (AZ)</Label>
+                    <Input value={worker.az.last_name} onChange={(e) => updateWorkerTranslatedField(index, "az", "last_name", e.target.value)} placeholder="Soyad" />
                   </div>
                   <div>
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Ata adı</Label>
-                    <Input value={worker.father_name ?? ""} onChange={(e) => updateWorkerField(index, "father_name", e.target.value)} placeholder="Ata adı" />
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Name (EN)</Label>
+                    <Input value={worker.en.first_name} onChange={(e) => updateWorkerTranslatedField(index, "en", "first_name", e.target.value)} placeholder="Name" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Surname (EN)</Label>
+                    <Input value={worker.en.last_name} onChange={(e) => updateWorkerTranslatedField(index, "en", "last_name", e.target.value)} placeholder="Surname" />
                   </div>
                 </div>
                 <div className="grid gap-4 lg:grid-cols-3">

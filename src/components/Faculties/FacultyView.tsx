@@ -78,14 +78,14 @@ export default function FacultyView() {
             <div key={idx} className="flex flex-col gap-3 p-4 rounded-xl border border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
               <div className="flex items-center gap-3">
                 {item.profile_image ? (
-                  <img src={getImageUrl(item.profile_image)} alt={item.first_name} className="w-12 h-12 rounded-full object-cover border border-gray-200" />
+                  <img src={getImageUrl(item.profile_image)} alt={item.az?.first_name || item.en?.first_name || ""} className="w-12 h-12 rounded-full object-cover border border-gray-200" />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{item.first_name} {item.last_name}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{item.az?.first_name || item.en?.first_name} {item.az?.last_name || item.en?.last_name}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{item.az?.duty || item.en?.duty || "Əməkdaş"}</p>
                 </div>
               </div>
@@ -147,8 +147,8 @@ export default function FacultyView() {
               )}
               <div className="flex-1 grid gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Ad Soyad Ata adı</p>
-                  <p className="text-base font-bold text-gray-900 dark:text-white">{faculty.director.first_name} {faculty.director.last_name} {faculty.director.father_name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Ad Soyad</p>
+                  <p className="text-base font-bold text-gray-900 dark:text-white">{faculty.director.az?.first_name || faculty.director.en?.first_name} {faculty.director.az?.last_name || faculty.director.en?.last_name}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Elmi dərəcə / Titul (AZ)</p>

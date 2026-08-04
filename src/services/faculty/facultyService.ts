@@ -30,11 +30,8 @@ export interface EducationItem {
 }
 
 export interface DirectorPayload {
-    first_name: string;
-    last_name: string;
-    father_name: string;
-    az: { scientific_degree: string; scientific_title: string; bio: string; room: string; scientific_research_fields: string[] };
-    en: { scientific_degree: string; scientific_title: string; bio: string; room: string; scientific_research_fields: string[] };
+    az: { first_name: string; last_name: string; scientific_degree: string; scientific_title: string; bio: string; room: string; scientific_research_fields: string[] };
+    en: { first_name: string; last_name: string; scientific_degree: string; scientific_title: string; bio: string; room: string; scientific_research_fields: string[] };
     email: string;
     phone: string;
     phone_code: string;
@@ -49,38 +46,29 @@ export interface DirectorPayload {
 
 export interface DeputyDean {
     id?: number;
-    first_name: string;
-    last_name: string;
-    father_name: string;
     email: string;
     phone: string;
     phone_code: string;
-    az: { scientific_name: string; scientific_degree: string; duty: string; room: string; working_hours: string };
-    en: { scientific_name: string; scientific_degree: string; duty: string; room: string; working_hours: string };
+    az: { first_name: string; last_name: string; scientific_name: string; scientific_degree: string; duty: string; room: string; working_hours: string };
+    en: { first_name: string; last_name: string; scientific_name: string; scientific_degree: string; duty: string; room: string; working_hours: string };
     profile_image?: string;
 }
 
 export interface ScientificCouncilMember {
     id?: number;
-    first_name: string;
-    last_name: string;
-    father_name: string;
     email: string;
     phone: string;
-    az: { duty: string; scientific_name: string; scientific_degree: string };
-    en: { duty: string; scientific_name: string; scientific_degree: string };
+    az: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string };
+    en: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string };
 }
 
 /** Shared create/update payload for any person sub-entity (worker / deputy dean / council member). */
 export type PersonPayload = {
-    first_name: string;
-    last_name: string;
-    father_name: string;
     email: string;
     phone: string;
     phone_code: string;
-    az: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
-    en: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    az: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    en: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
     profile_image?: string;
 };
 
@@ -89,14 +77,11 @@ export type MutateResult = "SUCCESS" | "NOT FOUND" | "ERROR";
 
 export interface Worker {
     id?: number;
-    first_name: string;
-    last_name: string;
-    father_name: string;
     email: string;
     phone: string;
     phone_code: string;
-    az: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
-    en: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    az: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    en: { first_name: string; last_name: string; duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
     profile_image?: string;
 }
 

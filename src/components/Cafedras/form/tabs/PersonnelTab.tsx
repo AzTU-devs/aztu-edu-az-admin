@@ -31,13 +31,12 @@ import {
 } from "../formStyles";
 
 const personToForm = (p: any): PersonFormValue => ({
-  first_name: p.first_name ?? "",
-  last_name: p.last_name ?? "",
-  father_name: p.father_name ?? "",
   email: p.email ?? "",
   phone: p.phone ?? "",
   phone_code: p.phone_code ?? "",
   az: {
+    first_name: p.az?.first_name ?? "",
+    last_name: p.az?.last_name ?? "",
     duty: p.az?.duty ?? "",
     scientific_name: p.az?.scientific_name ?? "",
     scientific_degree: p.az?.scientific_degree ?? "",
@@ -45,6 +44,8 @@ const personToForm = (p: any): PersonFormValue => ({
     working_hours: p.az?.working_hours ?? "",
   },
   en: {
+    first_name: p.en?.first_name ?? "",
+    last_name: p.en?.last_name ?? "",
     duty: p.en?.duty ?? "",
     scientific_name: p.en?.scientific_name ?? "",
     scientific_degree: p.en?.scientific_degree ?? "",
@@ -91,7 +92,7 @@ export default function PersonnelTab({
           description="Kafedra işçilərini ayrıca əlavə edin, redaktə edin və silin."
           items={(cafedra?.workers ?? []) as any[]}
           getId={(w) => w.id}
-          getName={(w) => `${w.first_name} ${w.last_name}`}
+          getName={(w) => `${w.az?.first_name ?? ""} ${w.az?.last_name ?? ""}`.trim()}
           getSubtitle={(w) => w.az?.duty ?? ""}
           getImage={(w) => w.profile_image}
           toFormValue={personToForm}
@@ -107,7 +108,7 @@ export default function PersonnelTab({
           description="Kafedra müdir müavinlərini ayrıca idarə edin."
           items={(cafedra?.deputy_directors ?? []) as any[]}
           getId={(d) => d.id}
-          getName={(d) => `${d.first_name} ${d.last_name}`}
+          getName={(d) => `${d.az?.first_name ?? ""} ${d.az?.last_name ?? ""}`.trim()}
           getSubtitle={(d) => d.az?.duty ?? ""}
           getImage={(d) => d.profile_image}
           toFormValue={personToForm}
@@ -123,7 +124,7 @@ export default function PersonnelTab({
           description="Elmi şura üzvlərini ayrıca idarə edin."
           items={(cafedra?.scientific_council ?? []) as any[]}
           getId={(m) => m.id}
-          getName={(m) => `${m.first_name} ${m.last_name}`}
+          getName={(m) => `${m.az?.first_name ?? ""} ${m.az?.last_name ?? ""}`.trim()}
           getSubtitle={(m) => m.az?.duty ?? ""}
           showImage={false}
           toFormValue={personToForm}
@@ -159,7 +160,7 @@ export default function PersonnelTab({
                   <CollapsibleRow
                     key={item.uid}
                     index={idx}
-                    title={`${item.first_name} ${item.last_name}`.trim()}
+                    title={`${item.az.first_name} ${item.az.last_name}`.trim()}
                     fallbackTitle="Adsız əməkdaş"
                     subtitle={item.az.duty}
                     thumbUrl={pending ? undefined : getImageUrl(item.profile_image)}
@@ -172,21 +173,6 @@ export default function PersonnelTab({
                       onSelect={(files) => setImage(section.key, item.uid, files[0] ?? null)}
                       onRemovePending={() => setImage(section.key, item.uid, null)}
                     />
-
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div>
-                        <Label className={fieldLabel}>Ad</Label>
-                        <Input value={item.first_name} placeholder="Ad" onChange={(e) => updateListItem(section.key, item.uid, "first_name", e.target.value)} />
-                      </div>
-                      <div>
-                        <Label className={fieldLabel}>Soyad</Label>
-                        <Input value={item.last_name} placeholder="Soyad" onChange={(e) => updateListItem(section.key, item.uid, "last_name", e.target.value)} />
-                      </div>
-                      <div>
-                        <Label className={fieldLabel}>Ata adı</Label>
-                        <Input value={item.father_name} placeholder="Ata adı" onChange={(e) => updateListItem(section.key, item.uid, "father_name", e.target.value)} />
-                      </div>
-                    </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
                       <div>
@@ -206,6 +192,14 @@ export default function PersonnelTab({
                     <LangPair
                       az={
                         <>
+                          <div>
+                            <Label className={fieldLabel}>Ad</Label>
+                            <Input value={item.az.first_name} placeholder="Ad" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "az", "first_name", e.target.value)} />
+                          </div>
+                          <div>
+                            <Label className={fieldLabel}>Soyad</Label>
+                            <Input value={item.az.last_name} placeholder="Soyad" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "az", "last_name", e.target.value)} />
+                          </div>
                           <div>
                             <Label className={fieldLabel}>Vəzifə</Label>
                             <Input value={item.az.duty} placeholder="Müəllim" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "az", "duty", e.target.value)} />
@@ -230,6 +224,14 @@ export default function PersonnelTab({
                       }
                       en={
                         <>
+                          <div>
+                            <Label className={fieldLabel}>Name</Label>
+                            <Input value={item.en.first_name} placeholder="Name" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "en", "first_name", e.target.value)} />
+                          </div>
+                          <div>
+                            <Label className={fieldLabel}>Surname</Label>
+                            <Input value={item.en.last_name} placeholder="Surname" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "en", "last_name", e.target.value)} />
+                          </div>
                           <div>
                             <Label className={fieldLabel}>Duty</Label>
                             <Input value={item.en.duty} placeholder="Lecturer" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "en", "duty", e.target.value)} />

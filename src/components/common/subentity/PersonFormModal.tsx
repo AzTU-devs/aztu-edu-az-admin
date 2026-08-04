@@ -34,7 +34,7 @@ export default function PersonFormModal({
     }
   }, [isOpen, initialValue]);
 
-  const canSubmit = value.first_name.trim() !== "" && value.last_name.trim() !== "" && !submitting;
+  const canSubmit = value.az.first_name.trim() !== "" && value.az.last_name.trim() !== "" && !submitting;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl mx-4 my-8 max-h-[90vh] overflow-y-auto p-6 sm:p-8">

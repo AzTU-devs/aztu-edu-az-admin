@@ -52,7 +52,7 @@ export default function SubEntityManager<T>({
       toFormValue={toFormValue}
       emptyValue={emptyPersonValue}
       validate={(value) =>
-        value.first_name.trim() === "" || value.last_name.trim() === "" ? "Ad və soyad tələb olunur." : null
+        value.az.first_name.trim() === "" || value.az.last_name.trim() === "" ? "Ad və soyad tələb olunur." : null
       }
       renderForm={(value, onChange, helpers) => (
         <PersonForm

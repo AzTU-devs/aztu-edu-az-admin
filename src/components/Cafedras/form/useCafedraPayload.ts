@@ -34,14 +34,11 @@ export const blankTranslatedItem = (): WithUid<TranslatedTextItem> => ({
 
 export const blankPersonnelItem = () => ({
   uid: newUid(),
-  first_name: "",
-  last_name: "",
-  father_name: "",
   email: "",
   phone: "",
   phone_code: "",
-  az: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
-  en: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
+  az: { first_name: "", last_name: "", duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
+  en: { first_name: "", last_name: "", duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
 });
 
 export const blankLaboratory = (): WithUid<Laboratory> => ({
@@ -78,11 +75,8 @@ export const blankEducation = (): WithUid<EducationItem> => ({
 });
 
 export const blankDirector = (): DirectorPayload => ({
-  first_name: "",
-  last_name: "",
-  father_name: "",
-  az: { scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [], room: "" },
-  en: { scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [], room: "" },
+  az: { first_name: "", last_name: "", scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [], room: "" },
+  en: { first_name: "", last_name: "", scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [], room: "" },
   email: "",
   phone: "",
   phone_code: "",
@@ -128,13 +122,12 @@ const personnelList = (value: any) =>
     uid: newUid(),
     id: item.id,
     profile_image: item.profile_image,
-    first_name: item.first_name ?? "",
-    last_name: item.last_name ?? "",
-    father_name: item.father_name ?? "",
     email: item.email ?? "",
     phone: item.phone ?? "",
     phone_code: item.phone_code ?? "",
     az: {
+      first_name: item.az?.first_name ?? "",
+      last_name: item.az?.last_name ?? "",
       duty: item.az?.duty ?? "",
       scientific_name: item.az?.scientific_name ?? "",
       scientific_degree: item.az?.scientific_degree ?? "",
@@ -142,6 +135,8 @@ const personnelList = (value: any) =>
       working_hours: item.az?.working_hours ?? "",
     },
     en: {
+      first_name: item.en?.first_name ?? "",
+      last_name: item.en?.last_name ?? "",
       duty: item.en?.duty ?? "",
       scientific_name: item.en?.scientific_name ?? "",
       scientific_degree: item.en?.scientific_degree ?? "",
@@ -161,10 +156,9 @@ export const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
       value.director === null || value.director === undefined
         ? null
         : {
-            first_name: value.director?.first_name ?? "",
-            last_name: value.director?.last_name ?? "",
-            father_name: value.director?.father_name ?? "",
             az: {
+              first_name: value.director?.az?.first_name ?? "",
+              last_name: value.director?.az?.last_name ?? "",
               scientific_degree: value.director?.az?.scientific_degree ?? "",
               scientific_title: value.director?.az?.scientific_title ?? "",
               bio: value.director?.az?.bio ?? "",
@@ -174,6 +168,8 @@ export const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
               room: value.director?.az?.room ?? "",
             },
             en: {
+              first_name: value.director?.en?.first_name ?? "",
+              last_name: value.director?.en?.last_name ?? "",
               scientific_degree: value.director?.en?.scientific_degree ?? "",
               scientific_title: value.director?.en?.scientific_title ?? "",
               bio: value.director?.en?.bio ?? "",
@@ -342,7 +338,7 @@ export function useCafedraPayload(initialValue: any) {
   }, []);
 
   const changeDirectorLanguageField = useCallback(
-    (lang: "az" | "en", field: "scientific_degree" | "scientific_title" | "bio" | "room", value: string) => {
+    (lang: "az" | "en", field: "first_name" | "last_name" | "scientific_degree" | "scientific_title" | "bio" | "room", value: string) => {
       setPayload((prev) => {
         const director = prev.director ?? blankDirector();
         return { ...prev, director: { ...director, [lang]: { ...director[lang], [field]: value } } };

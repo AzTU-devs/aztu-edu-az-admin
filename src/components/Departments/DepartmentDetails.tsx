@@ -18,13 +18,12 @@ import {
 } from "../../services/department/departmentService";
 
 const personToForm = (w: any): PersonFormValue => ({
-  first_name: w.first_name ?? "",
-  last_name: w.last_name ?? "",
-  father_name: w.father_name ?? "",
   email: w.email ?? "",
   phone: w.phone ?? "",
   phone_code: w.phone_code ?? "",
   az: {
+    first_name: w.az?.first_name ?? "",
+    last_name: w.az?.last_name ?? "",
     duty: w.az?.duty ?? "",
     scientific_name: w.az?.scientific_name ?? "",
     scientific_degree: w.az?.scientific_degree ?? "",
@@ -32,6 +31,8 @@ const personToForm = (w: any): PersonFormValue => ({
     working_hours: w.az?.working_hours ?? "",
   },
   en: {
+    first_name: w.en?.first_name ?? "",
+    last_name: w.en?.last_name ?? "",
     duty: w.en?.duty ?? "",
     scientific_name: w.en?.scientific_name ?? "",
     scientific_degree: w.en?.scientific_degree ?? "",
@@ -221,7 +222,7 @@ export default function DepartmentDetails() {
           description="Departament işçilərini ayrıca əlavə edin, redaktə edin və silin."
           items={(d.workers ?? []) as any[]}
           getId={(w) => w.id}
-          getName={(w) => `${w.first_name} ${w.last_name}`}
+          getName={(w) => `${w.az?.first_name ?? w.en?.first_name ?? ""} ${w.az?.last_name ?? w.en?.last_name ?? ""}`}
           getSubtitle={(w) => w.az?.duty ?? ""}
           getImage={(w) => w.profile_image}
           toFormValue={personToForm}
