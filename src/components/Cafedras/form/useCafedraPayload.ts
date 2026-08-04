@@ -39,8 +39,9 @@ export const blankPersonnelItem = () => ({
   father_name: "",
   email: "",
   phone: "",
-  az: { duty: "", scientific_name: "", scientific_degree: "" },
-  en: { duty: "", scientific_name: "", scientific_degree: "" },
+  phone_code: "",
+  az: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
+  en: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
 });
 
 export const blankLaboratory = (): WithUid<Laboratory> => ({
@@ -80,11 +81,11 @@ export const blankDirector = (): DirectorPayload => ({
   first_name: "",
   last_name: "",
   father_name: "",
-  az: { scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [] },
-  en: { scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [] },
+  az: { scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [], room: "" },
+  en: { scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [], room: "" },
   email: "",
   phone: "",
-  room_number: "",
+  phone_code: "",
   working_hours: [],
   educations: [],
 });
@@ -132,15 +133,20 @@ const personnelList = (value: any) =>
     father_name: item.father_name ?? "",
     email: item.email ?? "",
     phone: item.phone ?? "",
+    phone_code: item.phone_code ?? "",
     az: {
       duty: item.az?.duty ?? "",
       scientific_name: item.az?.scientific_name ?? "",
       scientific_degree: item.az?.scientific_degree ?? "",
+      room: item.az?.room ?? "",
+      working_hours: item.az?.working_hours ?? "",
     },
     en: {
       duty: item.en?.duty ?? "",
       scientific_name: item.en?.scientific_name ?? "",
       scientific_degree: item.en?.scientific_degree ?? "",
+      room: item.en?.room ?? "",
+      working_hours: item.en?.working_hours ?? "",
     },
   }));
 
@@ -165,6 +171,7 @@ export const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
               scientific_research_fields: Array.isArray(value.director?.az?.scientific_research_fields)
                 ? value.director.az.scientific_research_fields
                 : [],
+              room: value.director?.az?.room ?? "",
             },
             en: {
               scientific_degree: value.director?.en?.scientific_degree ?? "",
@@ -173,10 +180,11 @@ export const normalizeCafedraPayload = (value: any): CreateCafedraPayload => {
               scientific_research_fields: Array.isArray(value.director?.en?.scientific_research_fields)
                 ? value.director.en.scientific_research_fields
                 : [],
+              room: value.director?.en?.room ?? "",
             },
             email: value.director?.email ?? "",
             phone: value.director?.phone ?? "",
-            room_number: value.director?.room_number ?? "",
+            phone_code: value.director?.phone_code ?? "",
             working_hours: (Array.isArray(value.director?.working_hours) ? value.director.working_hours : []).map(
               (wh: any) => ({
                 uid: newUid(),
@@ -334,7 +342,7 @@ export function useCafedraPayload(initialValue: any) {
   }, []);
 
   const changeDirectorLanguageField = useCallback(
-    (lang: "az" | "en", field: "scientific_degree" | "scientific_title" | "bio", value: string) => {
+    (lang: "az" | "en", field: "scientific_degree" | "scientific_title" | "bio" | "room", value: string) => {
       setPayload((prev) => {
         const director = prev.director ?? blankDirector();
         return { ...prev, director: { ...director, [lang]: { ...director[lang], [field]: value } } };

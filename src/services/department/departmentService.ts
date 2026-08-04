@@ -38,17 +38,22 @@ export interface DirectorPayload {
   father_name: string;
   email: string;
   phone: string;
-  room_number: string;
+  phone_code: string;
+  /** @deprecated The API no longer accepts a neutral room_number; use az/en.room. Kept
+   *  optional so local blank objects stay valid, but it is never sent. */
+  room_number?: string;
   profile_image?: string;
   az: {
     scientific_degree: string;
     scientific_title: string;
     bio: string;
+    room: string;
   };
   en: {
     scientific_degree: string;
     scientific_title: string;
     bio: string;
+    room: string;
   };
   working_hours: WorkingHour[];
   educations: EducationItem[];
@@ -61,15 +66,20 @@ export interface DepartmentWorker {
   father_name: string | null;
   email: string | null;
   phone: string | null;
+  phone_code: string | null;
   az: {
     duty: string;
     scientific_degree: string | null;
     scientific_name: string | null;
+    room: string | null;
+    working_hours: string | null;
   };
   en: {
     duty: string;
     scientific_degree: string | null;
     scientific_name: string | null;
+    room: string | null;
+    working_hours: string | null;
   };
   profile_image?: string;
 }
@@ -150,9 +160,22 @@ const mergeDeptWorkers = (azArr: any[] = [], enArr: any[] = []) =>
       father_name: a.father_name ?? "",
       email: a.email ?? "",
       phone: a.phone ?? "",
+      phone_code: a.phone_code ?? "",
       profile_image: a.profile_image,
-      az: { duty: a.duty ?? "", scientific_degree: a.scientific_degree ?? "", scientific_name: a.scientific_name ?? "" },
-      en: { duty: e.duty ?? "", scientific_degree: e.scientific_degree ?? "", scientific_name: e.scientific_name ?? "" },
+      az: {
+        duty: a.duty ?? "",
+        scientific_degree: a.scientific_degree ?? "",
+        scientific_name: a.scientific_name ?? "",
+        room: a.room ?? "",
+        working_hours: a.working_hours ?? "",
+      },
+      en: {
+        duty: e.duty ?? "",
+        scientific_degree: e.scientific_degree ?? "",
+        scientific_name: e.scientific_name ?? "",
+        room: e.room ?? "",
+        working_hours: e.working_hours ?? "",
+      },
     };
   });
 
@@ -171,10 +194,10 @@ const mergeDeptDirector = (a: any, e: any) => {
     father_name: a.father_name ?? "",
     email: a.email ?? "",
     phone: a.phone ?? "",
-    room_number: a.room_number ?? "",
+    phone_code: a.phone_code ?? "",
     profile_image: a.profile_image,
-    az: { scientific_degree: a.scientific_degree ?? "", scientific_title: a.scientific_title ?? "", bio: a.bio ?? "" },
-    en: { scientific_degree: e.scientific_degree ?? "", scientific_title: e.scientific_title ?? "", bio: e.bio ?? "" },
+    az: { scientific_degree: a.scientific_degree ?? "", scientific_title: a.scientific_title ?? "", bio: a.bio ?? "", room: a.room ?? "" },
+    en: { scientific_degree: e.scientific_degree ?? "", scientific_title: e.scientific_title ?? "", bio: e.bio ?? "", room: e.room ?? "" },
     working_hours: (a.working_hours ?? []).map((wh: any, i: number) => ({
       time_range: wh.time_range ?? "",
       az: { day: wh.day ?? "" },
@@ -377,8 +400,9 @@ export type DepartmentWorkerPayload = {
   father_name: string;
   email: string;
   phone: string;
-  az: { duty: string; scientific_degree: string; scientific_name: string };
-  en: { duty: string; scientific_degree: string; scientific_name: string };
+  phone_code: string;
+  az: { duty: string; scientific_degree: string; scientific_name: string; room: string; working_hours: string };
+  en: { duty: string; scientific_degree: string; scientific_name: string; room: string; working_hours: string };
 };
 
 export type CreateResult = { status: "SUCCESS"; id: number } | { status: "ERROR" };

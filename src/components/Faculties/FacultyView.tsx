@@ -163,8 +163,12 @@ export default function FacultyView() {
                   <p className="text-sm text-gray-900 dark:text-white">{faculty.director.phone}</p>
                 </div>
                 <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Daxili nömrə</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{faculty.director.phone_code}</p>
+                </div>
+                <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Otaq</p>
-                  <p className="text-sm text-gray-900 dark:text-white">{faculty.director.room_number}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{faculty.director.az?.room || faculty.director.en?.room}</p>
                 </div>
                 <div className="sm:col-span-2">
                   <p className="text-xs text-gray-500 dark:text-gray-400">Elmi tədqiqat sahələri</p>

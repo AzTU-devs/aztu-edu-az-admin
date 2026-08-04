@@ -100,8 +100,8 @@ export default function DirectorTab({
                 <Input placeholder="+994501234567" value={director?.phone ?? ""} onChange={(e) => changeDirectorField("phone", e.target.value)} />
               </div>
               <div>
-                <Label className={fieldLabel}>Ofis nömrəsi</Label>
-                <Input placeholder="B-101" value={director?.room_number ?? ""} onChange={(e) => changeDirectorField("room_number", e.target.value)} />
+                <Label className={fieldLabel}>Daxili nömrə</Label>
+                <Input placeholder="1234" value={director?.phone_code ?? ""} onChange={(e) => changeDirectorField("phone_code", e.target.value)} />
               </div>
             </div>
 
@@ -119,6 +119,10 @@ export default function DirectorTab({
                   <div>
                     <Label className={fieldLabel}>Elmi tədqiqat sahələri (vergüllə ayırın)</Label>
                     <Input placeholder="Süni intellekt, Maşın öyrənməsi" value={(director?.az.scientific_research_fields ?? []).join(", ")} onChange={(e) => updateDirectorResearchFields("az", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className={fieldLabel}>Otaq nömrəsi</Label>
+                    <Input placeholder="B-101" value={director?.az.room ?? ""} onChange={(e) => changeDirectorLanguageField("az", "room", e.target.value)} />
                   </div>
                   <div>
                     <Label className={fieldLabel}>Bioqrafiya</Label>
@@ -139,6 +143,10 @@ export default function DirectorTab({
                   <div>
                     <Label className={fieldLabel}>Scientific research fields (separate with comma)</Label>
                     <Input placeholder="Artificial Intelligence, Machine Learning" value={(director?.en.scientific_research_fields ?? []).join(", ")} onChange={(e) => updateDirectorResearchFields("en", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className={fieldLabel}>Room number</Label>
+                    <Input placeholder="B-101" value={director?.en.room ?? ""} onChange={(e) => changeDirectorLanguageField("en", "room", e.target.value)} />
                   </div>
                   <div>
                     <Label className={fieldLabel}>Biography</Label>

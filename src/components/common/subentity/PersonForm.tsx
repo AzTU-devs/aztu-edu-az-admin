@@ -8,8 +8,10 @@ export interface PersonFormValue {
   father_name: string;
   email: string;
   phone: string;
-  az: { duty: string; scientific_name: string; scientific_degree: string };
-  en: { duty: string; scientific_name: string; scientific_degree: string };
+  /** Internal phone extension (language-neutral). */
+  phone_code: string;
+  az: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+  en: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
   profile_image?: string;
 }
 
@@ -19,8 +21,9 @@ export const emptyPersonValue = (): PersonFormValue => ({
   father_name: "",
   email: "",
   phone: "",
-  az: { duty: "", scientific_name: "", scientific_degree: "" },
-  en: { duty: "", scientific_name: "", scientific_degree: "" },
+  phone_code: "",
+  az: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
+  en: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
   profile_image: "",
 });
 
@@ -45,7 +48,7 @@ export default function PersonForm({
   };
   const setTr = (
     lang: "az" | "en",
-    field: "duty" | "scientific_name" | "scientific_degree",
+    field: "duty" | "scientific_name" | "scientific_degree" | "room" | "working_hours",
     v: string
   ) => {
     onChange({ ...value, [lang]: { ...value[lang], [field]: v } });
@@ -68,7 +71,7 @@ export default function PersonForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <Label>Email</Label>
           <Input type="email" value={value.email} onChange={(e) => setField("email", e.target.value)} placeholder="email@aztu.edu.az" />
@@ -76,6 +79,10 @@ export default function PersonForm({
         <div>
           <Label>Telefon</Label>
           <Input value={value.phone} onChange={(e) => setField("phone", e.target.value)} placeholder="+994 ..." />
+        </div>
+        <div>
+          <Label>Daxili nömrə</Label>
+          <Input value={value.phone_code} onChange={(e) => setField("phone_code", e.target.value)} placeholder="Daxili nömrə" />
         </div>
       </div>
 
@@ -95,6 +102,14 @@ export default function PersonForm({
               <Label>Elmi dərəcə</Label>
               <Input value={value.az.scientific_degree} onChange={(e) => setTr("az", "scientific_degree", e.target.value)} placeholder="Elmi dərəcə" />
             </div>
+            <div>
+              <Label>Otaq nömrəsi</Label>
+              <Input value={value.az.room} onChange={(e) => setTr("az", "room", e.target.value)} placeholder="Otaq nömrəsi" />
+            </div>
+            <div>
+              <Label>İş saatları</Label>
+              <Input value={value.az.working_hours} onChange={(e) => setTr("az", "working_hours", e.target.value)} placeholder="B.e - Cümə, 09:00 - 17:00" />
+            </div>
           </div>
         </div>
 
@@ -112,6 +127,14 @@ export default function PersonForm({
             <div>
               <Label>Scientific degree</Label>
               <Input value={value.en.scientific_degree} onChange={(e) => setTr("en", "scientific_degree", e.target.value)} placeholder="Scientific degree" />
+            </div>
+            <div>
+              <Label>Room number</Label>
+              <Input value={value.en.room} onChange={(e) => setTr("en", "room", e.target.value)} placeholder="Room number" />
+            </div>
+            <div>
+              <Label>Working hours</Label>
+              <Input value={value.en.working_hours} onChange={(e) => setTr("en", "working_hours", e.target.value)} placeholder="Mon - Fri, 09:00 - 17:00" />
             </div>
           </div>
         </div>

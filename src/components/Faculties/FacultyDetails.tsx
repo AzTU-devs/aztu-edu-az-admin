@@ -28,15 +28,20 @@ const personToForm = (p: any): PersonFormValue => ({
   father_name: p.father_name ?? "",
   email: p.email ?? "",
   phone: p.phone ?? "",
+  phone_code: p.phone_code ?? "",
   az: {
     duty: p.az?.duty ?? "",
     scientific_name: p.az?.scientific_name ?? "",
     scientific_degree: p.az?.scientific_degree ?? "",
+    room: p.az?.room ?? "",
+    working_hours: p.az?.working_hours ?? "",
   },
   en: {
     duty: p.en?.duty ?? "",
     scientific_name: p.en?.scientific_name ?? "",
     scientific_degree: p.en?.scientific_degree ?? "",
+    room: p.en?.room ?? "",
+    working_hours: p.en?.working_hours ?? "",
   },
   profile_image: p.profile_image ?? "",
 });

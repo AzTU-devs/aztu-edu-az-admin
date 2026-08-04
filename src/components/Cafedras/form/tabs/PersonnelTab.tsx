@@ -36,15 +36,20 @@ const personToForm = (p: any): PersonFormValue => ({
   father_name: p.father_name ?? "",
   email: p.email ?? "",
   phone: p.phone ?? "",
+  phone_code: p.phone_code ?? "",
   az: {
     duty: p.az?.duty ?? "",
     scientific_name: p.az?.scientific_name ?? "",
     scientific_degree: p.az?.scientific_degree ?? "",
+    room: p.az?.room ?? "",
+    working_hours: p.az?.working_hours ?? "",
   },
   en: {
     duty: p.en?.duty ?? "",
     scientific_name: p.en?.scientific_name ?? "",
     scientific_degree: p.en?.scientific_degree ?? "",
+    room: p.en?.room ?? "",
+    working_hours: p.en?.working_hours ?? "",
   },
   profile_image: p.profile_image ?? "",
 });
@@ -183,7 +188,7 @@ export default function PersonnelTab({
                       </div>
                     </div>
 
-                    <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-3">
                       <div>
                         <Label className={fieldLabel}>Email</Label>
                         <Input value={item.email} placeholder="email@example.com" onChange={(e) => updateListItem(section.key, item.uid, "email", e.target.value)} />
@@ -191,6 +196,10 @@ export default function PersonnelTab({
                       <div>
                         <Label className={fieldLabel}>Telefon</Label>
                         <Input value={item.phone} placeholder="+994501234567" onChange={(e) => updateListItem(section.key, item.uid, "phone", e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className={fieldLabel}>Daxili nömrə</Label>
+                        <Input value={item.phone_code} placeholder="1234" onChange={(e) => updateListItem(section.key, item.uid, "phone_code", e.target.value)} />
                       </div>
                     </div>
 
@@ -209,6 +218,14 @@ export default function PersonnelTab({
                             <Label className={fieldLabel}>Elmi dərəcə</Label>
                             <Input value={item.az.scientific_degree} placeholder="Fəlsəfə doktoru" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "az", "scientific_degree", e.target.value)} />
                           </div>
+                          <div>
+                            <Label className={fieldLabel}>Otaq nömrəsi</Label>
+                            <Input value={item.az.room} placeholder="B-101" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "az", "room", e.target.value)} />
+                          </div>
+                          <div>
+                            <Label className={fieldLabel}>İş saatları</Label>
+                            <Input value={item.az.working_hours} placeholder="B.e - Cümə, 09:00 - 17:00" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "az", "working_hours", e.target.value)} />
+                          </div>
                         </>
                       }
                       en={
@@ -224,6 +241,14 @@ export default function PersonnelTab({
                           <div>
                             <Label className={fieldLabel}>Scientific degree</Label>
                             <Input value={item.en.scientific_degree} placeholder="PhD" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "en", "scientific_degree", e.target.value)} />
+                          </div>
+                          <div>
+                            <Label className={fieldLabel}>Room number</Label>
+                            <Input value={item.en.room} placeholder="B-101" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "en", "room", e.target.value)} />
+                          </div>
+                          <div>
+                            <Label className={fieldLabel}>Working hours</Label>
+                            <Input value={item.en.working_hours} placeholder="Mon - Fri, 09:00 - 17:00" onChange={(e) => updateTranslatedListItem(section.key, item.uid, "en", "working_hours", e.target.value)} />
                           </div>
                         </>
                       }

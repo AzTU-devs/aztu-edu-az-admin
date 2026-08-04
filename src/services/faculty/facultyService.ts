@@ -33,11 +33,15 @@ export interface DirectorPayload {
     first_name: string;
     last_name: string;
     father_name: string;
-    az: { scientific_degree: string; scientific_title: string; bio: string; scientific_research_fields: string[] };
-    en: { scientific_degree: string; scientific_title: string; bio: string; scientific_research_fields: string[] };
+    az: { scientific_degree: string; scientific_title: string; bio: string; room: string; scientific_research_fields: string[] };
+    en: { scientific_degree: string; scientific_title: string; bio: string; room: string; scientific_research_fields: string[] };
     email: string;
     phone: string;
-    room_number: string;
+    phone_code: string;
+    /** Deprecated: the API no longer accepts a neutral room_number; the director's
+     *  room now lives per-language in az.room / en.room. Kept optional for local
+     *  blank objects only — never sent to the backend. */
+    room_number?: string;
     working_hours: WorkingHour[];
     educations: EducationItem[];
     profile_image?: string;
@@ -50,8 +54,9 @@ export interface DeputyDean {
     father_name: string;
     email: string;
     phone: string;
-    az: { scientific_name: string; scientific_degree: string; duty: string };
-    en: { scientific_name: string; scientific_degree: string; duty: string };
+    phone_code: string;
+    az: { scientific_name: string; scientific_degree: string; duty: string; room: string; working_hours: string };
+    en: { scientific_name: string; scientific_degree: string; duty: string; room: string; working_hours: string };
     profile_image?: string;
 }
 
@@ -73,8 +78,10 @@ export type PersonPayload = {
     father_name: string;
     email: string;
     phone: string;
-    az: { duty: string; scientific_name: string; scientific_degree: string };
-    en: { duty: string; scientific_name: string; scientific_degree: string };
+    phone_code: string;
+    az: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    en: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    profile_image?: string;
 };
 
 export type CreateResult = { status: "SUCCESS"; id: number } | { status: "ERROR" };
@@ -87,8 +94,9 @@ export interface Worker {
     father_name: string;
     email: string;
     phone: string;
-    az: { duty: string; scientific_name: string; scientific_degree: string };
-    en: { duty: string; scientific_name: string; scientific_degree: string };
+    phone_code: string;
+    az: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
+    en: { duty: string; scientific_name: string; scientific_degree: string; room: string; working_hours: string };
     profile_image?: string;
 }
 

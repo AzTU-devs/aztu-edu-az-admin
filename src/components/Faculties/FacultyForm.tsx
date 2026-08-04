@@ -40,11 +40,11 @@ const blankDirector: DirectorPayload = {
   first_name: "",
   last_name: "",
   father_name: "",
-  az: { scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [] },
-  en: { scientific_degree: "", scientific_title: "", bio: "", scientific_research_fields: [] },
+  az: { scientific_degree: "", scientific_title: "", bio: "", room: "", scientific_research_fields: [] },
+  en: { scientific_degree: "", scientific_title: "", bio: "", room: "", scientific_research_fields: [] },
   email: "",
   phone: "",
-  room_number: "",
+  phone_code: "",
   working_hours: [],
   educations: [],
 };
@@ -95,17 +95,19 @@ const normalizeFacultyPayload = (value: any): CreateFacultyPayload => {
         scientific_degree: value.director?.az?.scientific_degree ?? "",
         scientific_title: value.director?.az?.scientific_title ?? "",
         bio: value.director?.az?.bio ?? "",
+        room: value.director?.az?.room ?? "",
         scientific_research_fields: Array.isArray(value.director?.az?.scientific_research_fields) ? value.director.az.scientific_research_fields : [],
       },
       en: {
         scientific_degree: value.director?.en?.scientific_degree ?? "",
         scientific_title: value.director?.en?.scientific_title ?? "",
         bio: value.director?.en?.bio ?? "",
+        room: value.director?.en?.room ?? "",
         scientific_research_fields: Array.isArray(value.director?.en?.scientific_research_fields) ? value.director.en.scientific_research_fields : [],
       },
       email: value.director?.email ?? "",
       phone: value.director?.phone ?? "",
-      room_number: value.director?.room_number ?? "",
+      phone_code: value.director?.phone_code ?? "",
       working_hours: (Array.isArray(value.director?.working_hours) ? value.director.working_hours : []).map((wh: any) => ({
         az: { day: wh.az?.day ?? "" },
         en: { day: wh.en?.day ?? "" },
@@ -155,15 +157,20 @@ const normalizeFacultyPayload = (value: any): CreateFacultyPayload => {
       father_name: item.father_name ?? "",
       email: item.email ?? "",
       phone: item.phone ?? "",
-      az: { 
-        scientific_name: item.az?.scientific_name ?? "", 
-        scientific_degree: item.az?.scientific_degree ?? "", 
-        duty: item.az?.duty ?? "" 
+      phone_code: item.phone_code ?? "",
+      az: {
+        scientific_name: item.az?.scientific_name ?? "",
+        scientific_degree: item.az?.scientific_degree ?? "",
+        duty: item.az?.duty ?? "",
+        room: item.az?.room ?? "",
+        working_hours: item.az?.working_hours ?? "",
       },
-      en: { 
-        scientific_name: item.en?.scientific_name ?? "", 
-        scientific_degree: item.en?.scientific_degree ?? "", 
-        duty: item.en?.duty ?? "" 
+      en: {
+        scientific_name: item.en?.scientific_name ?? "",
+        scientific_degree: item.en?.scientific_degree ?? "",
+        duty: item.en?.duty ?? "",
+        room: item.en?.room ?? "",
+        working_hours: item.en?.working_hours ?? "",
       },
     })),
     scientific_council: (Array.isArray(value.scientific_council) ? value.scientific_council : []).map((item: any) => ({
@@ -191,15 +198,20 @@ const normalizeFacultyPayload = (value: any): CreateFacultyPayload => {
       father_name: item.father_name ?? "",
       email: item.email ?? "",
       phone: item.phone ?? "",
-      az: { 
-        duty: item.az?.duty ?? "", 
-        scientific_name: item.az?.scientific_name ?? "", 
-        scientific_degree: item.az?.scientific_degree ?? "" 
+      phone_code: item.phone_code ?? "",
+      az: {
+        duty: item.az?.duty ?? "",
+        scientific_name: item.az?.scientific_name ?? "",
+        scientific_degree: item.az?.scientific_degree ?? "",
+        room: item.az?.room ?? "",
+        working_hours: item.az?.working_hours ?? "",
       },
-      en: { 
-        duty: item.en?.duty ?? "", 
-        scientific_name: item.en?.scientific_name ?? "", 
-        scientific_degree: item.en?.scientific_degree ?? "" 
+      en: {
+        duty: item.en?.duty ?? "",
+        scientific_name: item.en?.scientific_name ?? "",
+        scientific_degree: item.en?.scientific_degree ?? "",
+        room: item.en?.room ?? "",
+        working_hours: item.en?.working_hours ?? "",
       },
     })),
     cafedra_count: value.cafedra_count ?? 0,
@@ -774,8 +786,8 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                 <Input placeholder="Telefon" value={payload.director?.phone ?? ""} onChange={(e) => changeDirectorField("phone", e.target.value)} />
               </div>
               <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Ofis nömrəsi</Label>
-                <Input placeholder="B-101" value={payload.director?.room_number ?? ""} onChange={(e) => changeDirectorField("room_number", e.target.value)} />
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Daxili nömrə</Label>
+                <Input placeholder="Daxili nömrə" value={payload.director?.phone_code ?? ""} onChange={(e) => changeDirectorField("phone_code", e.target.value)} />
               </div>
             </div>
 
@@ -789,6 +801,10 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Elmi titul</Label>
                   <Input placeholder="Professor" value={payload.director?.az.scientific_title ?? ""} onChange={(e) => changeDirectorLanguageField("az", "scientific_title", e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Otaq nömrəsi</Label>
+                  <Input placeholder="B-101" value={payload.director?.az.room ?? ""} onChange={(e) => changeDirectorLanguageField("az", "room", e.target.value)} />
                 </div>
               </div>
               <div>
@@ -811,6 +827,10 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Scientific title</Label>
                   <Input placeholder="Professor" value={payload.director?.en.scientific_title ?? ""} onChange={(e) => changeDirectorLanguageField("en", "scientific_title", e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Room number</Label>
+                  <Input placeholder="B-101" value={payload.director?.en.room ?? ""} onChange={(e) => changeDirectorLanguageField("en", "room", e.target.value)} />
                 </div>
               </div>
               <div>
@@ -926,8 +946,9 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
             father_name: "",
             email: "",
             phone: "",
-            az: { scientific_name: "", scientific_degree: "", duty: "" },
-            en: { scientific_name: "", scientific_degree: "", duty: "" },
+            phone_code: "",
+            az: { scientific_name: "", scientific_degree: "", duty: "", room: "", working_hours: "" },
+            en: { scientific_name: "", scientific_degree: "", duty: "", room: "", working_hours: "" },
           })}>
             Yeni əlavə et
           </Button>
@@ -967,7 +988,7 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                   <Input value={item.father_name} onChange={(e) => updateDeputyDean(idx, "father_name", e.target.value)} placeholder="Ata adı" />
                 </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Email</Label>
                   <Input value={item.email} onChange={(e) => updateDeputyDean(idx, "email", e.target.value)} placeholder="email@example.com" />
@@ -975,6 +996,10 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Telefon</Label>
                   <Input value={item.phone} onChange={(e) => updateDeputyDean(idx, "phone", e.target.value)} placeholder="+994501234567" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Daxili nömrə</Label>
+                  <Input value={item.phone_code} onChange={(e) => updateDeputyDean(idx, "phone_code", e.target.value)} placeholder="Daxili nömrə" />
                 </div>
               </div>
               <div className="grid gap-4 lg:grid-cols-2">
@@ -985,6 +1010,10 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                   <Input value={item.az.scientific_degree} onChange={(e) => updateDeputyDeanLanguageField(idx, "az", "scientific_degree", e.target.value)} placeholder="Fəlsəfə doktoru" />
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">AZ - Vəzifə</Label>
                   <Input value={item.az.duty} onChange={(e) => updateDeputyDeanLanguageField(idx, "az", "duty", e.target.value)} placeholder="Tədris işləri müavini" />
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">AZ - Otaq nömrəsi</Label>
+                  <Input value={item.az.room} onChange={(e) => updateDeputyDeanLanguageField(idx, "az", "room", e.target.value)} placeholder="Otaq nömrəsi" />
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">AZ - İş saatları</Label>
+                  <Input value={item.az.working_hours} onChange={(e) => updateDeputyDeanLanguageField(idx, "az", "working_hours", e.target.value)} placeholder="B.e - Cümə, 09:00 - 17:00" />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">EN - Scientific name</Label>
@@ -993,6 +1022,10 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                   <Input value={item.en.scientific_degree} onChange={(e) => updateDeputyDeanLanguageField(idx, "en", "scientific_degree", e.target.value)} placeholder="PhD" />
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">EN - Duty</Label>
                   <Input value={item.en.duty} onChange={(e) => updateDeputyDeanLanguageField(idx, "en", "duty", e.target.value)} placeholder="Vice Dean for Academic Affairs" />
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">EN - Room number</Label>
+                  <Input value={item.en.room} onChange={(e) => updateDeputyDeanLanguageField(idx, "en", "room", e.target.value)} placeholder="Room number" />
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">EN - Working hours</Label>
+                  <Input value={item.en.working_hours} onChange={(e) => updateDeputyDeanLanguageField(idx, "en", "working_hours", e.target.value)} placeholder="Mon - Fri, 09:00 - 17:00" />
                 </div>
               </div>
             </div>
@@ -1087,8 +1120,9 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
             father_name: "",
             email: "",
             phone: "",
-            az: { duty: "", scientific_name: "", scientific_degree: "" },
-            en: { duty: "", scientific_name: "", scientific_degree: "" },
+            phone_code: "",
+            az: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
+            en: { duty: "", scientific_name: "", scientific_degree: "", room: "", working_hours: "" },
           })}>
             Yeni əlavə et
           </Button>
@@ -1128,7 +1162,7 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                   <Input value={item.father_name} onChange={(e) => updateWorker(idx, "father_name", e.target.value)} placeholder="Ata adı" />
                 </div>
               </div>
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Email</Label>
                   <Input value={item.email} onChange={(e) => updateWorker(idx, "email", e.target.value)} placeholder="email@example.com" />
@@ -1136,6 +1170,10 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                 <div>
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Telefon</Label>
                   <Input value={item.phone} onChange={(e) => updateWorker(idx, "phone", e.target.value)} placeholder="+994501234567" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Daxili nömrə</Label>
+                  <Input value={item.phone_code} onChange={(e) => updateWorker(idx, "phone_code", e.target.value)} placeholder="Daxili nömrə" />
                 </div>
               </div>
               <div className="grid gap-4 lg:grid-cols-2">
@@ -1146,6 +1184,10 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                   <Input value={item.az.scientific_name} onChange={(e) => updateWorkerLanguageField(idx, "az", "scientific_name", e.target.value)} placeholder="Dosent" />
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">AZ - Elmi dərəcə</Label>
                   <Input value={item.az.scientific_degree} onChange={(e) => updateWorkerLanguageField(idx, "az", "scientific_degree", e.target.value)} placeholder="Fəlsəfə doktoru" />
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">AZ - Otaq nömrəsi</Label>
+                  <Input value={item.az.room} onChange={(e) => updateWorkerLanguageField(idx, "az", "room", e.target.value)} placeholder="Otaq nömrəsi" />
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">AZ - İş saatları</Label>
+                  <Input value={item.az.working_hours} onChange={(e) => updateWorkerLanguageField(idx, "az", "working_hours", e.target.value)} placeholder="B.e - Cümə, 09:00 - 17:00" />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">EN - Duty</Label>
@@ -1154,6 +1196,10 @@ export default function FacultyForm({ initialValue = null, onSubmit, submitLabel
                   <Input value={item.en.scientific_name} onChange={(e) => updateWorkerLanguageField(idx, "en", "scientific_name", e.target.value)} placeholder="Associate Professor" />
                   <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">EN - Scientific degree</Label>
                   <Input value={item.en.scientific_degree} onChange={(e) => updateWorkerLanguageField(idx, "en", "scientific_degree", e.target.value)} placeholder="PhD" />
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">EN - Room number</Label>
+                  <Input value={item.en.room} onChange={(e) => updateWorkerLanguageField(idx, "en", "room", e.target.value)} placeholder="Room number" />
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">EN - Working hours</Label>
+                  <Input value={item.en.working_hours} onChange={(e) => updateWorkerLanguageField(idx, "en", "working_hours", e.target.value)} placeholder="Mon - Fri, 09:00 - 17:00" />
                 </div>
               </div>
             </div>

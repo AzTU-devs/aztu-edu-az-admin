@@ -56,16 +56,18 @@ const blankDirector: DirectorPayload = {
   father_name: "",
   email: "",
   phone: "",
-  room_number: "",
+  phone_code: "",
   az: {
     scientific_degree: "",
     scientific_title: "",
     bio: "",
+    room: "",
   },
   en: {
     scientific_degree: "",
     scientific_title: "",
     bio: "",
+    room: "",
   },
   working_hours: [],
   educations: [],
@@ -77,15 +79,20 @@ const blankWorker: CreateDepartmentPayload["workers"][0] = {
   father_name: "",
   email: "",
   phone: "",
+  phone_code: "",
   az: {
     duty: "",
     scientific_degree: "",
     scientific_name: "",
+    room: "",
+    working_hours: "",
   },
   en: {
     duty: "",
     scientific_degree: "",
     scientific_name: "",
+    room: "",
+    working_hours: "",
   },
 };
 
@@ -125,17 +132,19 @@ const normalizePayload = (value: CreateDepartmentPayload | null | undefined): Cr
           father_name: value.director.father_name ?? "",
           email: value.director.email ?? "",
           phone: value.director.phone ?? "",
-          room_number: value.director.room_number ?? "",
+          phone_code: value.director.phone_code ?? "",
           profile_image: value.director.profile_image ?? "",
           az: {
             scientific_degree: value.director.az?.scientific_degree ?? "",
             scientific_title: value.director.az?.scientific_title ?? "",
             bio: value.director.az?.bio ?? "",
+            room: value.director.az?.room ?? "",
           },
           en: {
             scientific_degree: value.director.en?.scientific_degree ?? "",
             scientific_title: value.director.en?.scientific_title ?? "",
             bio: value.director.en?.bio ?? "",
+            room: value.director.en?.room ?? "",
           },
           working_hours: (Array.isArray(value.director.working_hours) ? value.director.working_hours : []).map((wh: any) => ({
             time_range: wh.time_range ?? "",
@@ -156,16 +165,21 @@ const normalizePayload = (value: CreateDepartmentPayload | null | undefined): Cr
       father_name: w.father_name ?? "",
       email: w.email ?? "",
       phone: w.phone ?? "",
+      phone_code: w.phone_code ?? "",
       profile_image: w.profile_image ?? "",
       az: {
         duty: w.az?.duty ?? "",
         scientific_degree: w.az?.scientific_degree ?? "",
         scientific_name: w.az?.scientific_name ?? "",
+        room: w.az?.room ?? "",
+        working_hours: w.az?.working_hours ?? "",
       },
       en: {
         duty: w.en?.duty ?? "",
         scientific_degree: w.en?.scientific_degree ?? "",
         scientific_name: w.en?.scientific_name ?? "",
+        room: w.en?.room ?? "",
+        working_hours: w.en?.working_hours ?? "",
       },
     })),
   };
@@ -625,11 +639,28 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Ofis nömrəsi</Label>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Email</Label>
                 <Input
-                  placeholder="1-202"
-                  value={payload.director?.room_number ?? ""}
-                  onChange={(e) => changeDirectorField("room_number", e.target.value)}
+                  type="email"
+                  placeholder="email@aztu.edu.az"
+                  value={payload.director?.email ?? ""}
+                  onChange={(e) => changeDirectorField("email", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Telefon</Label>
+                <Input
+                  placeholder="+994501234567"
+                  value={payload.director?.phone ?? ""}
+                  onChange={(e) => changeDirectorField("phone", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Daxili nömrə</Label>
+                <Input
+                  placeholder="Daxili nömrə"
+                  value={payload.director?.phone_code ?? ""}
+                  onChange={(e) => changeDirectorField("phone_code", e.target.value)}
                 />
               </div>
               <div className="lg:col-span-2">
@@ -664,6 +695,14 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
                 />
               </div>
               <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Otaq nömrəsi (AZ)</Label>
+                <Input
+                  placeholder="1-202"
+                  value={payload.director?.az.room ?? ""}
+                  onChange={(e) => changeDirectorTranslated("az", "room", e.target.value)}
+                />
+              </div>
+              <div>
                 <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Elmi dərəcə (EN)</Label>
                 <Input
                   placeholder="PhD"
@@ -677,6 +716,14 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
                   placeholder="Associate Professor"
                   value={payload.director?.en.scientific_title ?? ""}
                   onChange={(e) => changeDirectorTranslated("en", "scientific_title", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Room number (EN)</Label>
+                <Input
+                  placeholder="1-202"
+                  value={payload.director?.en.room ?? ""}
+                  onChange={(e) => changeDirectorTranslated("en", "room", e.target.value)}
                 />
               </div>
             </div>
@@ -885,6 +932,30 @@ export default function DepartmentForm({ initialValue = null, onSubmit, submitLa
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Scientific name (EN)</Label>
                     <Input value={worker.en.scientific_name ?? ""} onChange={(e) => updateWorkerTranslatedField(index, "en", "scientific_name", e.target.value)} placeholder="Professor" />
+                  </div>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-3">
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Daxili nömrə</Label>
+                    <Input value={worker.phone_code ?? ""} onChange={(e) => updateWorkerField(index, "phone_code", e.target.value)} placeholder="Daxili nömrə" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Otaq nömrəsi (AZ)</Label>
+                    <Input value={worker.az.room ?? ""} onChange={(e) => updateWorkerTranslatedField(index, "az", "room", e.target.value)} placeholder="1-202" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">İş saatları (AZ)</Label>
+                    <Input value={worker.az.working_hours ?? ""} onChange={(e) => updateWorkerTranslatedField(index, "az", "working_hours", e.target.value)} placeholder="B.e - Cümə, 09:00 - 17:00" />
+                  </div>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Room number (EN)</Label>
+                    <Input value={worker.en.room ?? ""} onChange={(e) => updateWorkerTranslatedField(index, "en", "room", e.target.value)} placeholder="1-202" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Working hours (EN)</Label>
+                    <Input value={worker.en.working_hours ?? ""} onChange={(e) => updateWorkerTranslatedField(index, "en", "working_hours", e.target.value)} placeholder="Mon - Fri, 09:00 - 17:00" />
                   </div>
                 </div>
                 <div>
