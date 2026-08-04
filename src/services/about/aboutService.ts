@@ -93,10 +93,9 @@ export interface AboutDocument {
   id: number;
   /** References a category's category_key on the same page, or null. */
   category_key: string | null;
-  /** An uploaded file's path or a pasted URL — any format. */
-  file_url: string | null;
-  az: { name: string | null };
-  en: { name: string | null };
+  /** Per-language: title plus that language's uploaded file path or pasted URL. */
+  az: { name: string | null; file_url: string | null };
+  en: { name: string | null; file_url: string | null };
 }
 
 /** One numbered card under "Strateji Sütunlar". */
@@ -258,9 +257,8 @@ export interface AboutPagePayload {
   /** Regulatory-documents page: the document cards, sent whole. */
   documents?: Array<{
     category_key: string;
-    file_url: string;
-    az: { name: string };
-    en: { name: string };
+    az: { name: string; file_url: string };
+    en: { name: string; file_url: string };
   }>;
   /** Students pages: the grade-scale table, sent whole. */
   grade_scale?: Array<{

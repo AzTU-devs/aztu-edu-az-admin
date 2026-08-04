@@ -130,8 +130,8 @@ interface DocCategoryForm {
 interface DocumentForm {
   /** The chosen category's key, or "" for uncategorized. */
   category_key: string;
-  /** An uploaded file's path or a pasted URL — any format. */
-  file_url: string;
+  /** Per-language uploaded file path or pasted URL — a separate file per language. */
+  file_url: { az: string; en: string };
   name: Bilingual;
 }
 
@@ -236,7 +236,7 @@ const ensureScaffold = (
   const documents = [...form.documents];
   for (const key of docCategories) {
     if (!documents.some((d) => d.category_key === key)) {
-      documents.push({ category_key: key, file_url: "", name: { az: "", en: "" } });
+      documents.push({ category_key: key, file_url: { az: "", en: "" }, name: { az: "", en: "" } });
     }
   }
   return { ...form, blocks, lists, documents };
@@ -370,7 +370,7 @@ const toForm = (page: AboutPageDetail): PageForm => {
   })),
   documents: page.documents.map((document) => ({
     category_key: str(document.category_key),
-    file_url: str(document.file_url),
+    file_url: { az: str(document.az?.file_url), en: str(document.en?.file_url) },
     name: { az: str(document.az?.name), en: str(document.en?.name) },
   })),
   milestones: page.milestones.map((milestone) => ({
@@ -662,13 +662,28 @@ export default function AboutPageEditor() {
     });
 
   // ── Regulatory documents: document cards ────────────────────────────────────
-  const setDocumentField = (di: number, field: "category_key" | "file_url", value: string) =>
+  const setDocumentField = (di: number, field: "category_key", value: string) =>
     setForm((prev) =>
       prev
         ? {
             ...prev,
             documents: prev.documents.map((document, i) =>
               i === di ? { ...document, [field]: value } : document
+            ),
+          }
+        : prev
+    );
+
+  // The file/URL is per-language, edited via the same az/en toggle as the name.
+  const setDocumentFileUrl = (di: number, lng: "az" | "en", value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            documents: prev.documents.map((document, i) =>
+              i === di
+                ? { ...document, file_url: { ...document.file_url, [lng]: value } }
+                : document
             ),
           }
         : prev
@@ -693,7 +708,7 @@ export default function AboutPageEditor() {
             ...prev,
             documents: [
               ...prev.documents,
-              { category_key: "", file_url: "", name: { az: "", en: "" } },
+              { category_key: "", file_url: { az: "", en: "" }, name: { az: "", en: "" } },
             ],
           }
         : prev
@@ -724,8 +739,9 @@ export default function AboutPageEditor() {
         return;
       }
       // The endpoint only stored the file; the path lands in the card's
-      // file_url and the whole-page save persists it.
-      setDocumentField(di, "file_url", result.path);
+      // file_url for the CURRENTLY selected language and the whole-page save
+      // persists it — each language carries its own file.
+      setDocumentFileUrl(di, lang, result.path);
       Swal.fire({ icon: "success", title: "Fayl yükləndi", showConfirmButton: false, timer: 1000 });
     } finally {
       setSaving(false);
@@ -846,10 +862,15 @@ export default function AboutPageEditor() {
 
   // ── Students pages: a document addressed by its category_key (the LMS files) ─
   const docByCategory = (key: string) => form?.documents.find((d) => d.category_key === key);
-  const setDocByCategory = (key: string, field: "file_url", value: string) =>
+  const setDocFileUrlByCategory = (key: string, value: string) =>
     setForm((prev) =>
       prev
-        ? { ...prev, documents: prev.documents.map((d) => (d.category_key === key ? { ...d, [field]: value } : d)) }
+        ? {
+            ...prev,
+            documents: prev.documents.map((d) =>
+              d.category_key === key ? { ...d, file_url: { ...d.file_url, [lang]: value } } : d
+            ),
+          }
         : prev
     );
   const setDocNameByCategory = (key: string, value: string) =>
@@ -872,7 +893,7 @@ export default function AboutPageEditor() {
         Swal.fire({ icon: "error", title: "Xəta", text: "Fayl yüklənmədi." });
         return;
       }
-      setDocByCategory(key, "file_url", result.path);
+      setDocFileUrlByCategory(key, result.path);
       Swal.fire({ icon: "success", title: "Fayl yükləndi", showConfirmButton: false, timer: 1000 });
     } finally {
       setSaving(false);
@@ -1401,13 +1422,15 @@ export default function AboutPageEditor() {
         documents: form.documents
           .filter(
             (document) =>
-              document.name.az.trim() || document.name.en.trim() || document.file_url.trim()
+              document.name.az.trim() ||
+              document.name.en.trim() ||
+              document.file_url.az.trim() ||
+              document.file_url.en.trim()
           )
           .map((document) => ({
             category_key: document.category_key,
-            file_url: document.file_url,
-            az: { name: document.name.az },
-            en: { name: document.name.en },
+            az: { name: document.name.az, file_url: document.file_url.az },
+            en: { name: document.name.en, file_url: document.file_url.en },
           })),
         // The grade-scale table — a row with no points and no grade was never
         // filled in.
@@ -2601,6 +2624,9 @@ export default function AboutPageEditor() {
 
                         <div>
                           <Label>Fayl və ya keçid</Label>
+                          <p className="mb-1 text-xs text-gray-400">
+                            {lang === "az" ? "Bu dil üçün fayl (AZ)" : "File for this language (EN)"}
+                          </p>
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                             <input
                               type="file"
@@ -2608,14 +2634,14 @@ export default function AboutPageEditor() {
                               className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
                             />
                             <Input
-                              value={document.file_url}
-                              onChange={(event) => setDocumentField(di, "file_url", event.target.value)}
+                              value={document.file_url[lang]}
+                              onChange={(event) => setDocumentFileUrl(di, lang, event.target.value)}
                               placeholder="və ya https://…"
                             />
                           </div>
-                          {document.file_url ? (
+                          {document.file_url[lang] ? (
                             <a
-                              href={getImageUrl(document.file_url)}
+                              href={getImageUrl(document.file_url[lang])}
                               target="_blank"
                               rel="noreferrer"
                               className="mt-1 inline-block text-xs text-brand-600 hover:text-brand-700"
@@ -3075,6 +3101,9 @@ export default function AboutPageEditor() {
                   />
                 </div>
                 <Label>Fayl və ya keçid</Label>
+                <p className="mb-1 text-xs text-gray-400">
+                  {lang === "az" ? "Bu dil üçün fayl (AZ)" : "File for this language (EN)"}
+                </p>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <input
                     type="file"
@@ -3082,8 +3111,8 @@ export default function AboutPageEditor() {
                     className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
                   />
                   <Input
-                    value={docByCategory("trained_staff")?.file_url ?? ""}
-                    onChange={(e) => setDocByCategory("trained_staff", "file_url", e.target.value)}
+                    value={docByCategory("trained_staff")?.file_url[lang] ?? ""}
+                    onChange={(e) => setDocFileUrlByCategory("trained_staff", e.target.value)}
                     placeholder="və ya https://…"
                   />
                 </div>
