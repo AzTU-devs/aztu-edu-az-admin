@@ -88,11 +88,25 @@ export interface AboutDocCategory {
   en: { name: string | null };
 }
 
+/** A document organization on a regulatory-documents page. */
+export interface AboutDocOrganization {
+  id: number;
+  display_order: number;
+  organization_key: string;
+  logo_url: string | null;
+  az: { name: string | null };
+  en: { name: string | null };
+}
+
 /** One downloadable document card. */
 export interface AboutDocument {
   id: number;
   /** References a category's category_key on the same page, or null. */
   category_key: string | null;
+  /** References an organization's organization_key on the same page, or null. */
+  organization_key: string | null;
+  /** Admin-only read-only metric — how many times the file was opened. */
+  view_count: number;
   /** Per-language: title plus that language's uploaded file path or pasted URL. */
   az: { name: string | null; file_url: string | null };
   en: { name: string | null; file_url: string | null };
@@ -173,8 +187,9 @@ export interface AboutPageDetail {
   persons: AboutPerson[];
   /** Scientific-board page: the councils, each with its members and secretariat. */
   councils: AboutCouncil[];
-  /** Regulatory-documents page: the categories and the document cards. */
+  /** Regulatory-documents page: the categories, organizations and the document cards. */
   doc_categories: AboutDocCategory[];
+  doc_organizations: AboutDocOrganization[];
   documents: AboutDocument[];
   /** Students pages: the grade-scale table (both descriptions per row). */
   grade_scale: Array<{
@@ -254,9 +269,20 @@ export interface AboutPagePayload {
     az: { name: string };
     en: { name: string };
   }>;
-  /** Regulatory-documents page: the document cards, sent whole. */
+  /** Regulatory-documents page: the organizations, sent whole (whole-list replace). */
+  doc_organizations?: Array<{
+    organization_key: string;
+    logo_url: string | null;
+    az: { name: string };
+    en: { name: string };
+  }>;
+  /** Regulatory-documents page: the document cards, sent whole. Send `id` for
+   *  every existing document so the backend preserves its view_count; omit it
+   *  for a brand-new card. Never send view_count. */
   documents?: Array<{
+    id?: number;
     category_key: string;
+    organization_key: string | null;
     az: { name: string; file_url: string };
     en: { name: string; file_url: string };
   }>;

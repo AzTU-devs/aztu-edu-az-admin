@@ -126,17 +126,36 @@ interface DocCategoryForm {
   name: Bilingual;
 }
 
+/** A document organization on a regulatory-documents page. */
+interface OrganizationForm {
+  /** Stable, page-local key a document references. */
+  organization_key: string;
+  /** Uploaded logo path or pasted URL. */
+  logo_url: string;
+  name: Bilingual;
+}
+
 /** One downloadable document card. */
 interface DocumentForm {
+  /** The server id, carried through so an existing card round-trips (and keeps
+   *  its view_count on save). Undefined for a brand-new card. */
+  id?: number;
   /** The chosen category's key, or "" for uncategorized. */
   category_key: string;
+  /** The chosen organization's key, or "" for none. */
+  organization_key: string;
   /** Per-language uploaded file path or pasted URL — a separate file per language. */
   file_url: { az: string; en: string };
   name: Bilingual;
+  /** Admin-only read-only metric — how many times the file was opened. */
+  view_count: number;
 }
 
 /** A fresh, stable page-local key for a new category. */
 const makeCategoryKey = () => `c-${Math.random().toString(36).slice(2, 9)}`;
+
+/** A fresh, stable page-local key for a new organization. */
+const makeOrganizationKey = () => `o-${Math.random().toString(36).slice(2, 9)}`;
 
 // ── MBA page (Akademik → Təhsil və proqramlar) ──────────────────────────────
 // The MBA page assembles fixed, named sections out of the generic block/list
@@ -236,7 +255,13 @@ const ensureScaffold = (
   const documents = [...form.documents];
   for (const key of docCategories) {
     if (!documents.some((d) => d.category_key === key)) {
-      documents.push({ category_key: key, file_url: { az: "", en: "" }, name: { az: "", en: "" } });
+      documents.push({
+        category_key: key,
+        organization_key: "",
+        file_url: { az: "", en: "" },
+        name: { az: "", en: "" },
+        view_count: 0,
+      });
     }
   }
   return { ...form, blocks, lists, documents };
@@ -271,6 +296,7 @@ interface PageForm {
   councils_title: Bilingual;
   councils: CouncilForm[];
   doc_categories: DocCategoryForm[];
+  doc_organizations: OrganizationForm[];
   documents: DocumentForm[];
   grade_scale: GradeRowForm[];
 }
@@ -368,10 +394,18 @@ const toForm = (page: AboutPageDetail): PageForm => {
     category_key: category.category_key,
     name: { az: str(category.az?.name), en: str(category.en?.name) },
   })),
+  doc_organizations: (page.doc_organizations ?? []).map((organization) => ({
+    organization_key: organization.organization_key,
+    logo_url: str(organization.logo_url),
+    name: { az: str(organization.az?.name), en: str(organization.en?.name) },
+  })),
   documents: page.documents.map((document) => ({
+    id: document.id,
     category_key: str(document.category_key),
+    organization_key: str(document.organization_key),
     file_url: { az: str(document.az?.file_url), en: str(document.en?.file_url) },
     name: { az: str(document.az?.name), en: str(document.en?.name) },
+    view_count: document.view_count ?? 0,
   })),
   milestones: page.milestones.map((milestone) => ({
     year: str(milestone.year),
@@ -661,8 +695,98 @@ export default function AboutPageEditor() {
       return { ...prev, doc_categories };
     });
 
+  // ── Regulatory documents: organizations ─────────────────────────────────────
+  const setOrganizationKey = (oi: number, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            doc_organizations: prev.doc_organizations.map((organization, i) =>
+              i === oi ? { ...organization, organization_key: value } : organization
+            ),
+          }
+        : prev
+    );
+
+  const setOrganizationName = (oi: number, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            doc_organizations: prev.doc_organizations.map((organization, i) =>
+              i === oi
+                ? { ...organization, name: { ...organization.name, [lang]: value } }
+                : organization
+            ),
+          }
+        : prev
+    );
+
+  const setOrganizationLogo = (oi: number, value: string) =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            doc_organizations: prev.doc_organizations.map((organization, i) =>
+              i === oi ? { ...organization, logo_url: value } : organization
+            ),
+          }
+        : prev
+    );
+
+  const addOrganization = () =>
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            doc_organizations: [
+              ...prev.doc_organizations,
+              { organization_key: makeOrganizationKey(), logo_url: "", name: { az: "", en: "" } },
+            ],
+          }
+        : prev
+    );
+
+  const removeOrganization = (oi: number) =>
+    setForm((prev) =>
+      prev
+        ? { ...prev, doc_organizations: prev.doc_organizations.filter((_, i) => i !== oi) }
+        : prev
+    );
+
+  const moveOrganization = (oi: number, delta: number) =>
+    setForm((prev) => {
+      if (!prev) return prev;
+      const target = oi + delta;
+      if (target < 0 || target >= prev.doc_organizations.length) return prev;
+      const doc_organizations = [...prev.doc_organizations];
+      [doc_organizations[oi], doc_organizations[target]] = [
+        doc_organizations[target],
+        doc_organizations[oi],
+      ];
+      return { ...prev, doc_organizations };
+    });
+
+  const handleOrgLogoUpload = async (oi: number, file: File | null) => {
+    if (!file) return;
+    setSaving(true);
+    try {
+      const result = await uploadAboutImage(pageKey, file);
+      if (result.status !== "SUCCESS") {
+        Swal.fire({ icon: "error", title: "Xəta", text: "Loqo yüklənmədi." });
+        return;
+      }
+      // The endpoint only stored the file; the path lands in the org's logo_url
+      // and the whole-page save persists it.
+      setOrganizationLogo(oi, result.path);
+      Swal.fire({ icon: "success", title: "Loqo yükləndi", showConfirmButton: false, timer: 1000 });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // ── Regulatory documents: document cards ────────────────────────────────────
-  const setDocumentField = (di: number, field: "category_key", value: string) =>
+  const setDocumentField = (di: number, field: "category_key" | "organization_key", value: string) =>
     setForm((prev) =>
       prev
         ? {
@@ -708,7 +832,13 @@ export default function AboutPageEditor() {
             ...prev,
             documents: [
               ...prev.documents,
-              { category_key: "", file_url: { az: "", en: "" }, name: { az: "", en: "" } },
+              {
+                category_key: "",
+                organization_key: "",
+                file_url: { az: "", en: "" },
+                name: { az: "", en: "" },
+                view_count: 0,
+              },
             ],
           }
         : prev
@@ -1418,7 +1548,23 @@ export default function AboutPageEditor() {
             az: { name: category.name.az },
             en: { name: category.name.en },
           })),
+        // An organization with no name in either language was never filled in.
+        // Also drop any row whose key never got set.
+        doc_organizations: form.doc_organizations
+          .filter(
+            (organization) =>
+              organization.organization_key.trim() &&
+              (organization.name.az.trim() || organization.name.en.trim())
+          )
+          .map((organization) => ({
+            organization_key: organization.organization_key,
+            logo_url: organization.logo_url.trim() ? organization.logo_url : null,
+            az: { name: organization.name.az },
+            en: { name: organization.name.en },
+          })),
         // A document with no name and no file is an empty row the editor added.
+        // Send `id` for every existing card so its view_count survives; omit
+        // view_count entirely (metric only).
         documents: form.documents
           .filter(
             (document) =>
@@ -1428,7 +1574,9 @@ export default function AboutPageEditor() {
               document.file_url.en.trim()
           )
           .map((document) => ({
+            ...(document.id !== undefined ? { id: document.id } : {}),
             category_key: document.category_key,
+            organization_key: document.organization_key.trim() ? document.organization_key : null,
             az: { name: document.name.az, file_url: document.file_url.az },
             en: { name: document.name.en, file_url: document.file_url.en },
           })),
@@ -2555,6 +2703,92 @@ export default function AboutPageEditor() {
 
         {isDocuments && (
           <ComponentCard
+            title="Qurumlar"
+            desc="Sənədləri yayımlayan qurumlar (loqo və ad). Sənəd yaradarkən bunlardan biri seçilə bilər."
+          >
+            <div className="space-y-4">
+              {form.doc_organizations.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Hələ qurum əlavə edilməyib.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {form.doc_organizations.map((organization, oi) => (
+                    <div
+                      key={organization.organization_key}
+                      className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400">#{oi + 1}</span>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => moveOrganization(oi, -1)} disabled={oi === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
+                          <button type="button" onClick={() => moveOrganization(oi, 1)} disabled={oi === form.doc_organizations.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
+                          <button type="button" onClick={() => removeOrganization(oi)} className="ml-1 text-xs text-red-500 hover:text-red-600">Sil</button>
+                        </div>
+                      </div>
+
+                      <div className="mb-3 flex items-center gap-4">
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                          {organization.logo_url ? (
+                            <img
+                              src={getImageUrl(organization.logo_url)}
+                              alt=""
+                              className="h-full w-full object-contain p-1"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-gray-400">
+                              Loqo yoxdur
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <Label>Loqo</Label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => void handleOrgLogoUpload(oi, event.target.files?.[0] ?? null)}
+                            className="block w-full text-xs text-gray-500 file:mr-2 file:rounded-md file:border-0 file:bg-brand-50 file:px-2 file:py-1 file:text-xs file:text-brand-600 hover:file:bg-brand-100 dark:text-gray-400 dark:file:bg-gray-800 dark:file:text-gray-200"
+                          />
+                          <Input
+                            value={organization.logo_url}
+                            onChange={(event) => setOrganizationLogo(oi, event.target.value)}
+                            placeholder="və ya keçid yapışdırın"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <Label>Ad</Label>
+                          <Input
+                            value={organization.name[lang]}
+                            onChange={(event) => setOrganizationName(oi, event.target.value)}
+                            placeholder="Təhsil Nazirliyi"
+                          />
+                        </div>
+                        <div>
+                          <Label>Daxili kod</Label>
+                          <Input
+                            value={organization.organization_key}
+                            onChange={(event) => setOrganizationKey(oi, event.target.value)}
+                            placeholder="ministry-of-education"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button size="sm" variant="outline" onClick={addOrganization}>
+                + Qurum əlavə et
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isDocuments && (
+          <ComponentCard
             title="Sənədlər"
             desc="Sənəd kartları. Sayı məhdud deyil. Faylı yükləyin və ya keçid yapışdırın (bütün formatlar)."
           >
@@ -2587,7 +2821,17 @@ export default function AboutPageEditor() {
                         className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
                       >
                         <div className="mb-3 flex items-center justify-between">
-                          <span className="text-xs font-semibold text-gray-400">#{di + 1}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-gray-400">#{di + 1}</span>
+                            <span
+                              title="Baxış sayı"
+                              className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                            >
+                              {lang === "az"
+                                ? `${document.view_count} baxış`
+                                : `${document.view_count} views`}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-1">
                             <button type="button" onClick={() => moveDocument(di, -1)} disabled={di === 0} title="Yuxarı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↑</button>
                             <button type="button" onClick={() => moveDocument(di, 1)} disabled={di === form.documents.length - 1} title="Aşağı" className="px-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 dark:hover:text-gray-200">↓</button>
@@ -2595,23 +2839,41 @@ export default function AboutPageEditor() {
                           </div>
                         </div>
 
-                        {hasDocCategories && (
-                          <div className="mb-3">
-                            <Label>Kateqoriya</Label>
+                        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          {hasDocCategories && (
+                            <div>
+                              <Label>Kateqoriya</Label>
+                              <select
+                                value={document.category_key}
+                                onChange={(event) => setDocumentField(di, "category_key", event.target.value)}
+                                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                              >
+                                <option value="">Kateqoriyasız</option>
+                                {form.doc_categories.map((category) => (
+                                  <option key={category.category_key} value={category.category_key}>
+                                    {category.name[lang] || category.name.az || category.name.en || "(adsız)"}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          <div>
+                            <Label>Qurum</Label>
                             <select
-                              value={document.category_key}
-                              onChange={(event) => setDocumentField(di, "category_key", event.target.value)}
+                              value={document.organization_key}
+                              onChange={(event) => setDocumentField(di, "organization_key", event.target.value)}
                               className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                             >
-                              <option value="">Kateqoriyasız</option>
-                              {form.doc_categories.map((category) => (
-                                <option key={category.category_key} value={category.category_key}>
-                                  {category.name[lang] || category.name.az || category.name.en || "(adsız)"}
+                              <option value="">—</option>
+                              {form.doc_organizations.map((organization) => (
+                                <option key={organization.organization_key} value={organization.organization_key}>
+                                  {organization.name[lang] || organization.name.az || organization.name.en || "(adsız)"}
                                 </option>
                               ))}
                             </select>
                           </div>
-                        )}
+                        </div>
 
                         <div className="mb-3">
                           <Label>Sənədin adı</Label>
