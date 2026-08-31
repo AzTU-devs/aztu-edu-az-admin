@@ -40,6 +40,7 @@ import SlidersPage from "./pages/Sliders/SlidersPage";
 import NewSliderPage from "./pages/Sliders/NewSliderPage";
 import SliderDetailsPage from "./pages/Sliders/SliderDetailsPage";
 import NewsCategoriesPage from "./pages/NewsCategories/NewsCategoriesPage";
+import HonoraryDoctorsPage from "./pages/HonoraryDoctors/HonoraryDoctorsPage";
 import ResearchInstitutesPage from "./pages/ResearchInstitute/ResearchInstitutesPage";
 import NewResearchInstitutePage from "./pages/ResearchInstitute/NewResearchInstitutePage";
 import ResearchInstituteDetailsPage from "./pages/ResearchInstitute/ResearchInstituteDetailsPage";
@@ -174,6 +175,7 @@ export default function App() {
 
             {/* News Categories */}
             <Route path="/news-categories" element={<NewsCategoriesPage />} />
+            <Route path="/honorary-doctors" element={<HonoraryDoctorsPage />} />
 
             {/* Research Institutes */}
             <Route path="/research-institutes" element={<ResearchInstitutesPage />} />

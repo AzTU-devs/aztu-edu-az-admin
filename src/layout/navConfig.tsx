@@ -146,6 +146,7 @@ export const navGroups: NavGroup[] = [
           { name: "Xəbərlər", path: "/news" },
           { name: "Yeni xəbər", path: "/news/new" },
           { name: "Xəbər kateqoriyaları", path: "/news-categories" },
+          { name: "Fəxri Doktorlar", path: "/honorary-doctors" },
         ],
       },
       {
