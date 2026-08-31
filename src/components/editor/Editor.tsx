@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react';
+import { createPortal } from "react-dom";
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -268,7 +269,7 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                     } as any}
                 />
             </div>
-            {isPreviewOpen && (
+            {isPreviewOpen && createPortal(
                 <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/70 dark:bg-gray-900/70">
                     <div className="bg-white/90 dark:bg-gray-800 rounded-xl p-6 w-11/12 max-w-3xl relative border border-gray-200 dark:border-gray-700">
                         <button
@@ -288,9 +289,10 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                             dangerouslySetInnerHTML={{ __html: editor?.getHTML() || '' }}
                         />
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
-            {showLinkModal && (
+            {showLinkModal && createPortal(
                 <div className="fixed inset-0 z-60 flex items-center justify-center backdrop-blur-sm bg-black/40">
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-full shadow-lg border border-gray-300 dark:border-gray-700">
                         <h3 className="text-lg font-semibold mb-4">{linkType === 'url' ? 'Enter URL' : 'Enter Email Address'}</h3>
@@ -326,7 +328,8 @@ const Editor: React.FC<EditorProps> = ({ onUpdate, initialContent, readOnlyConte
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
             <style>{`
         /* Preserve exactly the spaces the author types — multiple spaces,

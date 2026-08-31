@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import CloseIcon from "@mui/icons-material/Close";
 
 interface Props {
@@ -11,8 +12,11 @@ interface Props {
 }
 
 export default function MenuModal({ title, onClose, onSubmit, loading, submitLabel = "Yadda saxla", children }: Props) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  // Portalled to the body: a transformed ancestor (hover:scale card, blurred
+  // panel, animated page wrapper) would otherwise become the containing block
+  // for this fixed overlay and push it out of the viewport.
+  return createPortal(
+    <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -47,6 +51,7 @@ export default function MenuModal({ title, onClose, onSubmit, loading, submitLab
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

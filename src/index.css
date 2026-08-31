@@ -172,7 +172,22 @@ layer(base);
   --shadow-elevate: 0px 8px 24px -6px rgba(16, 24, 40, 0.12),
     0px 2px 8px -2px rgba(16, 24, 40, 0.06);
 
-  --animate-fade-in-up: fade-in-up 0.32s cubic-bezier(0.23, 1, 0.32, 1) both;
+  /*
+    `backwards`, not `both`.
+
+    AppLayout wraps every page in this animation. With `both` the animation keeps
+    filling after it ends, and the final keyframe's `transform: none` resolves to
+    an identity *matrix* rather than the keyword `none` — so the wrapper keeps a
+    transform forever. A transformed ancestor becomes the containing block for its
+    `position: fixed` descendants, which meant every modal inside a page was sized
+    and positioned against the page wrapper instead of the viewport, landing off
+    screen on long pages.
+
+    `backwards` still applies the `from` state before the animation starts, so the
+    entrance is unchanged, but afterwards the element reverts to its own style and
+    the computed transform is genuinely `none`.
+  */
+  --animate-fade-in-up: fade-in-up 0.32s cubic-bezier(0.23, 1, 0.32, 1) backwards;
 
   @keyframes fade-in-up {
     from {
