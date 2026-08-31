@@ -13,16 +13,38 @@ export const FAMILY_OPTIONS: { value: HeroCertificateFamily; label: string }[] =
 ];
 
 /**
- * Who attested the certificate. QS is a ranking body, so its rows carry a rank
- * and a family; AQAS is a programme-accreditation agency, so its rows carry
- * neither — the programme name is the whole story.
+ * Who attested the certificate.
+ *
+ * Ranking bodies (QS, UI GreenMetric) state a position, so their rows carry a
+ * rank_label. Accreditors and registers (AQAS, STAR Register) attest rather than
+ * rank, so their rows carry neither rank nor family — the programme name is the
+ * whole story.
+ *
+ * These values must stay in step with ALLOWED_ISSUERS in the backend's
+ * app/services/hero_certificate.py, which rejects anything outside its whitelist
+ * with a 422.
  */
-export type HeroCertificateIssuer = "qs" | "aqas";
+export type HeroCertificateIssuer = "qs" | "aqas" | "greenmetric" | "staregister";
 
 export const ISSUER_OPTIONS: { value: HeroCertificateIssuer; label: string }[] = [
     { value: "qs", label: "QS" },
     { value: "aqas", label: "AQAS" },
+    { value: "greenmetric", label: "UI GreenMetric" },
+    { value: "staregister", label: "STAR Register" },
 ];
+
+/** Issuers whose certificates state a position — these require a rank_label. */
+export const RANKING_ISSUERS: HeroCertificateIssuer[] = ["qs", "greenmetric"];
+
+/** Issuers for which a family must be chosen. GreenMetric ranks on a single
+ *  sustainability table, so it has no family split and does not require one. */
+export const FAMILY_REQUIRED_ISSUERS: HeroCertificateIssuer[] = ["qs"];
+
+export const issuerTakesRank = (issuer: string): boolean =>
+    (RANKING_ISSUERS as string[]).includes(issuer);
+
+export const issuerNeedsFamily = (issuer: string): boolean =>
+    (FAMILY_REQUIRED_ISSUERS as string[]).includes(issuer);
 
 /** One language's worth of certificate copy. All plain text — no rich editor. */
 export interface HeroCertificateTranslation {

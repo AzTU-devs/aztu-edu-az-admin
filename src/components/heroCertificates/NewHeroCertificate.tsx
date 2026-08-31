@@ -9,6 +9,8 @@ import {
     CreateHeroCertificatePayload,
     FAMILY_OPTIONS,
     ISSUER_OPTIONS,
+    issuerTakesRank,
+    issuerNeedsFamily,
 } from "../../services/heroCertificate/heroCertificateService";
 
 const selectClass =
@@ -55,10 +57,13 @@ export default function NewHeroCertificate() {
 
     const hasSource = image !== null || documentFile !== null || externalUrl.trim() !== "";
 
-    // AQAS accredits programmes rather than ranking them, so it carries no rank
-    // and no family. Every issuer test asks "is it AQAS?" so that anything else
-    // keeps the original QS behaviour.
-    const isAqas = issuer === "aqas";
+    // Ranking bodies (QS, GreenMetric) state a position; accreditors and
+    // registers (AQAS, STAR Register) do not. The test is now "does this issuer
+    // rank?" rather than "is it AQAS?", so a new accreditor gets the right form
+    // instead of silently being offered rank fields.
+    const takesRank = issuerTakesRank(issuer);
+    const needsFamily = issuerNeedsFamily(issuer);
+    const isAqas = !takesRank;
 
     // Switching to AQAS does not just hide the two QS-only fields, it empties
     // them: a rank typed before the switch would otherwise sit in state, be
@@ -66,7 +71,7 @@ export default function NewHeroCertificate() {
     // dropping them at submit time — reach the API on an AQAS record.
     const changeIssuer = (next: string) => {
         setIssuer(next);
-        if (next === "aqas") {
+        if (!issuerTakesRank(next)) {
             setRankLabel("");
             setFamily("");
         }
@@ -75,7 +80,7 @@ export default function NewHeroCertificate() {
     // Mirrors the server matrix exactly, so the editor never sees a raw 422.
     const isFormValid =
         hasSource &&
-        (isAqas || (rankLabel.trim() !== "" && family !== "")) &&
+        (!takesRank || (rankLabel.trim() !== "" && (!needsFamily || family !== ""))) &&
         azTitle.trim() !== "" &&
         enTitle.trim() !== "";
 
@@ -99,8 +104,8 @@ export default function NewHeroCertificate() {
         setLoading(true);
         const payload: CreateHeroCertificatePayload = {
             issuer,
-            rank_label: isAqas ? undefined : rankLabel.trim(),
-            family: isAqas ? undefined : family,
+            rank_label: takesRank ? rankLabel.trim() : undefined,
+            family: takesRank && family !== "" ? family : undefined,
             issued_date: issuedDate.trim() || undefined,
             external_url: externalUrl.trim() || undefined,
             image: image || undefined,
@@ -228,7 +233,7 @@ export default function NewHeroCertificate() {
                 <div className="p-5 space-y-5">
                     {isAqas && (
                         <p className="text-xs rounded-lg bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 px-3 py-2">
-                            AQAS proqram akkreditasiyası verir, reytinq deyil — buna görə
+                            Bu qurum akkreditasiya/qeydiyyat verir, reytinq deyil — buna görə
                             <span className="font-semibold"> reytinq göstəricisi</span> və
                             <span className="font-semibold"> kateqoriya</span> doldurulmur.
                             Ana səhifədə əsas mətn kimi <span className="font-semibold">proqramın adı</span> göstərilir.
@@ -249,7 +254,7 @@ export default function NewHeroCertificate() {
                             </select>
                         </div>
 
-                        {!isAqas && (
+                        {takesRank && (
                             <div>
                                 <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
                                     Reytinq göstəricisi
@@ -262,7 +267,7 @@ export default function NewHeroCertificate() {
                             </div>
                         )}
 
-                        {!isAqas && (
+                        {needsFamily && (
                             <div>
                                 <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
                                     Kateqoriya
