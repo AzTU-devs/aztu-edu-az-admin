@@ -304,18 +304,22 @@ export const navGroups: NavGroup[] = [
   },
   {
     /*
-      Only the header menu is listed. The footer/quick/shared editors exist and
-      are routed, but they still read the public `/api/menu/footer` and
-      `/api/menu/quick` payloads, which resolve a single language and carry no
-      row ids — nothing an editor can save against. They stay unlisted until
-      they get admin readers of their own, the way the header just did.
+      Header and quick are listed: both have admin readers that return row ids
+      and every translation, so an editor can actually save against them.
+
+      Footer and shared stay unlisted — they still read the public
+      `/api/menu/footer` payload, which resolves a single language and carries
+      no ids. They join the list when they get admin readers of their own.
     */
     label: "Naviqasiya",
     items: [
       {
         icon: <MenuIcon />,
         name: "Menyu",
-        subItems: [{ name: "Header menyu", path: "/menu-header" }],
+        subItems: [
+          { name: "Header menyu", path: "/menu-header" },
+          { name: "Sürətli keçid menyusu", path: "/menu-quick" },
+        ],
       },
     ],
   },

@@ -61,7 +61,8 @@ export default function QuickManager() {
   const [saving, setSaving] = useState(false);
 
   // Left item form
-  const [liUrl, setLiUrl] = useState("");
+  const [liUrlAz, setLiUrlAz] = useState("");
+  const [liUrlEn, setLiUrlEn] = useState("");
   const [liOrder, setLiOrder] = useState("1");
   const [liLabelAz, setLiLabelAz] = useState("");
   const [liLabelEn, setLiLabelEn] = useState("");
@@ -73,7 +74,8 @@ export default function QuickManager() {
   const [secTitleEn, setSecTitleEn] = useState("");
 
   // Section item form
-  const [siUrl, setSiUrl] = useState("");
+  const [siUrlAz, setSiUrlAz] = useState("");
+  const [siUrlEn, setSiUrlEn] = useState("");
   const [siOrder, setSiOrder] = useState("1");
   const [siLabelAz, setSiLabelAz] = useState("");
   const [siLabelEn, setSiLabelEn] = useState("");
@@ -102,12 +104,14 @@ export default function QuickManager() {
 
   // ── open modals ───────────────────────────────────────────
   const openCreateLeft = () => {
-    setLiUrl(""); setLiOrder("1"); setLiLabelAz(""); setLiLabelEn("");
+    setLiUrlAz(""); setLiUrlEn(""); setLiOrder("1"); setLiLabelAz(""); setLiLabelEn("");
     setModal({ kind: "left", mode: "create" });
   };
 
   const openEditLeft = (item: AdminQuickLeftItem) => {
-    setLiUrl(item.url); setLiOrder(String(item.display_order));
+    setLiUrlAz(item.url_tr?.az || item.url || "");
+    setLiUrlEn(item.url_tr?.en || item.url || "");
+    setLiOrder(String(item.display_order));
     setLiLabelAz(item.label?.az || ""); setLiLabelEn(item.label?.en || "");
     setModal({ kind: "left", mode: "edit", target: item });
   };
@@ -124,12 +128,14 @@ export default function QuickManager() {
   };
 
   const openCreateSectionItem = (sec: AdminQuickSection) => {
-    setSiUrl(""); setSiOrder("1"); setSiLabelAz(""); setSiLabelEn("");
+    setSiUrlAz(""); setSiUrlEn(""); setSiOrder("1"); setSiLabelAz(""); setSiLabelEn("");
     setModal({ kind: "sectionItem", mode: "create", section: sec });
   };
 
   const openEditSectionItem = (sec: AdminQuickSection, item: AdminQuickSectionItem) => {
-    setSiUrl(item.url); setSiOrder(String(item.display_order));
+    setSiUrlAz(item.url_tr?.az || item.url || "");
+    setSiUrlEn(item.url_tr?.en || item.url || "");
+    setSiOrder(String(item.display_order));
     setSiLabelAz(item.label?.az || ""); setSiLabelEn(item.label?.en || "");
     setModal({ kind: "sectionItem", mode: "edit", section: sec, target: item });
   };
@@ -157,9 +163,9 @@ export default function QuickManager() {
     if (modal.kind === "left") {
       const label: BiLang = { az: liLabelAz, en: liLabelEn };
       if (modal.mode === "create") {
-        await ok(() => createQuickLeftItem({ url: liUrl, display_order: Number(liOrder), label }), "Element yaradıldı");
+        await ok(() => createQuickLeftItem({ url: liUrlAz, url_tr: { az: liUrlAz, en: liUrlEn }, display_order: Number(liOrder), label }), "Element yaradıldı");
       } else {
-        await ok(() => updateQuickLeftItem(modal.target!.id, { url: liUrl, display_order: Number(liOrder), label }), "Yeniləndi");
+        await ok(() => updateQuickLeftItem(modal.target!.id, { url: liUrlAz, url_tr: { az: liUrlAz, en: liUrlEn }, display_order: Number(liOrder), label }), "Yeniləndi");
       }
     }
 
@@ -175,9 +181,9 @@ export default function QuickManager() {
     if (modal.kind === "sectionItem") {
       const label: BiLang = { az: siLabelAz, en: siLabelEn };
       if (modal.mode === "create") {
-        await ok(() => createQuickSectionItem({ section_id: modal.section.id, url: siUrl, display_order: Number(siOrder), label }), "Link yaradıldı");
+        await ok(() => createQuickSectionItem({ section_id: modal.section.id, url: siUrlAz, url_tr: { az: siUrlAz, en: siUrlEn }, display_order: Number(siOrder), label }), "Link yaradıldı");
       } else {
-        await ok(() => updateQuickSectionItem(modal.target!.id, { url: siUrl, display_order: Number(siOrder), label }), "Yeniləndi");
+        await ok(() => updateQuickSectionItem(modal.target!.id, { url: siUrlAz, url_tr: { az: siUrlAz, en: siUrlEn }, display_order: Number(siOrder), label }), "Yeniləndi");
       }
     }
 
@@ -334,7 +340,20 @@ export default function QuickManager() {
                 <Field label="Etiket (AZ) *"><Input value={modal.kind === "left" ? liLabelAz : siLabelAz} onChange={modal.kind === "left" ? setLiLabelAz : setSiLabelAz} placeholder="Reytinq" /></Field>
                 <Field label="Etiket (EN) *"><Input value={modal.kind === "left" ? liLabelEn : siLabelEn} onChange={modal.kind === "left" ? setLiLabelEn : setSiLabelEn} placeholder="Ranking" /></Field>
               </div>
-              <Field label="URL *"><Input value={modal.kind === "left" ? liUrl : siUrl} onChange={modal.kind === "left" ? setLiUrl : setSiUrl} placeholder="/about/rankings" /></Field>
+              <Field label="URL (AZ) *">
+                <Input
+                  value={modal.kind === "left" ? liUrlAz : siUrlAz}
+                  onChange={modal.kind === "left" ? setLiUrlAz : setSiUrlAz}
+                  placeholder="/az/haqqimizda/reytinqler"
+                />
+              </Field>
+              <Field label="URL (EN) *">
+                <Input
+                  value={modal.kind === "left" ? liUrlEn : siUrlEn}
+                  onChange={modal.kind === "left" ? setLiUrlEn : setSiUrlEn}
+                  placeholder="/en/about/rankings"
+                />
+              </Field>
               <Field label="Sıra *"><Input value={modal.kind === "left" ? liOrder : siOrder} onChange={modal.kind === "left" ? setLiOrder : setSiOrder} placeholder="1" /></Field>
             </>
           )}

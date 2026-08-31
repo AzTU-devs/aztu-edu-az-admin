@@ -108,25 +108,32 @@ export interface AdminContact {
 // --- QUICK MENU ---
 export interface AdminQuickLeftItem {
   id: number;
+  /** Shared fallback, used when a language has no link of its own. */
   url: string;
   display_order: number;
+  is_active?: boolean;
   label: BiLang;
+  /** Per-language link. The az and en sites use different paths. */
+  url_tr?: BiLang;
 }
 
 export interface AdminQuickSection {
   id: number;
   section_key: string;
   display_order: number;
+  is_active?: boolean;
   title: BiLang;
   items?: AdminQuickSectionItem[];
 }
 
 export interface AdminQuickSectionItem {
   id: number;
-  section_id: number;
+  section_id?: number;
   url: string;
   display_order: number;
+  is_active?: boolean;
   label: BiLang;
+  url_tr?: BiLang;
 }
 
 // ============================================================
@@ -676,17 +683,23 @@ export const deleteContact = async (id: number): Promise<"SUCCESS" | "NOT FOUND"
 export interface AdminQuickMenuData {
   left_items: AdminQuickLeftItem[];
   sections: AdminQuickSection[];
-  social_links: AdminSocialLink[];
 }
 
+/**
+ * The editor reads `/quick/admin`, not the public `/quick`.
+ *
+ * The public payload resolves a single language and carries no row ids, so it
+ * cannot be saved against — which is why this editor was unreachable from the
+ * sidebar until now. The admin reader returns both translations, both per-language
+ * links, the ids and the inactive rows.
+ */
 export const getAdminQuickMenu = async (): Promise<AdminQuickMenuData | "ERROR"> => {
   try {
-    const res = await apiClient.get("/api/menu/quick?lang=az");
+    const res = await apiClient.get("/api/menu/quick/admin");
     if (res.data.status_code === 200) {
       return {
         left_items: res.data.data.left_items as AdminQuickLeftItem[],
-        sections: res.data.data.right_sections as AdminQuickSection[],
-        social_links: res.data.data.social_links as AdminSocialLink[],
+        sections: res.data.data.sections as AdminQuickSection[],
       };
     }
     return "ERROR";
@@ -701,6 +714,7 @@ export const getAdminQuickMenu = async (): Promise<AdminQuickMenuData | "ERROR">
 
 export const createQuickLeftItem = async (payload: {
   url: string;
+  url_tr?: BiLang;
   display_order: number;
   label: BiLang;
 }): Promise<{ id: number } | "ERROR"> => {
@@ -715,7 +729,7 @@ export const createQuickLeftItem = async (payload: {
 
 export const updateQuickLeftItem = async (
   id: number,
-  payload: Partial<{ url: string; display_order: number; label: Partial<BiLang> }>
+  payload: Partial<{ url: string; url_tr: Partial<BiLang>; display_order: number; label: Partial<BiLang> }>
 ): Promise<"SUCCESS" | "NOT FOUND" | "ERROR"> => {
   try {
     const res = await apiClient.put(`/api/menu/quick/left-item/${id}`, payload);
@@ -792,6 +806,7 @@ export const deleteQuickSection = async (id: number): Promise<"SUCCESS" | "NOT F
 // ============================================================
 
 export const createQuickSectionItem = async (payload: {
+  url_tr?: BiLang;
   section_id: number;
   url: string;
   display_order: number;
@@ -808,7 +823,7 @@ export const createQuickSectionItem = async (payload: {
 
 export const updateQuickSectionItem = async (
   id: number,
-  payload: Partial<{ url: string; display_order: number; label: Partial<BiLang> }>
+  payload: Partial<{ url: string; url_tr: Partial<BiLang>; display_order: number; label: Partial<BiLang> }>
 ): Promise<"SUCCESS" | "NOT FOUND" | "ERROR"> => {
   try {
     const res = await apiClient.put(`/api/menu/quick/section-item/${id}`, payload);
