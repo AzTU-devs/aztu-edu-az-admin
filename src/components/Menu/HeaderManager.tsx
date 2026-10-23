@@ -115,8 +115,9 @@ function SlugPreview({
   lang,
   title,
   parentPath,
-}: { lang: "az" | "en"; title: string; parentPath?: string }) {
-  const slug = makeSlug(title);
+  existingSlug,
+}: { lang: "az" | "en"; title: string; parentPath?: string; existingSlug?: string }) {
+  const slug = existingSlug || makeSlug(title);
   if (!slug) return null;
   const prefix = parentPath ? `/${parentPath}` : "";
   return (
@@ -940,7 +941,7 @@ export default function HeaderManager() {
                 />
               </Field>
               {showSlugPreview && !form.directUrl && (
-                <SlugPreview lang="az" title={form.titleAz} parentPath={parentPath("az")} />
+                <SlugPreview lang="az" title={form.titleAz} parentPath={parentPath("az")} existingSlug={modal?.mode === "edit" ? slugOf(modal.row, "az") : undefined} />
               )}
             </div>
             <div>
@@ -952,7 +953,7 @@ export default function HeaderManager() {
                 />
               </Field>
               {showSlugPreview && !form.directUrl && (
-                <SlugPreview lang="en" title={form.titleEn} parentPath={parentPath("en")} />
+                <SlugPreview lang="en" title={form.titleEn} parentPath={parentPath("en")} existingSlug={modal?.mode === "edit" ? slugOf(modal.row, "en") : undefined} />
               )}
             </div>
           </div>
